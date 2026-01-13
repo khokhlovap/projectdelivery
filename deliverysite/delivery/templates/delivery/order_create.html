@@ -1,0 +1,101 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Создание заказа</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body class="bg-light">
+
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <h3 class="card-title mb-4 text-center">Создание заказа</h3>
+
+                    <form method="post">
+                        {% csrf_token %}
+
+                        <div class="mb-3">
+                            <label class="form-label">Тип заказа</label>
+                            {{ form.order_type }}
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Город</label>
+                            {{ form.city }}
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Улица</label>
+                            {{ form.street }}
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Дом</label>
+                            {{ form.house }}
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Комментарий к заказу</label>
+                            {{ form.comment }}
+                        </div>
+
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-primary btn-lg">
+                                Создать заказ
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<!-- Модальное окно успешного создания заказа -->
+{% if messages %}
+  {% for message in messages %}
+    <div class="modal fade" id="successModal" tabindex="-1" aria-hidden="true">
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+
+          <div class="modal-header">
+            <h5 class="modal-title">Заказ создан</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+          </div>
+
+          <div class="modal-body">
+            <p>{{ message }}</p>
+          </div>
+
+          <div class="modal-footer">
+            <button type="button" class="btn btn-success" data-bs-dismiss="modal">
+              Понятно
+            </button>
+          </div>
+
+        </div>
+      </div>
+    </div>
+  {% endfor %}
+{% endif %}
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"></script>
+
+<!-- Автоматический показ модального окна -->
+{% if messages %}
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        const modal = new bootstrap.Modal(document.getElementById('successModal'));
+        modal.show();
+    });
+</script>
+{% endif %}
+
+</body>
+</html>

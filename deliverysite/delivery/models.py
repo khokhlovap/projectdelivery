@@ -109,11 +109,11 @@ class OrderType(models.Model):
 class Order(models.Model):
     client = models.ForeignKey(User, on_delete=models.CASCADE, related_name='orders')
     courier = models.ForeignKey(Courier, on_delete=models.SET_NULL, null=True, blank=True)
-    order_type = models.ForeignKey(OrderType, on_delete=models.PROTECT)
-    city = models.CharField(max_length=100)
-    street = models.CharField(max_length=255)
-    house = models.CharField(max_length=20)
-    comment = models.TextField(blank=True, null=True)
+    order_type = models.ForeignKey(OrderType, on_delete=models.PROTECT, verbose_name="Тип заказа")
+    city = models.CharField(max_length=100, verbose_name="Город")
+    street = models.CharField(max_length=255, verbose_name="Улица")
+    house = models.CharField(max_length=20, verbose_name="Дом")
+    comment = models.TextField(blank=True, null=True, verbose_name="Комментарий")
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
