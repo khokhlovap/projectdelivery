@@ -1,7 +1,7 @@
 from django.contrib import messages
 from django.shortcuts import render, redirect, get_object_or_404
 from .forms import OrderForm
-from delivery.models import Order, Courier
+from delivery.models import Order, Courier, OrderStatus
 
 # CREATE: Создание заказа
 def create_order(request):
@@ -9,19 +9,30 @@ def create_order(request):
         form = OrderForm(request.POST)
         if form.is_valid():
             order = form.save(commit=False)
-            order.client = request.user   # автоматически текущий пользователь
+            order.client = request.user
             order.save()
+
+            # создаем первый статус
+            OrderStatus.objects.create(
+                order=order,
+                status='created'
+            )
+
             messages.success(
                 request,
                 'Ваш заказ создан. В ближайшее время с вами свяжется менеджер.'
             )
 
-            return render(request, 'delivery/order_create.html', {
-                'form': OrderForm()
-            })
+            return render(
+                request,
+                'delivery/order_create.html',
+                {'form': OrderForm()}
+            )
     else:
         form = OrderForm()
+
     return render(request, 'delivery/order_create.html', {'form': form})
+
 
 # READ: просмотр всех созланных заказов
 def order_list(request):
@@ -30,7 +41,7 @@ def order_list(request):
 
 # UPDATE
 def assign_courier(request, order_id):
-    order = get_object_or_404(Order, id=order_id, courier__isnull=True)
+    order = get_object_or_404(Order, id=order_id)
 
     available_couriers = [
         courier for courier in Courier.objects.all()
@@ -39,10 +50,20 @@ def assign_courier(request, order_id):
 
     if request.method == 'POST':
         courier_id = request.POST.get('courier')
-        courier = get_object_or_404(Courier, id=courier_id)
-        order.courier = courier
-        order.save()
-        return redirect('order_list')
+        if courier_id:
+            courier = get_object_or_404(Courier, id=courier_id)
+
+            order.courier = courier
+            order.save()
+
+            # создаем новый статус
+            OrderStatus.objects.create(
+                order=order,
+                status='assigned'
+            )
+
+            messages.success(request, 'Курьер назначен')
+            return redirect('order_list')
 
     return render(
         request,
@@ -52,6 +73,7 @@ def assign_courier(request, order_id):
             'couriers': available_couriers
         }
     )
+
 
 # DELETE
 def delete_order(request, order_id):
