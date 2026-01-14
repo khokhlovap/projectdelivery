@@ -47,6 +47,7 @@ class Role(models.Model):
         ('courier', 'Курьер'),
         ('manager', 'Менеджер'),
     )
+
     name = models.CharField(max_length=20, choices=ROLE_CHOICES, unique=True)
 
     def __str__(self):
@@ -172,5 +173,3 @@ class AIChatLog(models.Model):
     question = models.TextField()
     answer = models.TextField()
     created_at = models.DateTimeField(auto_now_add=True)
-
-

@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Назначить курьера</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body class="p-5">
+
+<div class="container">
+    <h3>Назначить курьера для заказа №{{ order.id }}</h3>
+
+    <form method="post">
+        {% csrf_token %}
+        <select name="courier" class="form-select mb-3" required>
+            {% for courier in couriers %}
+                <option value="{{ courier.id }}">{{ courier }}</option>
+            {% endfor %}
+        </select>
+
+        <button class="btn btn-success">Назначить</button>
+        <a href="{% url 'order_list' %}" class="btn btn-secondary">Отмена</a>
+    </form>
+</div>
+
+</body>
+</html>
