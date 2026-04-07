@@ -1,21 +1,31 @@
 from django.contrib import messages
 from django.shortcuts import render, redirect, get_object_or_404
 from .forms import OrderForm
-from delivery.models import Order, Courier, OrderStatus
+from delivery.models import Order, Courier, OrderStatusHistory, Client
+from django.contrib.auth.decorators import login_required
 
 # CREATE: Создание заказа
+@login_required
 def create_order(request):
     if request.method == 'POST':
         form = OrderForm(request.POST)
         if form.is_valid():
             order = form.save(commit=False)
-            order.client = request.user
+            # Получаем профиль клиента текущего пользователя
+            try:
+                client_profile = request.user.client_profile
+                order.client = client_profile
+            except Client.DoesNotExist:
+                messages.error(request, 'У вас нет профиля клиента. Обратитесь к менеджеру.')
+                return redirect('home')
+            
             order.save()
 
-            # создаем первый статус
-            OrderStatus.objects.create(
+            # создаем первый статус в истории
+            OrderStatusHistory.objects.create(
                 order=order,
-                status='created'
+                status='created',
+                comment='Заказ создан клиентом'
             )
 
             messages.success(
@@ -23,24 +33,35 @@ def create_order(request):
                 'Ваш заказ создан. В ближайшее время с вами свяжется менеджер.'
             )
 
-            return render(
-                request,
-                'delivery/order_create.html',
-                {'form': OrderForm()}
-            )
+            return redirect('order_list')  # редирект на список заказов
     else:
         form = OrderForm()
 
     return render(request, 'delivery/order_create.html', {'form': form})
 
 
-# READ: просмотр всех созланных заказов
+# READ: просмотр всех созданных заказов
+@login_required
 def order_list(request):
-    orders = Order.objects.select_related('client', 'courier', 'order_type')
+    # Показываем только заказы текущего клиента
+    try:
+        client_profile = request.user.client_profile
+        orders = Order.objects.filter(client=client_profile).select_related('courier')
+    except Client.DoesNotExist:
+        orders = Order.objects.none()
+        messages.info(request, 'У вас нет профиля клиента')
+    
     return render(request, 'delivery/order_list.html', {'orders': orders})
 
-# UPDATE
+
+# UPDATE: назначение курьера (только для менеджеров)
+@login_required
 def assign_courier(request, order_id):
+    # Проверка, что пользователь - менеджер
+    if request.user.role != 'manager':
+        messages.error(request, 'У вас нет прав для этого действия')
+        return redirect('order_list')
+    
     order = get_object_or_404(Order, id=order_id)
 
     available_couriers = [
@@ -54,12 +75,14 @@ def assign_courier(request, order_id):
             courier = get_object_or_404(Courier, id=courier_id)
 
             order.courier = courier
+            order.status = 'assigned'
             order.save()
 
-            # создаем новый статус
-            OrderStatus.objects.create(
+            # создаем новый статус в истории
+            OrderStatusHistory.objects.create(
                 order=order,
-                status='assigned'
+                status='assigned',
+                comment=f'Назначен курьер: {courier.user.get_full_name()}'
             )
 
             messages.success(request, 'Курьер назначен')
@@ -75,9 +98,15 @@ def assign_courier(request, order_id):
     )
 
 
-# DELETE
+# DELETE: удаление заказа (только для клиента, чей это заказ)
+@login_required
 def delete_order(request, order_id):
-    order = get_object_or_404(Order, id=order_id)
+    try:
+        client_profile = request.user.client_profile
+        order = get_object_or_404(Order, id=order_id, client=client_profile)
+    except Client.DoesNotExist:
+        messages.error(request, 'У вас нет профиля клиента')
+        return redirect('order_list')
 
     if request.method == 'POST':
         order.delete()
