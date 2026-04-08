@@ -1,0 +1,185 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container-fluid px-4 py-4">
+    <div class="row g-4">
+        <!-- Левое боковое меню -->
+        <div class="col-md-3 col-lg-2">
+            <div class="sidebar">
+                <div class="text-center mb-4">
+                    <div class="mx-auto mb-3" style="width: 70px; height: 70px; background: linear-gradient(135deg, #C8E0D6 0%, #E8E0D5 100%); border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+                        <i class="bi bi-person-badge" style="font-size: 2rem; color: #1E7A57;"></i>
+                    </div>
+                    <h6 class="mb-1 fw-semibold">{{ user.get_full_name|default:user.username }}</h6>
+                    <small style="color: #6B6B6B;">{{ user.email }}</small>
+                    <div class="mt-2">
+                        <span class="badge bg-primary">Менеджер</span>
+                    </div>
+                </div>
+                
+                <hr style="background: linear-gradient(90deg, #C8E0D6 0%, transparent 100%); height: 1px;">
+                
+                <ul class="nav nav-pills flex-column gap-1">
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.resolver_match.url_name == 'manager_dashboard' %}active{% endif %}" 
+                           href="{% url 'accounts:manager_dashboard' %}">
+                            <i class="bi bi-house me-2"></i> Главная
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.resolver_match.url_name == 'manager_tasks' %}active{% endif %}" 
+                           href="{% url 'accounts:manager_tasks' %}">
+                            <i class="bi bi-check2-square me-2"></i> Задачи
+                            <span class="badge bg-danger rounded-pill ms-2" id="tasksCount">0</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.resolver_match.url_name == 'manager_orders' %}active{% endif %}" 
+                           href="{% url 'accounts:manager_orders' %}">
+                            <i class="bi bi-truck me-2"></i> Заказы
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.resolver_match.url_name == 'manager_couriers' %}active{% endif %}" 
+                           href="{% url 'accounts:manager_couriers' %}">
+                            <i class="bi bi-people me-2"></i> Курьеры
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.resolver_match.url_name == 'manager_clients' %}active{% endif %}" 
+                           href="{% url 'accounts:manager_clients' %}">
+                            <i class="bi bi-building me-2"></i> Клиенты
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.resolver_match.url_name == 'manager_reports' %}active{% endif %}" 
+                           href="{% url 'accounts:manager_reports' %}">
+                            <i class="bi bi-graph-up me-2"></i> Отчеты
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.resolver_match.url_name == 'manager_settings' %}active{% endif %}" 
+                           href="{% url 'accounts:manager_settings' %}">
+                            <i class="bi bi-gear me-2"></i> Настройки
+                        </a>
+                    </li>
+                    <li class="nav-item mt-3 pt-2">
+                        <hr style="background: linear-gradient(90deg, #C8E0D6 0%, transparent 100%); height: 1px;">
+                        <a class="nav-link text-danger" href="{% url 'accounts:logout' %}">
+                            <i class="bi bi-box-arrow-right me-2"></i> Выход
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+        
+        <!-- Основной контент -->
+        <div class="col-md-6 col-lg-7">
+            {% if messages %}
+                {% for message in messages %}
+                    <div class="alert alert-{{ message.tags }} alert-dismissible fade show mb-4" role="alert">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+            
+            {% block manager_content %}
+            {% endblock %}
+        </div>
+        
+        <!-- Правая панель уведомлений -->
+        <div class="col-md-3 col-lg-3">
+            <div class="sidebar">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h6 class="mb-0 fw-semibold">
+                        <i class="bi bi-bell me-2" style="color: #1E7A57;"></i>Уведомления
+                    </h6>
+                    <span class="badge bg-primary rounded-pill" id="notificationsCount">0</span>
+                </div>
+                <hr style="background: linear-gradient(90deg, #C8E0D6 0%, transparent 100%); height: 1px;">
+                <div id="notificationsList" style="max-height: 500px; overflow-y: auto;">
+                    <div class="text-center text-muted py-4">
+                        <i class="bi bi-inbox" style="font-size: 2rem;"></i>
+                        <p class="mt-2 mb-0 small">Нет уведомлений</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<footer class="text-center py-4 mt-5">
+    <div class="container">
+        <p class="mb-0 small" style="color: #6B6B6B;">© 2026 АВН Бизнес курьерская служба</p>
+        <div class="mt-2">
+            <span class="small mx-2" style="color: #6B6B6B;">+7 (980) 888-88-88</span>
+            <span class="small mx-2" style="color: #6B6B6B;">|</span>
+            <span class="small" style="color: #6B6B6B;">abn-business@mail.ru</span>
+        </div>
+    </div>
+</footer>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Функция для загрузки уведомлений
+    function loadNotifications() {
+        fetch('/api/manager/notifications/')
+            .then(response => response.json())
+            .then(data => {
+                const container = document.getElementById('notificationsList');
+                const countBadge = document.getElementById('notificationsCount');
+                
+                if (data.notifications && data.notifications.length > 0) {
+                    countBadge.textContent = data.notifications.length;
+                    container.innerHTML = data.notifications.map(notif => `
+                        <div class="alert alert-sm alert-${notif.type} mb-2 p-2" style="font-size: 0.8rem;">
+                            <small>${notif.message}</small>
+                            <br>
+                            <small class="text-muted">${notif.time}</small>
+                        </div>
+                    `).join('');
+                } else {
+                    countBadge.textContent = '0';
+                    container.innerHTML = `
+                        <div class="text-center text-muted py-4">
+                            <i class="bi bi-inbox" style="font-size: 2rem;"></i>
+                            <p class="mt-2 mb-0 small">Нет уведомлений</p>
+                        </div>
+                    `;
+                }
+            })
+            .catch(error => console.error('Ошибка загрузки уведомлений:', error));
+    }
+    
+    // Функция для загрузки количества задач
+    function loadTasksCount() {
+        fetch('/api/manager/tasks/count/')
+            .then(response => response.json())
+            .then(data => {
+                const tasksSpan = document.getElementById('tasksCount');
+                if (tasksSpan) {
+                    tasksSpan.textContent = data.count || 0;
+                    if (data.count > 0) {
+                        tasksSpan.classList.remove('bg-secondary');
+                        tasksSpan.classList.add('bg-danger');
+                    } else {
+                        tasksSpan.classList.remove('bg-danger');
+                        tasksSpan.classList.add('bg-secondary');
+                    }
+                }
+            })
+            .catch(error => console.error('Ошибка загрузки задач:', error));
+    }
+    
+    // Загружаем данные при загрузке страницы
+    loadNotifications();
+    loadTasksCount();
+    
+    // Обновляем каждые 30 секунд
+    setInterval(loadNotifications, 30000);
+    setInterval(loadTasksCount, 30000);
+</script>
+{% endblock %}

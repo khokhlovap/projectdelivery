@@ -13,4 +13,13 @@ urlpatterns = [
     path('settings/', views.client_settings, name='settings'),
     path('ai-assistant/', views.ai_assistant, name='ai_assistant'),
     path('privacy-policy/', views.privacy_policy, name='privacy_policy'),
+    path('manager/', views.manager_dashboard, name='manager_dashboard'),
+    path('manager/tasks/', views.manager_tasks, name='manager_tasks'),
+    path('manager/orders/', views.manager_orders, name='manager_orders'),
+    path('manager/couriers/', views.manager_couriers, name='manager_couriers'),
+    path('manager/clients/', views.manager_clients, name='manager_clients'),
+    path('manager/reports/', views.manager_reports, name='manager_reports'),
+    path('manager/settings/', views.manager_settings, name='manager_settings'),
+    path('api/manager/notifications/', views.manager_notifications, name='manager_notifications'),
+    path('api/manager/tasks/count/', views.manager_tasks_count, name='manager_tasks_count'),
 ]

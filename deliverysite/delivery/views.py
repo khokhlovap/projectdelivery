@@ -1,8 +1,9 @@
 from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
+from django.http import JsonResponse  # ДОБАВЬТЕ ЭТОТ ИМПОРТ
 from .forms import OrderForm
-from .models import Order, Courier, OrderStatusHistory
+from .models import Order, Courier, OrderStatusHistory, CourierNotification  # ДОБАВЬТЕ CourierNotification
 
 @login_required
 def create_order(request):
@@ -32,6 +33,7 @@ def create_order(request):
         form = OrderForm()
     
     return render(request, 'delivery/order_create.html', {'form': form})
+
 @login_required
 def order_list(request):
     orders = Order.objects.filter(client=request.user.client_profile)
@@ -84,3 +86,63 @@ def delete_order(request, order_id):
         return redirect('delivery:order_list')
     
     return render(request, 'delivery/order_confirm_delete.html', {'order': order})
+
+
+@login_required
+def courier_reject_order(request, order_id):
+    """Курьер отклоняет заказ"""
+    if request.user.role != 'courier':
+        return JsonResponse({'error': 'Доступ запрещен'}, status=403)
+    
+    try:
+        order = get_object_or_404(Order, id=order_id, status='pending')
+        courier = request.user.courier_profile
+        
+        # Создаем запись в истории, что курьер отклонил
+        OrderStatusHistory.objects.create(
+            order=order,
+            status='pending',
+            comment=f'Курьер {request.user.get_full_name()} отклонил заказ'
+        )
+        
+        # Создаем уведомление (если модель есть, иначе пропускаем)
+        try:
+            CourierNotification.objects.create(
+                courier=courier,
+                order=order,
+                message=f'Курьер {request.user.get_full_name()} отклонил заказ №{order.id}',
+                notification_type='rejected'
+            )
+        except:
+            pass  # Если модели нет, просто пропускаем
+        
+        return JsonResponse({'success': True, 'message': 'Заказ отклонен'})
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)}, status=400)
+
+
+@login_required
+def courier_accept_order(request, order_id):
+    """Курьер принимает заказ"""
+    if request.user.role != 'courier':
+        return JsonResponse({'error': 'Доступ запрещен'}, status=403)
+    
+    try:
+        order = get_object_or_404(Order, id=order_id, status='pending')
+        courier = request.user.courier_profile
+        
+        # Назначаем курьера
+        order.courier = courier
+        order.status = 'assigned'
+        order.save()
+        
+        # Создаем запись в истории
+        OrderStatusHistory.objects.create(
+            order=order,
+            status='assigned',
+            comment=f'Курьер {request.user.get_full_name()} принял заказ'
+        )
+        
+        return JsonResponse({'success': True, 'message': 'Заказ принят'})
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)}, status=400)

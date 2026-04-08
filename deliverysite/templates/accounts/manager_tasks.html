@@ -1,0 +1,30 @@
+{% extends 'accounts/manager_lk_base.html' %}
+{% block title %}Задачи{% endblock %}
+{% block manager_content %}
+<div class="card shadow-sm">
+    <div class="card-header bg-white">
+        <h5 class="mb-0">Задачи</h5>
+    </div>
+    <div class="card-body">
+        <h6>Заказы, ожидающие назначения курьера:</h6>
+        {% for order in orders_without_courier %}
+        <div class="alert alert-warning">
+            <strong>Заказ №{{ order.id }}</strong> от {{ order.client.company_name }}<br>
+            <small>Статус: {{ order.get_status_display }} | Создан: {{ order.created_at|date:"d.m.Y H:i" }}</small>
+        </div>
+        {% empty %}
+        <p>Нет заказов, ожидающих назначения</p>
+        {% endfor %}
+        
+        <h6 class="mt-4">Просроченные заказы:</h6>
+        {% for order in delayed_orders %}
+        <div class="alert alert-danger">
+            <strong>Заказ №{{ order.id }}</strong> от {{ order.client.company_name }}<br>
+            <small>Должен быть доставлен: {{ order.requested_delivery_date }}</small>
+        </div>
+        {% empty %}
+        <p>Нет просроченных заказов</p>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

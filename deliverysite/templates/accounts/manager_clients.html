@@ -1,0 +1,33 @@
+{% extends 'accounts/manager_lk_base.html' %}
+{% block title %}Клиенты{% endblock %}
+{% block manager_content %}
+<div class="card shadow-sm">
+    <div class="card-header bg-white">
+        <h5 class="mb-0">Клиенты</h5>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>Компания</th>
+                        <th>ИНН</th>
+                        <th>Контактное лицо</th>
+                        <th>Телефон</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for client in clients %}
+                    <tr>
+                        <td>{{ client.company_name }}</td>
+                        <td>{{ client.inn }}</td>
+                        <td>{{ client.get_contact_person_full_name }}</td>
+                        <td>{{ client.contact_person_phone }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

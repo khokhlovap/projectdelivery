@@ -631,3 +631,27 @@ class AIChatLog(models.Model):
         ordering = ['-created_at']
         verbose_name = 'Лог AI-чата'
         verbose_name_plural = 'Логи AI-чата'
+
+class CourierNotification(models.Model):
+    """Уведомления для курьера о новых заказах"""
+    courier = models.ForeignKey(Courier, on_delete=models.CASCADE, related_name='notifications')
+    order = models.ForeignKey(Order, on_delete=models.CASCADE, related_name='notifications')
+    message = models.TextField(verbose_name='Сообщение')
+    is_read = models.BooleanField(default=False, verbose_name='Прочитано')
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name='Дата создания')
+    
+    NOTIFICATION_TYPES = (
+        ('new', 'Новый заказ'),
+        ('reminder', 'Напоминание'),
+        ('rejected', 'Отклонен'),
+    )
+    notification_type = models.CharField(max_length=20, choices=NOTIFICATION_TYPES, default='new')
+    
+    def __str__(self):
+        return f"Уведомление для {self.courier.user.get_full_name()} - {self.order.id}"
+    
+    class Meta:
+        db_table = 'courier_notifications'
+        ordering = ['-created_at']
+        verbose_name = 'Уведомление курьера'
+        verbose_name_plural = 'Уведомления курьеров'

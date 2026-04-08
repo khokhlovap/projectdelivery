@@ -1,0 +1,131 @@
+{% extends 'accounts/manager_lk_base.html' %}
+{% load static %}
+{% block title %}Панель управления{% endblock %}
+
+{% block manager_content %}
+<!-- Приветствие -->
+<div class="card shadow-sm mb-4">
+    <div class="card-body p-4">
+        <div class="d-flex align-items-center">
+            <div>
+                <h3 class="mb-1">Доброе утро, {{ user.first_name }}!</h3>
+                <p class="text-muted mb-0">Пусть все доставки сегодня будут быстрыми, а курьеры — пунктуальными</p>
+            </div>
+            <div class="ms-auto">
+                <i class="bi bi-emoji-smile" style="font-size: 3rem; color: #1E7A57;"></i>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Статистические карточки -->
+<div class="row g-4 mb-4">
+    <div class="col-md-4">
+        <div class="stat-card text-center">
+            <i class="bi bi-truck" style="font-size: 2rem; color: #1E7A57;"></i>
+            <h1 class="display-4 fw-bold mt-2 mb-0" style="color: #1E1E1E;">{{ active_orders|default:"0" }}</h1>
+            <p class="mb-0" style="color: #6B6B6B;">Активные заказы</p>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <div class="stat-card text-center">
+            <i class="bi bi-plus-circle" style="font-size: 2rem; color: #1E7A57;"></i>
+            <h1 class="display-4 fw-bold mt-2 mb-0" style="color: #1E1E1E;">{{ new_orders|default:"0" }}</h1>
+            <p class="mb-0" style="color: #6B6B6B;">Новые заказы</p>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <div class="stat-card text-center">
+            <i class="bi bi-clock-history" style="font-size: 2rem; color: #DC2626;"></i>
+            <h1 class="display-4 fw-bold mt-2 mb-0" style="color: #1E1E1E;">{{ delayed_orders|default:"0" }}</h1>
+            <p class="mb-0" style="color: #6B6B6B;">Просрочено</p>
+        </div>
+    </div>
+</div>
+
+<!-- График заказов за неделю -->
+<div class="card shadow-sm mb-4">
+    <div class="card-header bg-white">
+        <h5 class="mb-0"><i class="bi bi-graph-up me-2" style="color: #1E7A57;"></i> График заказов за неделю</h5>
+    </div>
+    <div class="card-body">
+        <canvas id="ordersChart" height="200"></canvas>
+    </div>
+</div>
+
+<!-- Топ курьеров месяца -->
+<div class="card shadow-sm">
+    <div class="card-header bg-white">
+        <h5 class="mb-0"><i class="bi bi-trophy me-2" style="color: #1E7A57;"></i> Топ курьеров месяца</h5>
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead style="background-color: #F5F3F0;">
+                    <tr>
+                        <th class="border-0 pt-3 pb-3">Курьер</th>
+                        <th class="border-0 pt-3 pb-3">Доставок</th>
+                        <th class="border-0 pt-3 pb-3">Среднее время</th>
+                        <th class="border-0 pt-3 pb-3">Рейтинг</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for courier in top_couriers %}
+                    <tr>
+                        <td class="align-middle">
+                            <i class="bi bi-person-circle me-2" style="color: #1E7A57;"></i>
+                            {{ courier.name }}
+                        </td>
+                        <td class="align-middle">{{ courier.deliveries }}</td>
+                        <td class="align-middle">{{ courier.avg_time }} мин</td>
+                        <td class="align-middle">
+                            <span class="badge bg-warning">
+                                <i class="bi bi-star-fill me-1"></i> {{ courier.rating }}
+                            </span>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="4" class="text-center py-4 text-muted">Нет данных</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+{{ block.super }}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    // График заказов
+    const ctx = document.getElementById('ordersChart').getContext('2d');
+    new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'],
+            datasets: [{
+                label: 'Кол-во заказов',
+                data: {{ weekly_data|default:'[0,0,0,0,0,0,0]' }},
+                borderColor: '#1E7A57',
+                backgroundColor: 'rgba(30, 122, 87, 0.1)',
+                tension: 0.4,
+                fill: true
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: true,
+            plugins: {
+                legend: {
+                    position: 'top',
+                }
+            }
+        }
+    });
+</script>
+{% endblock %}
