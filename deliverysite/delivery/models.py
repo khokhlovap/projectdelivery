@@ -7,7 +7,7 @@ from django.contrib.auth.base_user import BaseUserManager
 
 
 class CustomUserManager(BaseUserManager):
-    """Кастомный менеджер пользователей с email в качестве идентификатора"""
+    "Кастомный менеджер пользователей с email в качестве идентификатора"
     use_in_migrations = True
 
     def create_user(self, email, password=None, **extra_fields):
@@ -33,12 +33,7 @@ class CustomUserManager(BaseUserManager):
 
 
 class User(AbstractUser):
-    """
-    Расширенная модель пользователя.
-    Используется email в качестве уникального идентификатора.
-    """
     username = None
-    
     email = models.EmailField(unique=True, verbose_name='Email профиля')
     first_name = models.CharField(max_length=100, verbose_name='Имя')
     last_name = models.CharField(max_length=100, verbose_name='Фамилия')
@@ -74,9 +69,7 @@ class User(AbstractUser):
 
 
 class Client(models.Model):
-    """
-    Модель клиента (юридического лица).
-    """
+    "Модель клиента (юридического лица)"
     user = models.OneToOneField(User, on_delete=models.CASCADE, 
                                 primary_key=True, related_name='client_profile')
     
@@ -119,9 +112,8 @@ class Client(models.Model):
 
 
 class ClientAdditionalInfo(models.Model):
-    """
-    Дополнительные сведения о клиенте (комментарии менеджера).
-    """
+    "Дополнительные сведения о клиенте (комментарии менеджера)"
+
     client = models.OneToOneField(Client, on_delete=models.CASCADE, 
                                   related_name='additional_info')
     comment = models.TextField(blank=True, verbose_name='Комментарий от менеджера')
@@ -138,9 +130,7 @@ class ClientAdditionalInfo(models.Model):
 
 
 class Manager(models.Model):
-    """
-    Модель менеджера.
-    """
+    "Модель менеджера"
     user = models.OneToOneField(User, on_delete=models.CASCADE, 
                                 primary_key=True, related_name='manager_profile')
     position = models.CharField(max_length=255, default='Менеджер', verbose_name='Должность')
@@ -155,9 +145,7 @@ class Manager(models.Model):
 
 
 class Courier(models.Model):
-    """
-    Модель курьера.
-    """
+    "Модель курьера"
     user = models.OneToOneField(User, on_delete=models.CASCADE, 
                                 primary_key=True, related_name='courier_profile')
     
@@ -192,7 +180,7 @@ class Courier(models.Model):
     actual_address = models.TextField(verbose_name='Фактический адрес проживания')
     
     def is_available(self):
-        """Проверка доступности курьера для назначения заказа"""
+        "Проверка доступности курьера для назначения заказа"
         if self.shift_status != 'on':
             return False
         
@@ -213,7 +201,7 @@ class Courier(models.Model):
         return not (has_vacation or has_sick_leave)
 
     def update_rating(self):
-        """Обновление среднего рейтинга курьера"""
+        "Обновление среднего рейтинга курьера"
         from django.db.models import Avg
         avg = OrderRating.objects.filter(courier=self).aggregate(Avg('rating'))['rating__avg']
         self.avg_rating = avg if avg else 0
@@ -229,9 +217,8 @@ class Courier(models.Model):
 
 
 class CourierAdditionalInfo(models.Model):
-    """
-    Дополнительные сведения о курьере (комментарии менеджера).
-    """
+    "Дополнительные сведения о курьере (комментарии менеджера)"
+
     courier = models.OneToOneField(Courier, on_delete=models.CASCADE, 
                                    related_name='additional_info')
     comment = models.TextField(blank=True, verbose_name='Комментарий от менеджера')
@@ -248,16 +235,15 @@ class CourierAdditionalInfo(models.Model):
 
 
 class Vacation(models.Model):
-    """
-    Отпуск курьера.
-    """
+    "Отпуск курьера"
+
     courier = models.ForeignKey(Courier, on_delete=models.CASCADE, 
                                 related_name='vacations')
     start_date = models.DateField(verbose_name='Дата начала отпуска')
     end_date = models.DateField(verbose_name='Дата окончания отпуска')
 
     def clean(self):
-        """Валидация перед сохранением"""
+        "Валидация перед сохранением"
         if self.end_date < self.start_date:
             raise ValidationError({'end_date': 'Дата окончания не может быть раньше даты начала'})
 
@@ -275,9 +261,8 @@ class Vacation(models.Model):
 
 
 class SickLeave(models.Model):
-    """
-    Больничный лист курьера.
-    """
+    "Больничный лист курьера"
+
     courier = models.ForeignKey(Courier, on_delete=models.CASCADE, 
                                 related_name='sick_leaves')
     start_date = models.DateField(verbose_name='Дата начала болезни')
@@ -286,7 +271,7 @@ class SickLeave(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
 
     def clean(self):
-        """Валидация перед сохранением"""
+        "Валидация перед сохранением"
         if self.end_date < self.start_date:
             raise ValidationError({'end_date': 'Дата окончания не может быть раньше даты начала'})
 
@@ -304,9 +289,7 @@ class SickLeave(models.Model):
 
 
 class CourierShift(models.Model):
-    """
-    Рабочая смена курьера (история).
-    """
+    "Рабочая смена курьера (история)"
     courier = models.ForeignKey(Courier, on_delete=models.CASCADE, 
                                 related_name='shifts')
     
@@ -319,7 +302,7 @@ class CourierShift(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     
     def clean(self):
-        """Валидация перед сохранением"""
+        "Валидация перед сохранением"
         if self.end_time and self.end_time < self.start_time:
             raise ValidationError({'end_time': 'Время окончания не может быть раньше времени начала'})
     
@@ -328,7 +311,7 @@ class CourierShift(models.Model):
         super().save(*args, **kwargs)
     
     def get_duration(self):
-        """Продолжительность смены в часах (без учёта перерывов)"""
+        "Продолжительность смены в часах (без учёта перерывов)"
         if not self.end_time:
             return None
         
@@ -344,7 +327,7 @@ class CourierShift(models.Model):
         return round(duration_minutes / 60, 2)
     
     def end_shift(self):
-        """Завершить смену с атомарным обновлением статистики"""
+        "Завершить смену с атомарным обновлением статистики"
         if self.end_time:
             raise ValidationError('Смена уже завершена')
         
@@ -374,9 +357,8 @@ class CourierShift(models.Model):
 
 
 class CourierShiftBreak(models.Model):
-    """
-    Перерыв внутри смены.
-    """
+    "Перерыв внутри смены"
+
     shift = models.ForeignKey(CourierShift, on_delete=models.CASCADE, 
                               related_name='breaks')
     
@@ -399,7 +381,7 @@ class CourierShiftBreak(models.Model):
         super().save(*args, **kwargs)
     
     def get_duration_minutes(self):
-        """Продолжительность перерыва в минутах"""
+        "Продолжительность перерыва в минутах"
         if not self.end_time:
             return None
         
@@ -410,7 +392,7 @@ class CourierShiftBreak(models.Model):
         return int(duration.total_seconds() / 60)
     
     def end_break(self):
-        """Завершить перерыв с атомарным обновлением статистики смены"""
+        "Завершить перерыв с атомарным обновлением статистики смены"
         if self.end_time:
             raise ValidationError('Перерыв уже завершён')
         
@@ -437,9 +419,7 @@ class CourierShiftBreak(models.Model):
 
 
 class Order(models.Model):
-    """
-    Модель заказа.
-    """
+    "Модель заказа"
     client = models.ForeignKey(Client, on_delete=models.PROTECT, 
                                related_name='orders', verbose_name='Клиент')
     courier = models.ForeignKey(Courier, on_delete=models.SET_NULL, 
@@ -503,7 +483,7 @@ class Order(models.Model):
                                       verbose_name='Статус оплаты')
     
     def clean(self):
-        """Валидация перед сохранением"""
+        "Валидация перед сохранением"
         if self.pk is None and self.requested_delivery_date < timezone.now().date():
             raise ValidationError({'requested_delivery_date': 'Желаемая дата доставки не может быть в прошлом'})
     
@@ -532,9 +512,7 @@ class Order(models.Model):
 
 
 class OrderStatusHistory(models.Model):
-    """
-    История изменения статусов заказа.
-    """
+    "История изменения статусов заказа"
     order = models.ForeignKey(Order, on_delete=models.CASCADE, 
                               related_name='status_history', verbose_name='Заказ')
     status = models.CharField(max_length=20, choices=Order.STATUS_CHOICES, verbose_name='Статус')
@@ -552,9 +530,7 @@ class OrderStatusHistory(models.Model):
 
 
 class OrderRating(models.Model):
-    """
-    Оценка заказа (клиентом курьера). Только оценка, без комментария.
-    """
+    "Оценка заказа (клиентом курьера). Только оценка, без комментария"
     order = models.OneToOneField(Order, on_delete=models.CASCADE, 
                                  related_name='rating', verbose_name='Заказ')
     client = models.ForeignKey(Client, on_delete=models.CASCADE, 
@@ -594,9 +570,7 @@ class OrderRating(models.Model):
 
 
 class Payment(models.Model):
-    """
-    Оплата заказа.
-    """
+    "Оплата заказа"
     order = models.OneToOneField(Order, on_delete=models.CASCADE, 
                                  related_name='payment', verbose_name='Заказ')
     
@@ -623,9 +597,7 @@ class Payment(models.Model):
 
 
 class AIChatKnowledgeBase(models.Model):
-    """
-    База знаний для AI-чата (заготовленные вопросы и ответы).
-    """
+    "База знаний для AI-чата (заготовленные вопросы и ответы)"
     question = models.TextField(verbose_name='Вопрос')
     answer = models.TextField(verbose_name='Ответ')
     keywords = models.CharField(max_length=255, blank=True, verbose_name='Ключевые слова')

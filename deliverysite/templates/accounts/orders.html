@@ -1,0 +1,65 @@
+{% extends 'accounts/lk_base.html' %}
+{% block title %}Мои заказы{% endblock %}
+
+{% block lk_content %}
+<div class="card shadow-sm">
+    <div class="card-header bg-white">
+        <h5 class="mb-0">Все заказы</h5>
+    </div>
+    <div class="card-body">
+        {% if orders %}
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead class="table-light">
+                    <tr>
+                        <th>№</th>
+                        <th>Номер заказа</th>
+                        <th>Тип</th>
+                        <th>Тариф</th>
+                        <th>Сумма</th>
+                        <th>Статус</th>
+                        <th>Дата создания</th>
+                        <th>Действия</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for order in orders %}
+                    <tr>
+                        <td>{{ forloop.counter }}</td>
+                        <td>{{ order.invoice_number|default:order.id }}</td>
+                        <td>{{ order.get_order_type_display }}</td>
+                        <td>{{ order.get_tariff_display }}</td>
+                        <td>{{ order.total_amount }} ₽</td>
+                        <td>
+                            <span class="badge 
+                                {% if order.status == 'created' %}bg-secondary
+                                {% elif order.status == 'pending' %}bg-warning
+                                {% elif order.status == 'assigned' %}bg-info
+                                {% elif order.status == 'in_progress' %}bg-primary
+                                {% elif order.status == 'delivered' %}bg-success
+                                {% else %}bg-danger{% endif %}">
+                                {{ order.get_status_display }}
+                            </span>
+                        </td>
+                        <td>{{ order.created_at|date:"d.m.Y H:i" }}</td>
+                        <td>
+                            <a href="{% url 'delivery:order_detail' order.id %}" class="btn btn-sm btn-outline-primary">
+                                <i class="bi bi-eye"></i>
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <p class="text-center text-muted my-3">У вас пока нет заказов</p>
+        <div class="text-center">
+            <a href="{% url 'delivery:create_order' %}" class="btn btn-primary">
+                Создать первый заказ
+            </a>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

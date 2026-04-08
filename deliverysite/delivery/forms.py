@@ -3,20 +3,13 @@ from .models import Order
 
 class OrderForm(forms.ModelForm):
     class Meta:
-        model = Order     
+        model = Order
         fields = [
-            'order_type', 
-            'tariff', 
-            'weight',
-            'pickup_address',
-            'delivery_address',
-            'recipient_first_name',
-            'recipient_last_name',
-            'recipient_patronymic',
-            'recipient_phone',
-            'recipient_company',
-            'requested_delivery_date',
-            'client_comment'
+            'order_type', 'tariff', 'weight',
+            'pickup_address', 'delivery_address',
+            'recipient_first_name', 'recipient_last_name', 
+            'recipient_patronymic', 'recipient_phone', 'recipient_company',
+            'requested_delivery_date', 'client_comment'
         ]
         widgets = {
             'order_type': forms.Select(attrs={'class': 'form-select'}),

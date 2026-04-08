@@ -1,0 +1,66 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}Вход в личный кабинет{% endblock %}
+
+{% block extra_css %}
+<link href="{% static 'css/auth.css' %}" rel="stylesheet">
+{% endblock %}
+
+{% block content %}
+<div class="auth-container">
+    <div class="auth-card">
+        <div class="auth-header">
+            <div class="auth-icon-wrapper">
+                <i class="bi bi-box-seam"></i>
+            </div>
+            <h1 class="auth-title">Добро пожаловать</h1>
+            <p class="auth-subtitle">Войдите в свой аккаунт</p>
+            <div class="divider-custom mx-auto"></div>
+        </div>
+        
+        <div class="auth-body">
+            {% if messages %}
+                {% for message in messages %}
+                    <div class="alert alert-custom alert-dismissible fade show mb-3" role="alert">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+            
+            <form method="post">
+                {% csrf_token %}
+                
+                <div class="auth-field">
+                    <label for="id_username">Email</label>
+                    <div class="input-group">
+                        <span class="input-group-text">
+                            <i class="bi bi-envelope"></i>
+                        </span>
+                        <input type="email" name="username" class="form-control" id="id_username" required autofocus>
+                    </div>
+                </div>
+                
+                <div class="auth-field">
+                    <label for="id_password">Пароль</label>
+                    <div class="input-group">
+                        <span class="input-group-text">
+                            <i class="bi bi-lock"></i>
+                        </span>
+                        <input type="password" name="password" class="form-control" id="id_password" required>
+                    </div>
+                </div>
+                
+                <button type="submit" class="auth-btn">
+                    <i class="bi bi-box-arrow-in-right"></i> Войти
+                </button>
+            </form>
+        </div>
+        
+        <div class="auth-footer">
+            Нет аккаунта? 
+            <a href="{% url 'accounts:register' %}">Зарегистрироваться</a>
+        </div>
+    </div>
+</div>
+{% endblock %}

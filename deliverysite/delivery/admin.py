@@ -1,4 +1,3 @@
-# admin.py
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
 from django.contrib.auth.forms import UserChangeForm, UserCreationForm
@@ -30,15 +29,15 @@ class CustomUserAdmin(UserAdmin):
     add_form = CustomUserCreationForm
     fieldsets = (
         (None, {'fields': ('email', 'password')}),
-        (_('Personal info'), {'fields': ('first_name', 'last_name', 'patronymic', 'phone', 'birth_date')}),
-        (_('Permissions'), {'fields': ('is_active', 'is_staff', 'is_superuser', 'groups', 'user_permissions')}),
-        (_('Role'), {'fields': ('role',)}),
-        (_('Important dates'), {'fields': ('last_login', 'date_joined', 'updated_at')}),
+        ('Личная информация', {'fields': ('first_name', 'last_name', 'patronymic', 'phone', 'birth_date')}),
+        ('Роль и права', {'fields': ('role', 'is_active', 'is_staff', 'is_superuser', 'groups', 'user_permissions')}),
+        ('Важные даты', {'fields': ('last_login', 'date_joined')}),
     )
+
     add_fieldsets = (
         (None, {
             'classes': ('wide',),
-            'fields': ('email', 'password1', 'password2'),
+            'fields': ('email', 'password1', 'password2', 'first_name', 'last_name', 'role'),
         }),
     )
     list_display = ('email', 'first_name', 'last_name', 'role', 'is_active')

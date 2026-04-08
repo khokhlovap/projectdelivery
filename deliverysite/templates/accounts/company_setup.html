@@ -1,0 +1,110 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}Данные компании{% endblock %}
+
+{% block extra_css %}
+<link href="{% static 'css/auth.css' %}" rel="stylesheet">
+{% endblock %}
+
+{% block content %}
+<div class="auth-container">
+    <div class="auth-card" style="max-width: 800px;">
+        <div class="auth-header">
+            <div class="auth-icon-wrapper">
+                <i class="bi bi-building"></i>
+            </div>
+            <h1 class="auth-title">Данные компании</h1>
+            <p class="auth-subtitle">Заполните информацию о вашей компании</p>
+            <div class="divider-custom mx-auto"></div>
+        </div>
+        
+        <div class="auth-body">
+            {% if messages %}
+                {% for message in messages %}
+                    <div class="alert alert-custom alert-dismissible fade show mb-3" role="alert">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+            
+            <form method="post">
+                {% csrf_token %}
+                
+                <h5 class="mb-3">Основная информация</h5>
+                <div class="auth-field">
+                    <label>Название компании *</label>
+                    <input type="text" name="company_name" class="form-control" required>
+                </div>
+                
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="auth-field">
+                            <label>ИНН *</label>
+                            <input type="text" name="inn" class="form-control" required>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="auth-field">
+                            <label>КПП *</label>
+                            <input type="text" name="kpp" class="form-control" required>
+                        </div>
+                    </div>
+                </div>
+                
+                <h5 class="mb-3 mt-4">Адреса</h5>
+                <div class="auth-field">
+                    <label>Юридический адрес *</label>
+                    <textarea name="legal_address" class="form-control" rows="2" required></textarea>
+                </div>
+                
+                <div class="auth-field">
+                    <label>Фактический адрес *</label>
+                    <textarea name="actual_address" class="form-control" rows="2" required></textarea>
+                </div>
+                
+                <h5 class="mb-3 mt-4">Контактная информация</h5>
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="auth-field">
+                            <label>Телефон компании *</label>
+                            <input type="text" name="company_phone" class="form-control" required>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="auth-field">
+                            <label>Email компании *</label>
+                            <input type="email" name="company_email" class="form-control" required>
+                        </div>
+                    </div>
+                </div>
+                
+                <h5 class="mb-3 mt-4">Банковские реквизиты</h5>
+                <div class="auth-field">
+                    <label>Банк *</label>
+                    <input type="text" name="bank" class="form-control" required>
+                </div>
+                
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="auth-field">
+                            <label>Расчетный счет *</label>
+                            <input type="text" name="settlement_account" class="form-control" required>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="auth-field">
+                            <label>Корреспондентский счет *</label>
+                            <input type="text" name="correspondent_account" class="form-control" required>
+                        </div>
+                    </div>
+                </div>
+                
+                <button type="submit" class="auth-btn">
+                    <i class="bi bi-save"></i> Сохранить данные
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

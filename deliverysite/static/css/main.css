@@ -1,0 +1,168 @@
+:root {
+    --green: #1E7A57;
+    --green-dark: #4A7B66;
+    --green-light: #C8E0D6;
+    --sand: #E8E0D5;
+    --sand-dark: #C8C0B5;
+    --bg-light: #F5F3F0;
+    --white: #FFFFFF;
+    --text-dark: #1E1E1E;
+    --text-muted: #6B6B6B;
+}
+
+body {
+    background-color: var(--bg-light);
+    color: var(--text-dark);
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+
+/* Светлый хедер */
+.navbar-light-custom {
+    background-color: var(--white);
+    box-shadow: 0 1px 20px rgba(0, 0, 0, 0.03);
+    border-bottom: 1px solid var(--sand);
+    padding: 0.8rem 0;
+}
+
+.navbar-light-custom .navbar-brand {
+    color: var(--green);
+    font-weight: 600;
+    font-size: 1.3rem;
+}
+
+.navbar-light-custom .nav-link {
+    color: var(--text-dark);
+    font-weight: 450;
+    transition: color 0.2s;
+}
+
+.navbar-light-custom .nav-link:hover {
+    color: var(--green);
+}
+
+/* Кнопки */
+.btn-primary {
+    background-color: var(--green) !important;
+    border-color: var(--green) !important;
+    border-radius: 40px !important;
+    padding: 0.5rem 1.5rem !important;
+    font-weight: 500 !important;
+}
+
+.btn-primary:hover {
+    background-color: var(--green-dark) !important;
+    border-color: var(--green-dark) !important;
+    transform: translateY(-1px);
+}
+
+.btn-outline-primary {
+    color: var(--green) !important;
+    border-color: var(--green) !important;
+    border-radius: 40px !important;
+}
+
+.btn-outline-primary:hover {
+    background-color: var(--green) !important;
+    border-color: var(--green) !important;
+    color: white !important;
+}
+
+/* Карточки */
+.card {
+    border: none !important;
+    border-radius: 20px !important;
+    background: var(--white) !important;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.04) !important;
+    transition: all 0.2s ease;
+}
+
+.card:hover {
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.06) !important;
+}
+
+/* Сайдбар */
+.sidebar {
+    background: var(--white) !important;
+    border-radius: 20px !important;
+    border: 1px solid var(--sand) !important;
+    padding: 1.5rem !important;
+}
+
+.nav-pills .nav-link {
+    border-radius: 12px !important;
+    padding: 0.7rem 1rem !important;
+    color: var(--text-dark) !important;
+    transition: all 0.2s;
+}
+
+.nav-pills .nav-link:hover {
+    background-color: var(--green-light) !important;
+    color: var(--green) !important;
+}
+
+.nav-pills .nav-link.active {
+    background-color: var(--green) !important;
+    color: white !important;
+}
+
+/* Бейджи */
+.badge {
+    padding: 0.4rem 0.8rem !important;
+    border-radius: 30px !important;
+    font-weight: 500 !important;
+}
+
+.badge.bg-primary { background-color: var(--green) !important; }
+.badge.bg-secondary { background-color: var(--sand-dark) !important; color: var(--text-dark) !important; }
+.badge.bg-success { background-color: var(--green) !important; }
+.badge.bg-warning { background-color: #E8D8B0 !important; color: var(--text-dark) !important; }
+.badge.bg-info { background-color: #B8C8D0 !important; color: var(--text-dark) !important; }
+.badge.bg-danger { background-color: #D4A0A0 !important; }
+
+/* Статистические карточки */
+.stat-card {
+    background: linear-gradient(135deg, var(--green-light) 0%, var(--sand) 100%);
+    border-radius: 20px;
+    padding: 1.5rem;
+    transition: transform 0.2s;
+}
+
+.stat-card:hover {
+    transform: translateY(-3px);
+}
+
+/* Футер */
+footer {
+    background-color: var(--white) !important;
+    border-top: 1px solid var(--sand) !important;
+    color: var(--text-muted) !important;
+}
+
+/* Ссылки */
+a:not(.btn):not(.nav-link) {
+    color: var(--green) !important;
+    text-decoration: none;
+    transition: color 0.2s;
+}
+
+a:hover:not(.btn):not(.nav-link) {
+    color: var(--green-dark) !important;
+}
+
+/* Таблица */
+.table-hover tbody tr:hover {
+    background-color: var(--green-light) !important;
+    cursor: pointer;
+}
+
+.table > :not(caption) > * > * {
+    border-bottom-color: var(--sand) !important;
+}
+
+/* Разделитель */
+.divider-custom {
+    width: 50px;
+    height: 3px;
+    background: var(--green);
+    border-radius: 3px;
+}
