@@ -41,13 +41,21 @@ def login_view(request):
             user = form.get_user()
             login(request, user)
             
-            try:
-                if user.client_profile:
-                    messages.success(request, f'Добро пожаловать, {user.get_full_name()}!')
-                    return redirect('accounts:home')
-            except:
-                messages.warning(request, 'Пожалуйста, заполните данные компании')
-                return redirect('accounts:company_setup')
+            # Проверка роли пользователя и перенаправление
+            if user.role == 'manager':
+                messages.success(request, f'Добро пожаловать в панель управления, {user.get_full_name()}!')
+                return redirect('accounts:manager_dashboard')
+            elif user.role == 'client':
+                try:
+                    if user.client_profile:
+                        messages.success(request, f'Добро пожаловать, {user.get_full_name()}!')
+                        return redirect('accounts:home')
+                except:
+                    messages.warning(request, 'Пожалуйста, заполните данные компании')
+                    return redirect('accounts:company_setup')
+            elif user.role == 'courier':
+                # Если добавите панель курьера
+                return redirect('delivery:courier_dashboard')
         else:
             messages.error(request, 'Неверный email или пароль')
     else:
