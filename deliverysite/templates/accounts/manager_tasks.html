@@ -1,30 +1,462 @@
 {% extends 'accounts/manager_lk_base.html' %}
-{% block title %}Задачи{% endblock %}
+{% load static %}
+{% block title %}Задачи и распределение заказов{% endblock %}
+
 {% block manager_content %}
+<style>
+    .order-card {
+        border-left: 4px solid;
+        transition: all 0.2s;
+        margin-bottom: 16px;
+        background: white;
+    }
+    .order-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 16px rgba(0,0,0,0.1);
+    }
+    .order-card.status-created { border-left-color: #6c757d; }
+    .order-card.status-pending { border-left-color: #ffc107; }
+    .order-card.status-assigned { border-left-color: #0dcaf0; }
+    .order-card.status-in_progress { border-left-color: #0d6efd; }
+    .order-card.status-delivered { border-left-color: #198754; }
+    .order-card.status-cancelled { border-left-color: #dc3545; }
+    
+    .info-label {
+        font-size: 0.65rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        color: #6c757d;
+        margin-bottom: 4px;
+    }
+    .info-value {
+        font-size: 0.85rem;
+        font-weight: 500;
+        color: #1e1e1e;
+        word-break: break-word;
+    }
+    .order-header {
+        background-color: #f8f9fa;
+        padding: 8px 12px;
+        border-bottom: 1px solid #e9ecef;
+    }
+    .order-body {
+        padding: 12px;
+    }
+    .compact-text {
+        font-size: 0.75rem;
+        color: #6B6B6B;
+    }
+    .btn-group-action {
+        display: flex;
+        gap: 4px;
+        flex-wrap: wrap;
+    }
+    .btn-action {
+        padding: 4px 8px;
+        font-size: 0.7rem;
+        flex: 1;
+        min-width: 60px;
+        text-align: center;
+    }
+    .btn-action i {
+        font-size: 0.7rem;
+    }
+    @media (max-width: 992px) {
+        .btn-group-action {
+            flex-direction: column;
+        }
+        .btn-action {
+            width: 100%;
+        }
+    }
+</style>
+
 <div class="card shadow-sm">
-    <div class="card-header bg-white">
-        <h5 class="mb-0">Задачи</h5>
+    <div class="card-header bg-white d-flex justify-content-between align-items-center">
+        <h5 class="mb-0"><i class="bi bi-list-check me-2" style="color: #1E7A57;"></i> Задачи и распределение заказов</h5>
+        <span class="badge bg-primary rounded-pill">{{ orders|length }} заказов</span>
     </div>
     <div class="card-body">
-        <h6>Заказы, ожидающие назначения курьера:</h6>
-        {% for order in orders_without_courier %}
-        <div class="alert alert-warning">
-            <strong>Заказ №{{ order.id }}</strong> от {{ order.client.company_name }}<br>
-            <small>Статус: {{ order.get_status_display }} | Создан: {{ order.created_at|date:"d.m.Y H:i" }}</small>
-        </div>
-        {% empty %}
-        <p>Нет заказов, ожидающих назначения</p>
-        {% endfor %}
-        
-        <h6 class="mt-4">Просроченные заказы:</h6>
-        {% for order in delayed_orders %}
-        <div class="alert alert-danger">
-            <strong>Заказ №{{ order.id }}</strong> от {{ order.client.company_name }}<br>
-            <small>Должен быть доставлен: {{ order.requested_delivery_date }}</small>
-        </div>
-        {% empty %}
-        <p>Нет просроченных заказов</p>
-        {% endfor %}
+        {% if orders %}
+            {% for order in orders %}
+            <div class="order-card status-{{ order.status }} card">
+                <div class="order-header">
+                    <div class="row align-items-center">
+                        <div class="col-md-6">
+                            <strong><i class="bi bi-hash"></i> Заказ №{{ order.id }}</strong>
+                            <span class="badge 
+                                {% if order.status == 'created' %}bg-secondary
+                                {% elif order.status == 'pending' %}bg-warning
+                                {% elif order.status == 'assigned' %}bg-info
+                                {% elif order.status == 'in_progress' %}bg-primary
+                                {% elif order.status == 'delivered' %}bg-success
+                                {% else %}bg-danger{% endif %} ms-2">
+                                {{ order.get_status_display }}
+                            </span>
+                        </div>
+                        <div class="col-md-6 text-md-end">
+                            <small class="text-muted">Создан: {{ order.created_at|date:"d.m.Y H:i" }}</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="order-body">
+                    <div class="row">
+                        <div class="col-md-3 col-sm-6 mb-3">
+                            <div class="info-label"><i class="bi bi-building"></i> КЛИЕНТ</div>
+                            <div class="info-value">{{ order.client.company_name|truncatechars:25 }}</div>
+                            <div class="compact-text">{{ order.client.inn }}</div>
+                        </div>
+                        <div class="col-md-3 col-sm-6 mb-3">
+                            <div class="info-label"><i class="bi bi-geo-alt"></i> АДРЕС ДОСТАВКИ</div>
+                            <div class="info-value">{{ order.delivery_address|truncatechars:30 }}</div>
+                            <div class="compact-text">Тип: {{ order.get_order_type_display }}</div>
+                        </div>
+                        <div class="col-md-3 col-sm-6 mb-3">
+                            <div class="info-label"><i class="bi bi-box-seam"></i> АДРЕС ОТПРАВКИ</div>
+                            <div class="info-value">{{ order.pickup_address|truncatechars:30 }}</div>
+                            <div class="compact-text">Вес: {{ order.weight|default:"—" }} кг</div>
+                        </div>
+                        <div class="col-md-3 col-sm-6 mb-3">
+                            <div class="info-label"><i class="bi bi-person-badge"></i> КУРЬЕР</div>
+                            <div class="info-value mb-2">
+                                {% if order.courier %}
+                                    <span class="text-success">{{ order.courier.user.get_full_name|truncatechars:20 }}</span>
+                                {% else %}
+                                    <span class="text-danger">Не назначен</span>
+                                {% endif %}
+                            </div>
+                            <div class="btn-group-action">
+                                <button type="button" class="btn btn-outline-primary btn-action assign-courier-btn" 
+                                        data-order-id="{{ order.id }}"
+                                        data-current-courier="{% if order.courier %}{{ order.courier.user.get_full_name }}{% endif %}">
+                                    <i class="bi bi-arrow-repeat"></i> {% if order.courier %}Сменить{% else %}Назначить{% endif %}
+                                </button>
+                                <button type="button" class="btn btn-outline-danger btn-action delete-order-btn" 
+                                        data-order-id="{{ order.id }}">
+                                    <i class="bi bi-trash"></i> Удалить
+                                </button>
+                                <button type="button" class="btn btn-outline-info btn-action details-btn" 
+                                        data-order-id="{{ order.id }}">
+                                    <i class="bi bi-eye"></i> Детали
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    {% if order.client_comment %}
+                    <div class="row mt-2">
+                        <div class="col-12">
+                            <div class="info-label"><i class="bi bi-chat"></i> КОММЕНТАРИЙ КЛИЕНТА</div>
+                            <div class="compact-text">{{ order.client_comment|truncatechars:150 }}</div>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            {% endfor %}
+        {% else %}
+            <div class="text-center py-5">
+                <i class="bi bi-inbox" style="font-size: 3rem; color: #C8C0B5;"></i>
+                <p class="mt-2 mb-0 text-muted">Нет активных заказов</p>
+            </div>
+        {% endif %}
     </div>
 </div>
+
+<!-- Модальное окно для назначения/смены курьера -->
+<div class="modal fade" id="assignCourierModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title"><i class="bi bi-person-plus me-2"></i><span id="assignModalTitle">Назначить курьера</span></h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="assignOrderId">
+                <div class="mb-3">
+                    <label class="form-label fw-bold">Заказ №<span id="assignOrderNumber"></span></label>
+                    <div class="alert alert-secondary small" id="currentCourierInfo" style="display: none;"></div>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label fw-bold">Выберите курьера</label>
+                    <select class="form-select" id="courierSelect">
+                        <option value="">-- Выберите курьера --</option>
+                        {% for courier in available_couriers %}
+                        <option value="{{ courier.user.id }}">{{ courier.user.get_full_name }} ({{ courier.get_shift_status_display }})</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="alert alert-info small">
+                    <i class="bi bi-info-circle"></i> Доступны только курьеры, которые сейчас на смене
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                <button type="button" class="btn btn-primary" id="confirmAssignBtn">Подтвердить</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Модальное окно подтверждения удаления -->
+<div class="modal fade" id="deleteConfirmModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title"><i class="bi bi-exclamation-triangle me-2"></i>Подтверждение удаления</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Вы уверены, что хотите удалить заказ №<span id="deleteOrderId"></span>?</p>
+                <p class="text-muted small">Это действие нельзя отменить.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                <button type="button" class="btn btn-danger" id="confirmDeleteBtn">Удалить</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Модальное окно деталей заказа -->
+<div class="modal fade" id="orderDetailsModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-info text-white">
+                <h5 class="modal-title"><i class="bi bi-info-circle me-2"></i>Детали заказа №<span id="detailOrderId"></span></h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="orderDetailsContent">
+                <div class="text-center py-4">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Загрузка...</span>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Закрыть</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+    
+    const csrftoken = getCookie('csrftoken');
+    
+    // Открытие модального окна для назначения курьера
+    document.querySelectorAll('.assign-courier-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const orderId = this.dataset.orderId;
+            const currentCourier = this.dataset.currentCourier;
+            
+            console.log('Открытие модального окна для заказа:', orderId);
+            
+            document.getElementById('assignOrderId').value = orderId;
+            document.getElementById('assignOrderNumber').textContent = orderId;
+            
+            const modalTitle = document.getElementById('assignModalTitle');
+            const currentCourierInfo = document.getElementById('currentCourierInfo');
+            
+            if (currentCourier && currentCourier !== 'None') {
+                modalTitle.textContent = 'Сменить курьера';
+                currentCourierInfo.innerHTML = '<i class="bi bi-person-check"></i> Текущий курьер: <strong>' + currentCourier + '</strong>';
+                currentCourierInfo.style.display = 'block';
+            } else {
+                modalTitle.textContent = 'Назначить курьера';
+                currentCourierInfo.style.display = 'none';
+            }
+            
+            // Сбрасываем выбор
+            const select = document.getElementById('courierSelect');
+            if (select) {
+                select.value = '';
+            }
+            
+            new bootstrap.Modal(document.getElementById('assignCourierModal')).show();
+        });
+    });
+
+    // Подтверждение назначения курьера
+    const confirmBtn = document.getElementById('confirmAssignBtn');
+    if (confirmBtn) {
+        confirmBtn.addEventListener('click', function() {
+            const orderId = document.getElementById('assignOrderId').value;
+            const courierSelect = document.getElementById('courierSelect');
+            const courierId = courierSelect ? courierSelect.value : null;
+            
+            console.log('=== ОТЛАДКА ===');
+            console.log('orderId:', orderId);
+            console.log('courierId:', courierId);
+            console.log('selectedIndex:', courierSelect ? courierSelect.selectedIndex : 'no select');
+            
+            if (!courierId || courierId === '') {
+                alert('Пожалуйста, выберите курьера из списка');
+                return;
+            }
+            
+            if (!orderId) {
+                alert('Ошибка: ID заказа не найден');
+                return;
+            }
+            
+            const btn = this;
+            const originalText = btn.innerHTML;
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Отправка...';
+            btn.disabled = true;
+            
+            fetch('/api/assign-courier/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': csrftoken
+                },
+                body: JSON.stringify({ order_id: parseInt(orderId), courier_id: parseInt(courierId) })
+            })
+            .then(response => {
+                console.log('Response status:', response.status);
+                return response.json();
+            })
+            .then(data => {
+                console.log('Response data:', data);
+                if (data.success) {
+                    location.reload();
+                } else {
+                    alert('Ошибка: ' + (data.error || 'Неизвестная ошибка'));
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Ошибка сервера: ' + error);
+            })
+            .finally(() => {
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+            });
+        });
+    }
+    
+   
+    // Просмотр деталей заказа
+    document.querySelectorAll('.details-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const orderId = this.dataset.orderId;
+            document.getElementById('detailOrderId').textContent = orderId;
+            const modal = new bootstrap.Modal(document.getElementById('orderDetailsModal'));
+            modal.show();
+            
+            const contentDiv = document.getElementById('orderDetailsContent');
+            contentDiv.innerHTML = '<div class="text-center py-4"><div class="spinner-border text-primary" role="status"><span class="visually-hidden">Загрузка...</span></div></div>';
+            
+            fetch('/api/order-details/?order_id=' + orderId)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        const d = data.data;
+                        contentDiv.innerHTML = `
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <div class="card h-100">
+                                        <div class="card-header bg-light"><strong>Клиент</strong></div>
+                                        <div class="card-body">
+                                            <p><strong>Компания:</strong> ${d.client_name}<br>
+                                            <strong>ИНН:</strong> ${d.client_inn}<br>
+                                            <strong>Контактное лицо:</strong> ${d.contact_person}<br>
+                                            <strong>Телефон:</strong> ${d.contact_phone}<br>
+                                            <strong>Email:</strong> ${d.contact_email}</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <div class="card h-100">
+                                        <div class="card-header bg-light"><strong>Заказ</strong></div>
+                                        <div class="card-body">
+                                            <p><strong>Тип:</strong> ${d.order_type}<br>
+                                            <strong>Тариф:</strong> ${d.tariff}<br>
+                                            <strong>Вес:</strong> ${d.weight} кг<br>
+                                            <strong>Создан:</strong> ${d.created_at}<br>
+                                            <strong>Желаемая дата:</strong> ${d.requested_delivery_date}</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <div class="card h-100">
+                                        <div class="card-header bg-light"><strong>Адрес отправки</strong></div>
+                                        <div class="card-body">${d.pickup_address}</div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <div class="card h-100">
+                                        <div class="card-header bg-light"><strong>Адрес доставки</strong></div>
+                                        <div class="card-body">${d.delivery_address}</div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <div class="card h-100">
+                                        <div class="card-header bg-light"><strong>Получатель</strong></div>
+                                        <div class="card-body">
+                                            <p><strong>Имя:</strong> ${d.recipient_name}<br>
+                                            <strong>Телефон:</strong> ${d.recipient_phone}<br>
+                                            <strong>Компания:</strong> ${d.recipient_company}</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <div class="card h-100">
+                                        <div class="card-header bg-light"><strong>Комментарий</strong></div>
+                                        <div class="card-body">${d.client_comment || 'Нет комментария'}</div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-12">
+                                    <div class="card">
+                                        <div class="card-header bg-light"><strong>История статусов</strong></div>
+                                        <div class="card-body">
+                                            <p><strong>Текущий статус:</strong> <span class="badge bg-primary">${d.current_status}</span></p>
+                                            <p><strong>Курьер:</strong> ${d.courier_name}</p>
+                                            <hr>
+                                            <div style="max-height: 200px; overflow-y: auto;">
+                                                ${d.status_history.length > 0 ? d.status_history.map(h => `
+                                                    <div style="padding: 8px 0; border-bottom: 1px solid #eee;">
+                                                        <span class="badge bg-secondary">${h.status}</span>
+                                                        <span class="text-muted ms-2 small">${h.time}</span>
+                                                        <div class="small text-muted mt-1">${h.comment || '—'}</div>
+                                                    </div>
+                                                `).join('') : '<div class="text-muted small">Нет записей в истории</div>'}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                    } else {
+                        contentDiv.innerHTML = '<div class="alert alert-danger">Ошибка: ' + data.error + '</div>';
+                    }
+                })
+                .catch(error => {
+                    contentDiv.innerHTML = '<div class="alert alert-danger">Ошибка загрузки данных</div>';
+                });
+        });
+    });
+</script>
 {% endblock %}

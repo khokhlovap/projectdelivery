@@ -488,8 +488,36 @@ class Order(models.Model):
             raise ValidationError({'requested_delivery_date': 'Желаемая дата доставки не может быть в прошлом'})
     
     def save(self, *args, **kwargs):
-        self.clean()
+        is_new = self.pk is None
+
+        if not is_new:
+            old = Order.objects.get(pk=self.pk)
+            old_courier = old.courier
+        else:
+            old_courier = None
+
         super().save(*args, **kwargs)
+
+        # 1. Новый заказ
+        if is_new:
+            OrderStatusHistory.objects.create(
+                order=self,
+                status=self.status,
+                comment='Заказ создан'
+            )
+
+        # 2. Назначение курьера
+        if old_courier != self.courier and self.courier:
+            # обновляем статус
+            if self.status != 'assigned':
+                self.status = 'assigned'
+                super().save(update_fields=['status'])
+
+            OrderStatusHistory.objects.create(
+                order=self,
+                status='assigned',
+                comment=f'Назначен курьер {self.courier.user.get_full_name()}'
+            )
     
     def __str__(self):
         return f"Заказ №{self.id} от {self.created_at.strftime('%d.%m.%Y')}"

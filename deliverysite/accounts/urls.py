@@ -22,4 +22,7 @@ urlpatterns = [
     path('manager/settings/', views.manager_settings, name='manager_settings'),
     path('api/manager/notifications/', views.manager_notifications, name='manager_notifications'),
     path('api/manager/tasks/count/', views.manager_tasks_count, name='manager_tasks_count'),
+    path('api/assign-courier/', views.assign_courier_ajax, name='assign_courier_ajax'),
+    path('api/delete-order/', views.delete_order_ajax, name='delete_order_ajax'),
+    path('api/order-details/', views.get_order_details, name='get_order_details'),
 ]

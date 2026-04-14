@@ -1,3 +1,4 @@
+import json
 from django.shortcuts import render, redirect
 from django.contrib.auth import login, logout
 from django.contrib import messages
@@ -9,6 +10,7 @@ from django.contrib.auth.forms import AuthenticationForm
 from delivery.models import Order, Client, Courier, OrderRating, OrderStatusHistory 
 from django.db.models import Count, Avg, Q
 from datetime import datetime, timedelta
+
 
 # ЛК Клиент
 def register_view(request):
@@ -262,26 +264,30 @@ def manager_notifications(request):
 
 @login_required
 def manager_tasks(request):
-    """Страница задач менеджера"""
     if request.user.role != 'manager':
         messages.error(request, 'У вас нет доступа к этой странице')
         return redirect('accounts:home')
     
-    # Заказы, требующие внимания (без курьера)
-    orders_without_courier = Order.objects.filter(
-        status__in=['created', 'pending']  # Создан или ожидает назначения
-    )
+    orders = Order.objects.exclude(
+        status__in=['delivered', 'cancelled']
+    ).order_by('-created_at')
     
-    # Просроченные заказы
-    from django.utils import timezone
-    delayed_orders = Order.objects.filter(
-        requested_delivery_date__lt=timezone.now().date(),
-        status__in=['created', 'pending', 'assigned', 'in_progress']
-    )
+    # Добавляем информацию о последнем статусе
+    for order in orders:
+        last_status = OrderStatusHistory.objects.filter(order=order).order_by('-changed_at').first()
+        order.last_status_text = last_status.get_status_display() if last_status else order.get_status_display()
+        order.last_status_time = last_status.changed_at if last_status else order.created_at
+
+    available_couriers = Courier.objects.filter(shift_status='on')
+    
+    # Отладка - вывод в консоль
+    print(f"DEBUG: Найдено доступных курьеров: {len(available_couriers)}")
+    for c in available_couriers:
+        print(f"  - {c.user.get_full_name()}")
     
     context = {
-        'orders_without_courier': orders_without_courier,
-        'delayed_orders': delayed_orders,
+        'orders': orders,
+        'available_couriers': available_couriers,
     }
     return render(request, 'accounts/manager_tasks.html', context)
 
@@ -382,3 +388,118 @@ def manager_tasks_count(request):
     total_tasks = orders_without_courier + delayed_orders
     
     return JsonResponse({'count': total_tasks})
+
+@login_required
+def assign_courier_ajax(request):
+    "AJAX назначение курьера на заказ"
+    if request.user.role != 'manager':
+        return JsonResponse({'error': 'Доступ запрещен'}, status=403)
+    
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            order_id = data.get('order_id')
+            user_id = data.get('courier_id')
+            
+            print(f"DEBUG: order_id={order_id}, user_id={user_id}")
+            
+            if not order_id or not user_id:
+                return JsonResponse({'error': 'Не указаны ID заказа или курьера'}, status=400)
+            
+            order = Order.objects.get(pk=order_id)
+            # Ищем курьера по user_id
+            courier = Courier.objects.get(user_id=user_id)
+            
+            # Обновляем заказ
+            order.courier = courier
+            order.status = 'assigned'
+            order.save()
+
+            return JsonResponse({'success': True, 'message': 'Курьер успешно назначен'})
+            
+        except Order.DoesNotExist:
+            return JsonResponse({'error': f'Заказ с ID {order_id} не найден'}, status=404)
+        except Courier.DoesNotExist:
+            return JsonResponse({'error': f'Курьер с ID {user_id} не найден'}, status=404)
+        except Exception as e:
+            print(f"DEBUG: Ошибка: {str(e)}")
+            return JsonResponse({'error': str(e)}, status=500)
+    
+    return JsonResponse({'error': 'Метод не разрешен'}, status=405)
+  
+@login_required
+def delete_order_ajax(request):
+    "AJAX удаление заказа"
+    if request.user.role != 'manager':
+        return JsonResponse({'error': 'Доступ запрещен'}, status=403)
+    
+    if request.method == 'POST':
+        data = json.loads(request.body)
+        order_id = data.get('order_id')
+        
+        try:
+            order = Order.objects.get(id=order_id)
+            order.delete()
+            return JsonResponse({'success': True, 'message': 'Заказ удален'})
+        except Order.DoesNotExist:
+            return JsonResponse({'error': 'Заказ не найден'}, status=404)
+        except Exception as e:
+            return JsonResponse({'error': str(e)}, status=500)
+    
+    return JsonResponse({'error': 'Метод не разрешен'}, status=405)
+
+
+@login_required
+def get_order_details(request):
+    "Получение деталей заказа для модального окна"
+    if request.user.role != 'manager':
+        return JsonResponse({'error': 'Доступ запрещен'}, status=403)
+    
+    order_id = request.GET.get('order_id')
+    
+    try:
+        order = Order.objects.get(id=order_id)
+        
+        # Получаем Всю историю статусов в хронологическом порядке
+        status_history = OrderStatusHistory.objects.filter(order=order).order_by('changed_at')
+        history_list = []
+        for status in status_history:
+            history_list.append({
+                'status': status.get_status_display(),
+                'time': status.changed_at.strftime('%d.%m.%Y %H:%M'),
+                'comment': status.comment
+            })
+        
+        # Получаем последний статус
+        last_status = status_history.last()
+        
+        data = {
+            'id': order.id,
+            'client_name': order.client.company_name,
+            'client_inn': order.client.inn,
+            'contact_person': order.client.get_contact_person_full_name(),
+            'contact_phone': order.client.contact_person_phone,
+            'contact_email': order.client.contact_person_email,
+            'pickup_address': order.pickup_address,
+            'delivery_address': order.delivery_address,
+            'order_type': order.get_order_type_display(),
+            'tariff': order.get_tariff_display(),
+            'weight': str(order.weight) if order.weight else 'не указан',
+            'courier_name': order.courier.user.get_full_name() if order.courier else 'Не назначен',
+            'client_comment': order.client_comment or 'Нет комментария',
+            'recipient_name': order.get_recipient_full_name(),
+            'recipient_phone': order.recipient_phone,
+            'recipient_company': order.recipient_company or '—',
+            'created_at': order.created_at.strftime('%d.%m.%Y %H:%M'),
+            'requested_delivery_date': order.requested_delivery_date.strftime('%d.%m.%Y'),
+            'current_status': order.get_status_display(),
+            'last_status_time': last_status.changed_at.strftime('%d.%m.%Y %H:%M') if last_status else order.created_at.strftime('%d.%m.%Y %H:%M'),
+            'last_status_comment': last_status.comment if last_status else 'Заказ создан',
+            'status_history': history_list
+        }
+        
+        return JsonResponse({'success': True, 'data': data})
+    except Order.DoesNotExist:
+        return JsonResponse({'error': 'Заказ не найден'}, status=404)
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)

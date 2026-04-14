@@ -7,7 +7,6 @@ from .models import Order, Courier, OrderStatusHistory, CourierNotification  # �
 
 @login_required
 def create_order(request):
-    # Проверяем, есть ли профиль клиента
     try:
         client_profile = request.user.client_profile
     except:
@@ -19,12 +18,14 @@ def create_order(request):
         if form.is_valid():
             order = form.save(commit=False)
             order.client = client_profile
+            order.status = 'created'  # Устанавливаем статус
             order.save()
             
+            # СОЗДАЕМ ЗАПИСЬ В ИСТОРИИ
             OrderStatusHistory.objects.create(
                 order=order,
                 status='created',
-                comment='Заказ создан клиентом'
+                comment=f'Заказ создан клиентом {request.user.get_full_name()}'
             )
             
             messages.success(request, 'Заказ успешно создан!')
@@ -52,7 +53,7 @@ def assign_courier(request, order_id):
         messages.error(request, 'У вас нет прав для этого действия')
         return redirect('delivery:order_list')
     
-    available_couriers = [c for c in Courier.objects.all() if c.is_available()]
+    available_couriers = Courier.objects.filter(shift_status='on')
     
     if request.method == 'POST':
         courier_id = request.POST.get('courier')
