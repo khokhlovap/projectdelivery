@@ -1,0 +1,191 @@
+{% extends 'accounts/manager_lk_base.html' %}
+{% load static %}
+{% block title %}{{ title }}{% endblock %}
+
+{% block manager_content %}
+<style>
+    .form-container {
+        background: white;
+        border-radius: 20px;
+        padding: 24px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    }
+    .form-section {
+        margin-bottom: 24px;
+        padding-bottom: 16px;
+        border-bottom: 1px solid #eee;
+    }
+    .form-section-title {
+        font-size: 1rem;
+        font-weight: 600;
+        color: #1E7A57;
+        margin-bottom: 16px;
+    }
+    .form-label {
+        font-size: 0.8rem;
+        font-weight: 500;
+        color: #555;
+        margin-bottom: 4px;
+    }
+    .form-control {
+        border-radius: 10px;
+        border: 1px solid #ddd;
+        padding: 10px 14px;
+    }
+    .form-control:focus {
+        border-color: #1E7A57;
+        box-shadow: 0 0 0 3px rgba(30, 122, 87, 0.1);
+    }
+    .btn-save {
+        background-color: #1E7A57;
+        color: white;
+        border-radius: 40px;
+        padding: 10px 30px;
+        border: none;
+    }
+    .btn-save:hover {
+        background-color: #155f44;
+    }
+    .password-info {
+        background: #f8f9fa;
+        border-radius: 10px;
+        padding: 12px;
+        margin-top: 8px;
+    }
+</style>
+
+<div class="form-container">
+    <h4 class="mb-4">{{ title }}</h4>
+    
+    <form method="post" autocomplete="off">
+        {% csrf_token %}
+        
+        <div class="form-section">
+            <div class="form-section-title"><i class="bi bi-person me-2"></i> Личная информация</div>
+            <div class="row">
+                <div class="col-md-4 mb-3">
+                    <label class="form-label">Фамилия *</label>
+                    <input type="text" name="last_name" class="form-control" value="{% if client_user %}{{ client_user.last_name|default:'' }}{% endif %}" required autocomplete="off">
+                </div>
+                <div class="col-md-4 mb-3">
+                    <label class="form-label">Имя *</label>
+                    <input type="text" name="first_name" class="form-control" value="{% if client_user %}{{ client_user.first_name|default:'' }}{% endif %}" required autocomplete="off">
+                </div>
+                <div class="col-md-4 mb-3">
+                    <label class="form-label">Отчество</label>
+                    <input type="text" name="patronymic" class="form-control" value="{% if client_user %}{{ client_user.patronymic|default:'' }}{% endif %}" autocomplete="off">
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label class="form-label">Email *</label>
+                    <input type="email" name="email" class="form-control" value="{% if client_user %}{{ client_user.email|default:'' }}{% endif %}" {% if client_user and client_user.email %}readonly{% endif %} required autocomplete="off">
+                    {% if client_user and client_user.email %}
+                        <small class="text-muted">Email нельзя изменить</small>
+                    {% else %}
+                        <small class="text-muted">На этот email будет отправлен пароль</small>
+                    {% endif %}
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label class="form-label">Телефон</label>
+                    <input type="text" name="phone" class="form-control" value="{% if client_user %}{{ client_user.phone|default:'' }}{% endif %}" autocomplete="off">
+                </div>
+            </div>
+        </div>
+        
+        <div class="form-section">
+            <div class="form-section-title"><i class="bi bi-building me-2"></i> Информация о компании</div>
+            <div class="row">
+                <div class="col-md-12 mb-3">
+                    <label class="form-label">Название компании *</label>
+                    <input type="text" name="company_name" class="form-control" value="{% if client %}{{ client.company_name|default:'' }}{% endif %}" required autocomplete="off">
+                </div>
+                <div class="col-md-4 mb-3">
+                    <label class="form-label">ИНН *</label>
+                    <input type="text" name="inn" class="form-control" value="{% if client %}{{ client.inn|default:'' }}{% endif %}" required autocomplete="off">
+                </div>
+                <div class="col-md-4 mb-3">
+                    <label class="form-label">КПП *</label>
+                    <input type="text" name="kpp" class="form-control" value="{% if client %}{{ client.kpp|default:'' }}{% endif %}" required autocomplete="off">
+                </div>
+                <div class="col-md-4 mb-3">
+                    <label class="form-label">Телефон компании</label>
+                    <input type="text" name="company_phone" class="form-control" value="{% if client %}{{ client.company_phone|default:'' }}{% endif %}" autocomplete="off">
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label class="form-label">Email компании</label>
+                    <input type="email" name="company_email" class="form-control" value="{% if client %}{{ client.company_email|default:'' }}{% endif %}" autocomplete="off">
+                </div>
+            </div>
+        </div>
+        
+        <div class="form-section">
+            <div class="form-section-title"><i class="bi bi-geo-alt me-2"></i> Адреса</div>
+            <div class="mb-3">
+                <label class="form-label">Юридический адрес *</label>
+                <textarea name="legal_address" class="form-control" rows="2" required>{% if client %}{{ client.legal_address|default:'' }}{% endif %}</textarea>
+            </div>
+            <div class="mb-3">
+                <label class="form-label">Фактический адрес *</label>
+                <textarea name="actual_address" class="form-control" rows="2" required>{% if client %}{{ client.actual_address|default:'' }}{% endif %}</textarea>
+            </div>
+        </div>
+        
+        <div class="form-section">
+            <div class="form-section-title"><i class="bi bi-bank me-2"></i> Банковские реквизиты</div>
+            <div class="row">
+                <div class="col-md-12 mb-3">
+                    <label class="form-label">Банк</label>
+                    <input type="text" name="bank" class="form-control" value="{% if client %}{{ client.bank|default:'' }}{% endif %}" autocomplete="off">
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label class="form-label">Расчетный счет</label>
+                    <input type="text" name="settlement_account" class="form-control" value="{% if client %}{{ client.settlement_account|default:'' }}{% endif %}" autocomplete="off">
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label class="form-label">Корреспондентский счет</label>
+                    <input type="text" name="correspondent_account" class="form-control" value="{% if client %}{{ client.correspondent_account|default:'' }}{% endif %}" autocomplete="off">
+                </div>
+            </div>
+        </div>
+        
+        <div class="form-section">
+            <div class="form-section-title"><i class="bi bi-person-badge me-2"></i> Контактное лицо</div>
+            <div class="row">
+                <div class="col-md-4 mb-3">
+                    <label class="form-label">Фамилия *</label>
+                    <input type="text" name="contact_person_last_name" class="form-control" value="{% if client %}{{ client.contact_person_last_name|default:'' }}{% endif %}" required autocomplete="off">
+                </div>
+                <div class="col-md-4 mb-3">
+                    <label class="form-label">Имя *</label>
+                    <input type="text" name="contact_person_first_name" class="form-control" value="{% if client %}{{ client.contact_person_first_name|default:'' }}{% endif %}" required autocomplete="off">
+                </div>
+                <div class="col-md-4 mb-3">
+                    <label class="form-label">Отчество</label>
+                    <input type="text" name="contact_person_patronymic" class="form-control" value="{% if client %}{{ client.contact_person_patronymic|default:'' }}{% endif %}" autocomplete="off">
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label class="form-label">Телефон *</label>
+                    <input type="text" name="contact_person_phone" class="form-control" value="{% if client %}{{ client.contact_person_phone|default:'' }}{% endif %}" required autocomplete="off">
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label class="form-label">Email *</label>
+                    <input type="email" name="contact_person_email" class="form-control" value="{% if client %}{{ client.contact_person_email|default:'' }}{% endif %}" required autocomplete="off">
+                </div>
+            </div>
+        </div>
+        
+        {% if not client_user %}
+        <div class="password-info">
+            <i class="bi bi-info-circle me-2" style="color: #1E7A57;"></i>
+            <strong>Информация о пароле:</strong> После создания клиента на указанный email будет отправлено письмо с временным паролем. Клиент сможет войти в систему и сменить пароль самостоятельно.
+        </div>
+        {% endif %}
+        
+        <div class="text-end mt-4">
+            <a href="{% url 'accounts:manager_clients' %}" class="btn btn-secondary me-2">Отмена</a>
+            <button type="submit" class="btn-save">
+                <i class="bi bi-save"></i> Сохранить
+            </button>
+        </div>
+    </form>
+</div>
+{% endblock %}

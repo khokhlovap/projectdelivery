@@ -1,33 +1,604 @@
 {% extends 'accounts/manager_lk_base.html' %}
-{% block title %}Клиенты{% endblock %}
+{% load static %}
+{% block title %}Управление клиентами{% endblock %}
+
 {% block manager_content %}
-<div class="card shadow-sm">
-    <div class="card-header bg-white">
-        <h5 class="mb-0">Клиенты</h5>
+<style>
+    /* Шапка раздела */
+    .section-title {
+        font-size: 1.5rem;
+        font-weight: 600;
+        color: #1E1E1E;
+    }
+    .section-subtitle {
+        font-size: 0.85rem;
+        color: #6B6B6B;
+    }
+    .header-divider {
+        height: 3px;
+        background: linear-gradient(90deg, #1E7A57 0%, #C8E0D6 50%, transparent 100%);
+        border-radius: 3px;
+    }
+    
+    /* Кнопка добавления */
+    .btn-add-client {
+        background: #1E7A57;
+        border: none;
+        border-radius: 50px;
+        padding: 10px 24px;
+        font-weight: 600;
+        font-size: 0.9rem;
+        color: #FFFFFF !important;
+        transition: all 0.3s;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        box-shadow: 0 2px 6px rgba(30, 122, 87, 0.3);
+    }
+    .btn-add-client:hover {
+        background: #155f44;
+        color: #FFFFFF !important;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(30, 122, 87, 0.4);
+        text-decoration: none;
+    }
+    .btn-add-client i {
+        color: #FFFFFF !important;
+    }
+    
+    /* Поиск */
+    .search-wrapper {
+        position: relative;
+        margin-bottom: 32px;
+    }
+    .search-wrapper input {
+        width: 100%;
+        padding: 12px 20px 12px 45px;
+        border: none;
+        border-bottom: 2px solid #E8E0D5;
+        font-size: 0.9rem;
+        background: transparent;
+        transition: all 0.3s;
+    }
+    .search-wrapper input:focus {
+        border-bottom-color: #1E7A57;
+        background: transparent;
+        outline: none;
+        box-shadow: none;
+    }
+    .search-wrapper input::placeholder {
+        color: #B0B0B0;
+    }
+    .search-wrapper i {
+        position: absolute;
+        left: 8px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: #1E7A57;
+        font-size: 1.1rem;
+    }
+    
+    /* Статистические карточки */
+    .stat-card {
+        background: white;
+        border-radius: 16px;
+        padding: 20px;
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        transition: all 0.3s;
+        border: 1px solid #E8E0D5;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.03);
+    }
+    .stat-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 8px 20px rgba(0,0,0,0.08);
+        border-color: #C8E0D6;
+    }
+    .stat-icon {
+        width: 55px;
+        height: 55px;
+        border-radius: 14px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    .stat-icon i {
+        font-size: 26px;
+    }
+    .bg-success-light {
+        background: linear-gradient(135deg, #E8F5E9 0%, #C8E6C9 100%);
+        color: #2E7D32;
+    }
+    .bg-info-light {
+        background: linear-gradient(135deg, #E0F7FA 0%, #B2EBF2 100%);
+        color: #006064;
+    }
+    .stat-info {
+        flex: 1;
+    }
+    .stat-number {
+        font-size: 1.8rem;
+        font-weight: 700;
+        color: #1E1E1E;
+        margin-bottom: 4px;
+        line-height: 1;
+    }
+    .stat-text {
+        font-size: 0.7rem;
+        color: #6B6B6B;
+        margin-bottom: 0;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    
+    /* Карточка клиента */
+    .client-card {
+        background: white;
+        border-radius: 16px;
+        margin-bottom: 12px;
+        padding: 20px;
+        border: 1px solid #E8E0D5;
+        transition: all 0.3s;
+    }
+    .client-card:hover {
+        border-color: #C8E0D6;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.06);
+        transform: translateX(4px);
+    }
+    .client-avatar {
+        width: 48px;
+        height: 48px;
+        background: linear-gradient(135deg, #C8E0D6 0%, #E8E0D5 100%);
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    .client-avatar i {
+        font-size: 24px;
+        color: #1E7A57;
+    }
+    .client-name {
+        font-weight: 700;
+        font-size: 1rem;
+        color: #1E1E1E;
+    }
+    .client-inn {
+        font-size: 0.7rem;
+        color: #6B6B6B;
+    }
+    .orders-badge {
+        background: #F5F3F0;
+        padding: 4px 12px;
+        border-radius: 30px;
+        font-size: 0.7rem;
+        color: #1E7A57;
+        font-weight: 500;
+        margin-right: 8px;
+        display: inline-block;
+    }
+    .info-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 20px;
+        margin-top: 16px;
+    }
+    .info-item {
+        flex: 1;
+        min-width: 140px;
+    }
+    .info-label {
+        font-size: 0.65rem;
+        text-transform: uppercase;
+        color: #6B6B6B;
+        margin-bottom: 4px;
+        letter-spacing: 0.5px;
+    }
+    .info-value {
+        font-size: 0.85rem;
+        font-weight: 500;
+        color: #1E1E1E;
+    }
+    .btn-action {
+        padding: 6px 14px;
+        border-radius: 30px;
+        font-size: 0.75rem;
+        margin-left: 8px;
+        font-weight: 500;
+        transition: all 0.2s;
+        border: none;
+        cursor: pointer;
+    }
+    .btn-outline-edit {
+        background: white;
+        border: 1px solid #C8E0D6;
+        color: #1E7A57;
+    }
+    .btn-outline-edit:hover {
+        background: #1E7A57;
+        color: white;
+    }
+    .btn-outline-detail {
+        background: white;
+        border: 1px solid #E8E0D5;
+        color: #6B6B6B;
+    }
+    .btn-outline-detail:hover {
+        background: #6B6B6B;
+        color: white;
+    }
+    
+    /* Пагинация */
+    .pagination {
+        margin-top: 24px;
+        justify-content: center;
+    }
+    .page-link {
+        border-radius: 10px;
+        margin: 0 4px;
+        color: #1E7A57;
+        border: 1px solid #E8E0D5;
+        padding: 8px 14px;
+    }
+    .page-link:hover {
+        background: #C8E0D6;
+        border-color: #1E7A57;
+        color: #1E7A57;
+    }
+    .page-item.active .page-link {
+        background-color: #1E7A57;
+        border-color: #1E7A57;
+        color: white;
+    }
+    
+    /* Пустое состояние */
+    .empty-state {
+        text-align: center;
+        padding: 60px 20px;
+        background: white;
+        border-radius: 16px;
+        border: 1px solid #E8E0D5;
+    }
+    .empty-state i {
+        font-size: 4rem;
+        color: #C8E0D6;
+    }
+    .empty-state h5 {
+        margin-top: 16px;
+        color: #1E1E1E;
+    }
+    .empty-state p {
+        color: #6B6B6B;
+    }
+    .btn-add-client,
+    .btn-add-client:link,
+    .btn-add-client:visited,
+    .btn-add-client:hover,
+    .btn-add-client:active,
+    .btn-add-client:focus {
+        background: #1E7A57 !important;
+        border: none !important;
+        border-radius: 50px !important;
+        padding: 10px 24px !important;
+        font-weight: 600 !important;
+        font-size: 0.9rem !important;
+        color: #FFFFFF !important;
+        text-decoration: none !important;
+        display: inline-flex !important;
+        align-items: center !important;
+        gap: 8px !important;
+        box-shadow: 0 2px 6px rgba(30, 122, 87, 0.3) !important;
+    }
+
+    .btn-add-client:hover {
+        background: #155f44 !important;
+        transform: translateY(-2px) !important;
+        box-shadow: 0 4px 12px rgba(30, 122, 87, 0.4) !important;
+        color: #FFFFFF !important;
+    }
+
+    .btn-add-client i,
+    .btn-add-client i:before {
+        color: #FFFFFF !important;
+    }
+</style>
+<!-- Шапка раздела -->
+<div class="section-header mb-4">
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
+        <div>
+            <h2 class="section-title mb-1">
+                <i class="bi bi-people-fill me-2" style="color: #1E7A57;"></i>
+                Клиенты
+            </h2>
+            <p class="section-subtitle mb-0">Управление клиентами компании</p>
+        </div>
+        <a href="{% url 'accounts:manager_client_add' %}" class="btn-add-client" style="background: #1E7A57 !important; color: #FFFFFF !important;">
+            <i class="bi bi-plus-lg" style="color: #FFFFFF !important;"></i> Новый клиент
+        </a>
     </div>
-    <div class="card-body">
-        <div class="table-responsive">
-            <table class="table table-hover">
-                <thead>
-                    <tr>
-                        <th>Компания</th>
-                        <th>ИНН</th>
-                        <th>Контактное лицо</th>
-                        <th>Телефон</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for client in clients %}
-                    <tr>
-                        <td>{{ client.company_name }}</td>
-                        <td>{{ client.inn }}</td>
-                        <td>{{ client.get_contact_person_full_name }}</td>
-                        <td>{{ client.contact_person_phone }}</td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
+    <div class="header-divider mt-3"></div>
+</div>
+
+<!-- Статистические карточки -->
+<div class="row g-4 mb-4">
+    <div class="col-md-6">
+        <div class="stat-card">
+            <div class="stat-icon bg-success-light">
+                <i class="bi bi-people"></i>
+            </div>
+            <div class="stat-info">
+                <h3 class="stat-number">{{ total_count }}</h3>
+                <p class="stat-text">Всего клиентов</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="stat-card">
+            <div class="stat-icon bg-info-light">
+                <i class="bi bi-calendar-week"></i>
+            </div>
+            <div class="stat-info">
+                <h3 class="stat-number">{{ new_clients_this_month|default:0 }}</h3>
+                <p class="stat-text">Новых за месяц</p>
+            </div>
         </div>
     </div>
 </div>
+
+<!-- Поиск -->
+<div class="search-wrapper" style="margin-bottom: 32px;">
+    <i class="bi bi-search"></i>
+    <input type="text" id="searchInput" placeholder="Поиск по названию компании, ИНН, email или ФИО контактного лица..." value="{{ search_query }}">
+</div>
+{% if search_query %}
+<div class="mb-3">
+    <a href="{% url 'accounts:manager_clients' %}" class="text-muted small">
+        <i class="bi bi-x-circle"></i> Сбросить поиск
+    </a>
+</div>
+{% endif %}
+
+<!-- Список клиентов -->
+<div id="clientsList" style="margin-top: 32px;">
+    {% if page_obj %}
+        {% for client in page_obj %}
+        <div class="client-card" data-client-id="{{ client.user.id }}">
+            <div class="d-flex justify-content-between align-items-start flex-wrap">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="client-avatar">
+                        <i class="bi bi-building"></i>
+                    </div>
+                    <div>
+                        <div class="client-name">{{ client.company_name }}</div>
+                        <div class="client-inn">ИНН: {{ client.inn }}</div>
+                    </div>
+                </div>
+                <div class="mt-2 mt-sm-0">
+                    <span class="orders-badge">
+                        <i class="bi bi-box-seam"></i> {{ client.orders_count }} заказов
+                    </span>
+                    <button class="btn-action btn-outline-edit edit-client" data-user-id="{{ client.user.id }}">
+                        <i class="bi bi-pencil"></i> Редактировать
+                    </button>
+                    <button class="btn-action btn-outline-detail details-client" data-user-id="{{ client.user.id }}">
+                        <i class="bi bi-eye"></i> Подробнее
+                    </button>
+                </div>
+            </div>
+            <div class="info-row">
+                <div class="info-item">
+                    <div class="info-label"><i class="bi bi-person"></i> КОНТАКТНОЕ ЛИЦО</div>
+                    <div class="info-value">{{ client.get_contact_person_full_name }}</div>
+                    <div class="info-value small text-muted">{{ client.contact_person_phone }}</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label"><i class="bi bi-envelope"></i> EMAIL</div>
+                    <div class="info-value">{{ client.user.email }}</div>
+                    <div class="info-value small text-muted">{{ client.company_phone }}</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label"><i class="bi bi-building"></i> ИНН</div>
+                    <div class="info-value">{{ client.inn }}</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label"><i class="bi bi-calendar"></i> ДАТА РЕГИСТРАЦИИ</div>
+                    <div class="info-value">{{ client.user.date_joined|date:"d.m.Y" }}</div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+        
+        <!-- Пагинация -->
+        {% if page_obj.has_other_pages %}
+        <nav>
+            <ul class="pagination">
+                {% if page_obj.has_previous %}
+                <li class="page-item"><a class="page-link" href="#" data-page="1">&laquo;&laquo;</a></li>
+                <li class="page-item"><a class="page-link" href="#" data-page="{{ page_obj.previous_page_number }}">&laquo;</a></li>
+                {% endif %}
+                
+                {% for num in page_obj.paginator.page_range %}
+                    {% if page_obj.number == num %}
+                        <li class="page-item active"><span class="page-link">{{ num }}</span></li>
+                    {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                        <li class="page-item"><a class="page-link" href="#" data-page="{{ num }}">{{ num }}</a></li>
+                    {% endif %}
+                {% endfor %}
+                
+                {% if page_obj.has_next %}
+                <li class="page-item"><a class="page-link" href="#" data-page="{{ page_obj.next_page_number }}">&raquo;</a></li>
+                <li class="page-item"><a class="page-link" href="#" data-page="{{ page_obj.paginator.num_pages }}">&raquo;&raquo;</a></li>
+                {% endif %}
+            </ul>
+        </nav>
+        {% endif %}
+        
+        <div class="text-muted small mt-3">
+            Показано {{ page_obj|length }} из {{ total_count }} клиентов
+        </div>
+    {% else %}
+        <div class="empty-state">
+            <i class="bi bi-inbox"></i>
+            <h5>Нет клиентов</h5>
+            <p>Добавьте первого клиента, нажав кнопку "Новый клиент"</p>
+            <a href="{% url 'accounts:manager_client_add' %}" class="btn-add-client mt-2">
+                <i class="bi bi-plus-lg"></i> Добавить клиента
+            </a>
+        </div>
+    {% endif %}
+</div>
+
+<!-- Модальное окно деталей клиента -->
+<div class="modal fade" id="clientDetailsModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-info text-white">
+                <h5 class="modal-title"><i class="bi bi-building me-2"></i>Детали клиента</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="clientDetailsContent">
+                <div class="text-center py-4">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Загрузка...</span>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Закрыть</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Автоматический поиск
+    let typingTimer;
+    const searchInput = document.getElementById('searchInput');
+    if (searchInput) {
+        searchInput.addEventListener('keyup', function() {
+            clearTimeout(typingTimer);
+            typingTimer = setTimeout(() => {
+                const search = this.value;
+                let url = "{% url 'accounts:manager_clients' %}?";
+                if (search) url += `search=${encodeURIComponent(search)}`;
+                window.location.href = url;
+            }, 500);
+        });
+    }
+    
+    // Пагинация
+    document.querySelectorAll('.pagination a').forEach(link => {
+        link.addEventListener('click', function(e) {
+            e.preventDefault();
+            const page = this.dataset.page;
+            if (page) {
+                const url = new URL(window.location.href);
+                url.searchParams.set('page', page);
+                window.location.href = url.toString();
+            }
+        });
+    });
+    
+    // Редактирование клиента
+    document.querySelectorAll('.edit-client').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const userId = this.dataset.userId;
+            window.location.href = `/manager/clients/${userId}/edit/`;
+        });
+    });
+    
+    // Просмотр деталей клиента
+    document.querySelectorAll('.details-client').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const userId = this.dataset.userId;
+            const modal = new bootstrap.Modal(document.getElementById('clientDetailsModal'));
+            modal.show();
+            
+            const contentDiv = document.getElementById('clientDetailsContent');
+            contentDiv.innerHTML = '<div class="text-center py-4"><div class="spinner-border text-primary" role="status"></div></div>';
+            
+            fetch(`/manager/clients/${userId}/detail/`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        const d = data.data;
+                        contentDiv.innerHTML = `
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <div class="card h-100">
+                                        <div class="card-header bg-light"><strong>Личная информация</strong></div>
+                                        <div class="card-body">
+                                            <p><strong>ФИО:</strong> ${d.last_name} ${d.first_name} ${d.patronymic}<br>
+                                            <strong>Email:</strong> ${d.email}<br>
+                                            <strong>Телефон:</strong> ${d.phone || '—'}<br>
+                                            <strong>Дата регистрации:</strong> ${d.date_joined}</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <div class="card h-100">
+                                        <div class="card-header bg-light"><strong>Компания</strong></div>
+                                        <div class="card-body">
+                                            <p><strong>Название:</strong> ${d.company_name}<br>
+                                            <strong>ИНН:</strong> ${d.inn}<br>
+                                            <strong>КПП:</strong> ${d.kpp}<br>
+                                            <strong>Телефон:</strong> ${d.company_phone}<br>
+                                            <strong>Email:</strong> ${d.company_email}</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <div class="card h-100">
+                                        <div class="card-header bg-light"><strong>Адреса</strong></div>
+                                        <div class="card-body">
+                                            <p><strong>Юридический:</strong><br>${d.legal_address}<br><br>
+                                            <strong>Фактический:</strong><br>${d.actual_address}</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <div class="card h-100">
+                                        <div class="card-header bg-light"><strong>Банковские реквизиты</strong></div>
+                                        <div class="card-body">
+                                            <p><strong>Банк:</strong> ${d.bank}<br>
+                                            <strong>Расчетный счет:</strong> ${d.settlement_account}<br>
+                                            <strong>Корр. счет:</strong> ${d.correspondent_account}</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <div class="card h-100">
+                                        <div class="card-header bg-light"><strong>Контактное лицо</strong></div>
+                                        <div class="card-body">
+                                            <p><strong>ФИО:</strong> ${d.contact_person_last_name} ${d.contact_person_first_name} ${d.contact_person_patronymic}<br>
+                                            <strong>Телефон:</strong> ${d.contact_person_phone}<br>
+                                            <strong>Email:</strong> ${d.contact_person_email}</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <div class="card h-100">
+                                        <div class="card-header bg-light"><strong>Статистика</strong></div>
+                                        <div class="card-body">
+                                            <p><strong>Всего заказов:</strong> ${d.orders_count}</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                    } else {
+                        contentDiv.innerHTML = `<div class="alert alert-danger">Ошибка: ${data.error}</div>`;
+                    }
+                })
+                .catch(error => {
+                    contentDiv.innerHTML = '<div class="alert alert-danger">Ошибка загрузки данных</div>';
+                });
+        });
+    });
+</script>
 {% endblock %}

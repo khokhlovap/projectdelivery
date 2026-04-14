@@ -7,11 +7,16 @@ from django.http import JsonResponse
 from django.utils import timezone  
 from .forms import RegistrationForm
 from django.contrib.auth.forms import AuthenticationForm
-from delivery.models import Order, Client, Courier, OrderRating, OrderStatusHistory 
+from delivery.models import Order, Client, Courier, OrderRating, OrderStatusHistory, User 
 from django.db.models import Count, Avg, Q
 from datetime import datetime, timedelta
 from django.core.paginator import Paginator
-from django.db.models import Q
+from django.contrib.auth.hashers import make_password
+import random
+import string
+from django.db.models import Sum
+from django.core.mail import send_mail
+from django.conf import settings
 
 # ЛК Клиент
 def register_view(request):
@@ -369,13 +374,214 @@ def manager_clients(request):
         messages.error(request, 'У вас нет доступа к этой странице')
         return redirect('accounts:home')
     
-    clients = Client.objects.select_related('user').all()
+    clients = Client.objects.select_related('user').annotate(
+        orders_count=Count('orders')).order_by('-user__date_joined')
+    
+    # Поиск
+    search_query = request.GET.get('search', '')
+    if search_query:
+        clients = clients.filter(
+            Q(company_name__icontains=search_query) |
+            Q(inn__icontains=search_query) |
+            Q(contact_person_last_name__icontains=search_query) |
+            Q(contact_person_first_name__icontains=search_query) |
+            Q(user__email__icontains=search_query)
+        )
+    
+    # Пагинация
+    paginator = Paginator(clients, 10)
+    page_number = request.GET.get('page', 1)
+    page_obj = paginator.get_page(page_number)
+    
+    # Дополнительная статистика
+    from django.utils import timezone
+    total_orders_count = Order.objects.filter(status='delivered').count()
+    new_clients_this_month = Client.objects.filter(
+        user__date_joined__month=timezone.now().month
+    ).count()
     
     context = {
-        'clients': clients,
+        'page_obj': page_obj,
+        'search_query': search_query,
+        'total_count': clients.count(),
+        'total_orders_count': total_orders_count,
+        'new_clients_this_month': new_clients_this_month,
     }
     return render(request, 'accounts/manager_clients.html', context)
 
+@login_required
+def manager_client_add(request):
+    "Добавление нового клиента менеджером"
+    if request.user.role != 'manager':
+        messages.error(request, 'У вас нет доступа к этой странице')
+        return redirect('accounts:home')
+    
+    if request.method == 'POST':
+        # Генеррация временного пароля
+        temp_password = ''.join(random.choices(string.ascii_letters + string.digits, k=10))
+        email = request.POST.get('email')
+        first_name = request.POST.get('first_name')
+        last_name = request.POST.get('last_name')
+        
+        # Создаем пользователя
+        user = User.objects.create(
+            email=email,
+            first_name=first_name,
+            last_name=last_name,
+            patronymic=request.POST.get('patronymic', ''),
+            phone=request.POST.get('phone'),
+            role='client',
+            password=make_password(temp_password)
+        )
+        
+        # Создаем профиль клиента
+        Client.objects.create(
+            user=user,
+            company_name=request.POST.get('company_name'),
+            inn=request.POST.get('inn'),
+            kpp=request.POST.get('kpp'),
+            legal_address=request.POST.get('legal_address'),
+            actual_address=request.POST.get('actual_address'),
+            company_phone=request.POST.get('company_phone'),
+            company_email=request.POST.get('company_email'),
+            bank=request.POST.get('bank'),
+            settlement_account=request.POST.get('settlement_account'),
+            correspondent_account=request.POST.get('correspondent_account'),
+            contact_person_first_name=request.POST.get('contact_person_first_name'),
+            contact_person_last_name=request.POST.get('contact_person_last_name'),
+            contact_person_patronymic=request.POST.get('contact_person_patronymic', ''),
+            contact_person_phone=request.POST.get('contact_person_phone'),
+            contact_person_email=request.POST.get('contact_person_email'),
+        )
+        
+        # Отправка письма (email) с паролем
+        try:
+            send_mail(
+                subject='Добро пожаловать в АВН Бизнес Курьер!',
+                message=f"""
+                Здравствуйте, {first_name} {last_name}!
+
+                Для вас был создан аккаунт в системе АВН Бизнес Курьер.
+
+                Ваши данные для входа:
+                Email: {email}
+                Временный пароль: {temp_password}
+
+                Пожалуйста, войдите в систему и смените пароль при первом входе.
+
+                Ссылка для входа: http://127.0.0.1:8000/login/
+
+                С уважением,
+                Команда АВН Бизнес Курьер
+                """,
+                from_email=settings.DEFAULT_FROM_EMAIL,
+                recipient_list=[email],
+                fail_silently=False,
+            )
+            messages.success(request, f'Клиент {email} успешно создан. Пароль отправлен на почту.')
+        except Exception as e:
+            messages.warning(request, f'Клиент создан, но не удалось отправить email: {e}. Временный пароль: {temp_password}')
+        
+        return redirect('accounts:manager_clients')
+    
+    context = {
+        'title': 'Добавить клиента',
+        'client_user': None,
+        'client': None,
+    }
+    return render(request, 'accounts/manager_client_form.html', context)
+
+
+@login_required
+def manager_client_edit(request, user_id):
+    "Редактирование клиента"
+    if request.user.role != 'manager':
+        messages.error(request, 'У вас нет доступа к этой странице')
+        return redirect('accounts:home')
+    
+    try:
+        user = User.objects.get(id=user_id, role='client')
+        client = user.client_profile
+    except (User.DoesNotExist, Client.DoesNotExist):
+        messages.error(request, 'Клиент не найден')
+        return redirect('accounts:manager_clients')
+    
+    if request.method == 'POST':
+        # Обновлени пользователя
+        user.first_name = request.POST.get('first_name')
+        user.last_name = request.POST.get('last_name')
+        user.patronymic = request.POST.get('patronymic', '')
+        user.phone = request.POST.get('phone')
+        user.save()
+        
+        # Обновление клиента
+        client.company_name = request.POST.get('company_name')
+        client.inn = request.POST.get('inn')
+        client.kpp = request.POST.get('kpp')
+        client.legal_address = request.POST.get('legal_address')
+        client.actual_address = request.POST.get('actual_address')
+        client.company_phone = request.POST.get('company_phone')
+        client.company_email = request.POST.get('company_email')
+        client.bank = request.POST.get('bank')
+        client.settlement_account = request.POST.get('settlement_account')
+        client.correspondent_account = request.POST.get('correspondent_account')
+        client.contact_person_first_name = request.POST.get('contact_person_first_name')
+        client.contact_person_last_name = request.POST.get('contact_person_last_name')
+        client.contact_person_patronymic = request.POST.get('contact_person_patronymic', '')
+        client.contact_person_phone = request.POST.get('contact_person_phone')
+        client.contact_person_email = request.POST.get('contact_person_email')
+        client.save()
+        
+        messages.success(request, 'Данные клиента обновлены')
+        return redirect('accounts:manager_clients')
+    
+    context = {
+        'title': 'Редактировать клиента',
+        'client_user': user,
+        'client': client,
+    }
+    return render(request, 'accounts/manager_client_form.html', context)
+
+
+@login_required
+def manager_client_detail(request, user_id):
+    "Получение деталей клиента для модального окна"
+    if request.user.role != 'manager':
+        return JsonResponse({'error': 'Доступ запрещен'}, status=403)
+    
+    try:
+        user = User.objects.get(id=user_id, role='client')
+        client = user.client_profile
+        orders_count = Order.objects.filter(client=client).count()
+        
+        data = {
+            'id': user.id,
+            'email': user.email,
+            'first_name': user.first_name,
+            'last_name': user.last_name,
+            'patronymic': user.patronymic or '',
+            'phone': user.phone or '',
+            'date_joined': user.date_joined.strftime('%d.%m.%Y %H:%M'),
+            'company_name': client.company_name,
+            'inn': client.inn,
+            'kpp': client.kpp,
+            'legal_address': client.legal_address,
+            'actual_address': client.actual_address,
+            'company_phone': client.company_phone,
+            'company_email': client.company_email,
+            'bank': client.bank,
+            'settlement_account': client.settlement_account,
+            'correspondent_account': client.correspondent_account,
+            'contact_person_first_name': client.contact_person_first_name,
+            'contact_person_last_name': client.contact_person_last_name,
+            'contact_person_patronymic': client.contact_person_patronymic or '',
+            'contact_person_phone': client.contact_person_phone,
+            'contact_person_email': client.contact_person_email,
+            'orders_count': orders_count,
+        }
+        return JsonResponse({'success': True, 'data': data})
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=404)
 
 @login_required
 def manager_reports(request):
@@ -543,3 +749,4 @@ def get_order_details(request):
         return JsonResponse({'error': 'Заказ не найден'}, status=404)
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=500)
+    
