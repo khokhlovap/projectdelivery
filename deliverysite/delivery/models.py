@@ -493,8 +493,14 @@ class Order(models.Model):
         if not is_new:
             old = Order.objects.get(pk=self.pk)
             old_courier = old.courier
+            old_status = old.status
         else:
             old_courier = None
+            old_status = None
+
+        # Если статус меняется на 'delivered' и delivered_at пустой - устанавливаем дату
+        if old_status != 'delivered' and self.status == 'delivered' and not self.delivered_at:
+            self.delivered_at = timezone.now()
 
         super().save(*args, **kwargs)
 

@@ -10,7 +10,8 @@ from django.contrib.auth.forms import AuthenticationForm
 from delivery.models import Order, Client, Courier, OrderRating, OrderStatusHistory 
 from django.db.models import Count, Avg, Q
 from datetime import datetime, timedelta
-
+from django.core.paginator import Paginator
+from django.db.models import Q
 
 # ЛК Клиент
 def register_view(request):
@@ -294,15 +295,54 @@ def manager_tasks(request):
 
 @login_required
 def manager_orders(request):
-    "Страница управления заказами"
+    "Страница завершенных заказов"
     if request.user.role != 'manager':
         messages.error(request, 'У вас нет доступа к этой странице')
         return redirect('accounts:home')
     
-    orders = Order.objects.all().order_by('-created_at')
+    # Базовый запрос - только завершенные заказы (доставленные)
+    orders = Order.objects.filter(status='delivered').order_by('-delivered_at', '-created_at')
+    
+    # Поиск по названию компании клиента
+    search_query = request.GET.get('search', '')
+    if search_query:
+        orders = orders.filter(
+            Q(client__company_name__icontains=search_query) |
+            Q(client__contact_person_last_name__icontains=search_query) |
+            Q(recipient_last_name__icontains=search_query) |
+            Q(recipient_company__icontains=search_query)
+        )
+    
+    # Фильтр по дате доставки
+    date_from = request.GET.get('date_from', '')
+    date_to = request.GET.get('date_to', '')
+    
+    # Фильтр дат отдельно от поиска
+    if date_from:
+        try:
+            date_from_obj = datetime.strptime(date_from, '%Y-%m-%d').date()
+            orders = orders.filter(delivered_at__date__gte=date_from_obj)
+        except (ValueError, TypeError):
+            pass
+    
+    if date_to:
+        try:
+            date_to_obj = datetime.strptime(date_to, '%Y-%m-%d').date()
+            orders = orders.filter(delivered_at__date__lte=date_to_obj)
+        except (ValueError, TypeError):
+            pass
+    
+    # Пагинация
+    paginator = Paginator(orders, 4)
+    page_number = request.GET.get('page', 1)
+    page_obj = paginator.get_page(page_number)
     
     context = {
-        'orders': orders,
+        'page_obj': page_obj,
+        'search_query': search_query,
+        'date_from': date_from,
+        'date_to': date_to,
+        'total_count': orders.count(),
     }
     return render(request, 'accounts/manager_orders.html', context)
 

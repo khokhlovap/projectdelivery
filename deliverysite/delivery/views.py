@@ -1,9 +1,10 @@
 from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
-from django.http import JsonResponse  # ДОБАВЬТЕ ЭТОТ ИМПОРТ
+from django.http import JsonResponse  
 from .forms import OrderForm
-from .models import Order, Courier, OrderStatusHistory, CourierNotification  # ДОБАВЬТЕ CourierNotification
+from .models import Order, Courier, OrderStatusHistory, CourierNotification
+from django.utils import timezone
 
 @login_required
 def create_order(request):
@@ -147,3 +148,29 @@ def courier_accept_order(request, order_id):
         return JsonResponse({'success': True, 'message': 'Заказ принят'})
     except Exception as e:
         return JsonResponse({'success': False, 'error': str(e)}, status=400)
+
+@login_required
+def complete_order(request, order_id):
+    "Отметить заказ как доставленный"
+    if request.user.role != 'courier' and request.user.role != 'manager':
+        messages.error(request, 'У вас нет прав для этого действия')
+        return redirect('delivery:order_list')
+    
+    order = get_object_or_404(Order, id=order_id)
+    
+    if order.status == 'in_progress':
+        order.status = 'delivered'
+        order.delivered_at = timezone.now()
+        order.save()
+        
+        OrderStatusHistory.objects.create(
+            order=order,
+            status='delivered',
+            comment=f'Заказ доставлен {request.user.get_full_name()}'
+        )
+        
+        messages.success(request, f'Заказ №{order.id} отмечен как доставленный')
+    else:
+        messages.error(request, 'Заказ не может быть отмечен как доставленный (статус должен быть "В пути")')
+    
+    return redirect('delivery:order_list')
