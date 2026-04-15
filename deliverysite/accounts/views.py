@@ -820,21 +820,63 @@ def manager_reports(request):
 
 @login_required
 def manager_settings(request):
-    "Настройки менеджера"
+    "Настройки менеджера - изменение профиля и пароля"
     if request.user.role != 'manager':
         messages.error(request, 'У вас нет доступа к этой странице')
         return redirect('accounts:home')
     
     if request.method == 'POST':
-        user = request.user
-        user.first_name = request.POST.get('first_name')
-        user.last_name = request.POST.get('last_name')
-        user.phone = request.POST.get('phone')
-        user.save()
-        messages.success(request, 'Профиль успешно обновлен')
-        return redirect('accounts:manager_settings')
+        action = request.POST.get('action')
+        
+        # Обновление профиля
+        if action == 'update_profile':
+            user = request.user
+            user.first_name = request.POST.get('first_name', '').strip()
+            user.last_name = request.POST.get('last_name', '').strip()
+            user.patronymic = request.POST.get('patronymic', '').strip()
+            user.phone = request.POST.get('phone', '').strip()
+            user.save()
+            
+            messages.success(request, 'Данные профиля успешно обновлены')
+            return redirect('accounts:manager_settings')
+        
+        # Смена пароля
+        elif action == 'change_password':
+            current_password = request.POST.get('current_password')
+            new_password = request.POST.get('new_password')
+            confirm_password = request.POST.get('confirm_password')
+            
+            # Проверяем текущий пароль
+            if not request.user.check_password(current_password):
+                messages.error(request, 'Текущий пароль введен неверно')
+                return redirect('accounts:manager_settings')
+            
+            # Проверяем, что новый пароль не пустой
+            if not new_password:
+                messages.error(request, 'Введите новый пароль')
+                return redirect('accounts:manager_settings')
+            
+            # Проверяем совпадение паролей
+            if new_password != confirm_password:
+                messages.error(request, 'Новый пароль и подтверждение не совпадают')
+                return redirect('accounts:manager_settings')
+            
+            # Проверяем длину пароля
+            if len(new_password) < 8:
+                messages.error(request, 'Пароль должен содержать минимум 8 символов')
+                return redirect('accounts:manager_settings')
+            
+            # Меняем пароль
+            request.user.set_password(new_password)
+            request.user.save()
+            
+            messages.success(request, 'Пароль успешно изменен. Пожалуйста, войдите снова.')
+            return redirect('accounts:login')
     
-    return render(request, 'accounts/manager_settings.html')
+    context = {
+        'user': request.user,
+    }
+    return render(request, 'accounts/manager_settings.html', context)
 
 @login_required
 def manager_tasks_count(request):
