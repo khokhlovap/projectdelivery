@@ -51,7 +51,6 @@ def login_view(request):
             
             # Проверка роли пользователя и перенаправление
             if user.role == 'manager':
-                messages.success(request, f'Добро пожаловать в панель управления, {user.get_full_name()}!')
                 return redirect('accounts:manager_dashboard')
             elif user.role == 'client':
                 try:
@@ -74,7 +73,6 @@ def login_view(request):
 def logout_view(request):
     "Выход из системы"
     logout(request)
-    messages.info(request, 'Вы вышли из системы')
     return redirect('accounts:login')
 
 @login_required
