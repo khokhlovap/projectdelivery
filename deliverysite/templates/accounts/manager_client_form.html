@@ -4,64 +4,186 @@
 
 {% block manager_content %}
 <style>
+    /* Шапка раздела */
+    .section-header {
+        margin-bottom: 28px;
+    }
+    .section-title {
+        font-size: 1.5rem;
+        font-weight: 600;
+        color: #1E1E1E;
+    }
+    .section-subtitle {
+        font-size: 0.85rem;
+        color: #6B6B6B;
+    }
+    .header-divider {
+        height: 3px;
+        background: linear-gradient(90deg, #1E7A57 0%, #C8E0D6 50%, transparent 100%);
+        border-radius: 3px;
+        margin-top: 12px;
+    }
+    
+    /* Контейнер формы */
     .form-container {
         background: white;
         border-radius: 20px;
-        padding: 24px;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        padding: 28px;
+        border: 1px solid #E8E0D5;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.03);
     }
+    
+    /* Секции формы */
     .form-section {
-        margin-bottom: 24px;
-        padding-bottom: 16px;
-        border-bottom: 1px solid #eee;
+        margin-bottom: 28px;
+        padding-bottom: 20px;
+        border-bottom: 1px solid #E8E0D5;
+    }
+    .form-section:last-child {
+        border-bottom: none;
+        margin-bottom: 0;
+        padding-bottom: 0;
     }
     .form-section-title {
         font-size: 1rem;
         font-weight: 600;
         color: #1E7A57;
-        margin-bottom: 16px;
+        margin-bottom: 20px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
     }
+    .form-section-title i {
+        font-size: 1.1rem;
+    }
+    
+    /* Поля формы */
     .form-label {
-        font-size: 0.8rem;
-        font-weight: 500;
-        color: #555;
-        margin-bottom: 4px;
+        font-size: 0.75rem;
+        text-transform: uppercase;
+        font-weight: 600;
+        color: #6B6B6B;
+        margin-bottom: 6px;
+        letter-spacing: 0.5px;
     }
     .form-control {
-        border-radius: 10px;
-        border: 1px solid #ddd;
+        border-radius: 12px;
+        border: 1px solid #E8E0D5;
         padding: 10px 14px;
+        font-size: 0.9rem;
+        transition: all 0.2s;
+        background: white;
     }
     .form-control:focus {
         border-color: #1E7A57;
         box-shadow: 0 0 0 3px rgba(30, 122, 87, 0.1);
+        outline: none;
+    }
+    textarea.form-control {
+        resize: vertical;
+        min-height: 80px;
+    }
+    
+    /* Кнопки */
+    .btn-cancel {
+        background: white;
+        border: 1px solid #E8E0D5;
+        border-radius: 30px;
+        padding: 8px 28px;
+        color: #6B6B6B;
+        font-weight: 500;
+        transition: all 0.2s;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+    }
+    .btn-cancel:hover {
+        background: #F5F3F0;
+        border-color: #C8E0D6;
+        color: #1E1E1E;
     }
     .btn-save {
-        background-color: #1E7A57;
-        color: white;
-        border-radius: 40px;
-        padding: 10px 30px;
+        background: #1E7A57;
         border: none;
+        border-radius: 30px;
+        padding: 8px 32px;
+        color: white;
+        font-weight: 500;
+        transition: all 0.2s;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
     }
     .btn-save:hover {
-        background-color: #155f44;
+        background: #155f44;
+        transform: translateY(-1px);
     }
+    
+    /* Информация о пароле */
     .password-info {
-        background: #f8f9fa;
-        border-radius: 10px;
-        padding: 12px;
-        margin-top: 8px;
+        background: #F5F3F0;
+        border-radius: 12px;
+        padding: 14px 18px;
+        margin-top: 20px;
+        border-left: 3px solid #1E7A57;
+    }
+    .password-info i {
+        color: #1E7A57;
+        margin-right: 8px;
+    }
+    .password-info strong {
+        color: #1E1E1E;
+    }
+    .password-info .text-muted {
+        color: #6B6B6B;
+        font-size: 0.8rem;
+    }
+    
+    /* Текст ошибок */
+    .text-muted.small {
+        font-size: 0.7rem;
+        margin-top: 4px;
+    }
+    
+    /* Адаптивность */
+    @media (max-width: 768px) {
+        .form-container {
+            padding: 20px;
+        }
+        .btn-cancel, .btn-save {
+            width: 100%;
+            justify-content: center;
+            margin-bottom: 8px;
+        }
+        .text-end {
+            text-align: center !important;
+        }
     }
 </style>
 
+<!-- Шапка раздела -->
+<div class="section-header">
+    <div>
+        <h2 class="section-title mb-1">
+            <i class="bi bi-person-plus me-2" style="color: #1E7A57;"></i>
+            {{ title }}
+        </h2>
+        <p class="section-subtitle mb-0">Заполните информацию о клиенте</p>
+    </div>
+    <div class="header-divider"></div>
+</div>
+
+<!-- Форма -->
 <div class="form-container">
-    <h4 class="mb-4">{{ title }}</h4>
-    
     <form method="post" autocomplete="off">
         {% csrf_token %}
         
+        <!-- Личная информация -->
         <div class="form-section">
-            <div class="form-section-title"><i class="bi bi-person me-2"></i> Личная информация</div>
+            <div class="form-section-title">
+                <i class="bi bi-person"></i> Личная информация
+            </div>
             <div class="row">
                 <div class="col-md-4 mb-3">
                     <label class="form-label">Фамилия *</label>
@@ -91,8 +213,11 @@
             </div>
         </div>
         
+        <!-- Информация о компании -->
         <div class="form-section">
-            <div class="form-section-title"><i class="bi bi-building me-2"></i> Информация о компании</div>
+            <div class="form-section-title">
+                <i class="bi bi-building"></i> Информация о компании
+            </div>
             <div class="row">
                 <div class="col-md-12 mb-3">
                     <label class="form-label">Название компании *</label>
@@ -117,8 +242,11 @@
             </div>
         </div>
         
+        <!-- Адреса -->
         <div class="form-section">
-            <div class="form-section-title"><i class="bi bi-geo-alt me-2"></i> Адреса</div>
+            <div class="form-section-title">
+                <i class="bi bi-geo-alt"></i> Адреса
+            </div>
             <div class="mb-3">
                 <label class="form-label">Юридический адрес *</label>
                 <textarea name="legal_address" class="form-control" rows="2" required>{% if client %}{{ client.legal_address|default:'' }}{% endif %}</textarea>
@@ -129,8 +257,11 @@
             </div>
         </div>
         
+        <!-- Банковские реквизиты -->
         <div class="form-section">
-            <div class="form-section-title"><i class="bi bi-bank me-2"></i> Банковские реквизиты</div>
+            <div class="form-section-title">
+                <i class="bi bi-bank"></i> Банковские реквизиты
+            </div>
             <div class="row">
                 <div class="col-md-12 mb-3">
                     <label class="form-label">Банк</label>
@@ -147,8 +278,11 @@
             </div>
         </div>
         
+        <!-- Контактное лицо -->
         <div class="form-section">
-            <div class="form-section-title"><i class="bi bi-person-badge me-2"></i> Контактное лицо</div>
+            <div class="form-section-title">
+                <i class="bi bi-person-badge"></i> Контактное лицо
+            </div>
             <div class="row">
                 <div class="col-md-4 mb-3">
                     <label class="form-label">Фамилия *</label>
@@ -173,15 +307,20 @@
             </div>
         </div>
         
+        <!-- Информация о пароле (только при создании) -->
         {% if not client_user %}
         <div class="password-info">
-            <i class="bi bi-info-circle me-2" style="color: #1E7A57;"></i>
-            <strong>Информация о пароле:</strong> После создания клиента на указанный email будет отправлено письмо с временным паролем. Клиент сможет войти в систему и сменить пароль самостоятельно.
+            <i class="bi bi-info-circle"></i>
+            <strong>Информация о пароле:</strong><br>
+            <span class="text-muted">После создания клиента на указанный email будет отправлено письмо с временным паролем. Клиент сможет войти в систему и сменить пароль самостоятельно.</span>
         </div>
         {% endif %}
         
+        <!-- Кнопки -->
         <div class="text-end mt-4">
-            <a href="{% url 'accounts:manager_clients' %}" class="btn btn-secondary me-2">Отмена</a>
+            <a href="{% url 'accounts:manager_clients' %}" class="btn-cancel me-2">
+                <i class="bi bi-x-lg"></i> Отмена
+            </a>
             <button type="submit" class="btn-save">
                 <i class="bi bi-save"></i> Сохранить
             </button>

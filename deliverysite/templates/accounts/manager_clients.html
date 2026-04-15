@@ -5,6 +5,9 @@
 {% block manager_content %}
 <style>
     /* Шапка раздела */
+    .section-header {
+        margin-bottom: 28px;
+    }
     .section-title {
         font-size: 1.5rem;
         font-weight: 600;
@@ -18,6 +21,7 @@
         height: 3px;
         background: linear-gradient(90deg, #1E7A57 0%, #C8E0D6 50%, transparent 100%);
         border-radius: 3px;
+        margin-top: 12px;
     }
     
     /* Кнопка добавления */
@@ -33,6 +37,7 @@
         text-decoration: none;
         display: inline-flex;
         align-items: center;
+        gap: 8px;
         box-shadow: 0 2px 6px rgba(30, 122, 87, 0.3);
     }
     .btn-add-client:hover {
@@ -40,10 +45,6 @@
         color: #FFFFFF !important;
         transform: translateY(-2px);
         box-shadow: 0 4px 12px rgba(30, 122, 87, 0.4);
-        text-decoration: none;
-    }
-    .btn-add-client i {
-        color: #FFFFFF !important;
     }
     
     /* Поиск */
@@ -62,12 +63,8 @@
     }
     .search-wrapper input:focus {
         border-bottom-color: #1E7A57;
-        background: transparent;
         outline: none;
         box-shadow: none;
-    }
-    .search-wrapper input::placeholder {
-        color: #B0B0B0;
     }
     .search-wrapper i {
         position: absolute;
@@ -79,6 +76,9 @@
     }
     
     /* Статистические карточки */
+    .stats-row {
+        margin-bottom: 28px;
+    }
     .stat-card {
         background: white;
         border-radius: 16px;
@@ -114,9 +114,6 @@
         background: linear-gradient(135deg, #E0F7FA 0%, #B2EBF2 100%);
         color: #006064;
     }
-    .stat-info {
-        flex: 1;
-    }
     .stat-number {
         font-size: 1.8rem;
         font-weight: 700;
@@ -139,10 +136,12 @@
         margin-bottom: 12px;
         padding: 20px;
         border: 1px solid #E8E0D5;
+        border-left: 4px solid #d1ecf1;
         transition: all 0.3s;
     }
     .client-card:hover {
-        border-color: #C8E0D6;
+        border-color: #bfccce;
+        border-left-color: #bfccce !important;
         box-shadow: 0 4px 12px rgba(0,0,0,0.06);
         transform: translateX(4px);
     }
@@ -229,6 +228,130 @@
         color: white;
     }
     
+    /* Стили для модального окна */
+    .custom-modal .modal-content {
+        border: none;
+        border-radius: 20px;
+        overflow: hidden;
+        box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+    }
+    .custom-modal .modal-header {
+        background: white;
+        border-bottom: 1px solid #E8E0D5;
+        padding: 20px 24px;
+    }
+    .custom-modal .modal-header .modal-title {
+        color: #1E7A57;
+        font-weight: 600;
+        font-size: 1.2rem;
+    }
+    .custom-modal .modal-header .btn-close {
+        background: none;
+        font-size: 1.2rem;
+        opacity: 0.6;
+    }
+    .custom-modal .modal-header .btn-close:hover {
+        opacity: 1;
+    }
+    .custom-modal .modal-body {
+        padding: 24px;
+        background: white;
+    }
+    .custom-modal .modal-footer {
+        border-top: 1px solid #E8E0D5;
+        padding: 16px 24px;
+        background: white;
+    }
+    .custom-modal .btn-secondary {
+        background: white;
+        border: 1px solid #E8E0D5;
+        border-radius: 30px;
+        padding: 8px 24px;
+        color: #6B6B6B;
+        font-weight: 500;
+        transition: all 0.2s;
+    }
+    .custom-modal .btn-secondary:hover {
+        background: #F5F3F0;
+        border-color: #C8E0D6;
+        color: #1E1E1E;
+    }
+    .custom-modal .btn-primary-custom {
+        background: #1E7A57;
+        border: none;
+        border-radius: 30px;
+        padding: 8px 28px;
+        color: white;
+        font-weight: 500;
+        transition: all 0.2s;
+    }
+    .custom-modal .btn-primary-custom:hover {
+        background: #155f44;
+        transform: translateY(-1px);
+    }
+    
+    /* Выравнивание блоков в модальном окне */
+    .details-row {
+        display: flex;
+        flex-wrap: wrap;
+        margin: 0 -10px;
+    }
+    .details-col {
+        flex: 1;
+        min-width: 250px;
+        padding: 0 10px;
+        margin-bottom: 20px;
+    }
+    .detail-card {
+        background: #F8F9FA;
+        border-radius: 16px;
+        padding: 20px;
+        border: 1px solid #E8E0D5;
+        transition: all 0.2s;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+    }
+    .detail-card:hover {
+        background: white;
+        border-color: #C8E0D6;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    }
+    .detail-card-header {
+        font-size: 0.75rem;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        color: #1E7A57;
+        font-weight: 700;
+        margin-bottom: 16px;
+        padding-bottom: 8px;
+        border-bottom: 2px solid #C8E0D6;
+        display: inline-block;
+        flex-shrink: 0;
+    }
+    .detail-card-body {
+        flex: 1;
+    }
+    .detail-row {
+        display: flex;
+        flex-wrap: wrap;
+        margin-bottom: 12px;
+    }
+    .detail-label {
+        width: 110px;
+        font-size: 0.75rem;
+        color: #6B6B6B;
+        font-weight: 500;
+        flex-shrink: 0;
+    }
+    .detail-value {
+        flex: 1;
+        font-size: 0.85rem;
+        color: #1E1E1E;
+        font-weight: 500;
+        word-break: break-word;
+    }
+    
     /* Пагинация */
     .pagination {
         margin-top: 24px;
@@ -271,40 +394,10 @@
     .empty-state p {
         color: #6B6B6B;
     }
-    .btn-add-client,
-    .btn-add-client:link,
-    .btn-add-client:visited,
-    .btn-add-client:hover,
-    .btn-add-client:active,
-    .btn-add-client:focus {
-        background: #1E7A57 !important;
-        border: none !important;
-        border-radius: 50px !important;
-        padding: 10px 24px !important;
-        font-weight: 600 !important;
-        font-size: 0.9rem !important;
-        color: #FFFFFF !important;
-        text-decoration: none !important;
-        display: inline-flex !important;
-        align-items: center !important;
-        gap: 8px !important;
-        box-shadow: 0 2px 6px rgba(30, 122, 87, 0.3) !important;
-    }
-
-    .btn-add-client:hover {
-        background: #155f44 !important;
-        transform: translateY(-2px) !important;
-        box-shadow: 0 4px 12px rgba(30, 122, 87, 0.4) !important;
-        color: #FFFFFF !important;
-    }
-
-    .btn-add-client i,
-    .btn-add-client i:before {
-        color: #FFFFFF !important;
-    }
 </style>
+
 <!-- Шапка раздела -->
-<div class="section-header mb-4">
+<div class="section-header">
     <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
         <div>
             <h2 class="section-title mb-1">
@@ -317,11 +410,11 @@
             <i class="bi bi-plus-lg" style="color: #FFFFFF !important;"></i> Новый клиент
         </a>
     </div>
-    <div class="header-divider mt-3"></div>
+    <div class="header-divider"></div>
 </div>
 
 <!-- Статистические карточки -->
-<div class="row g-4 mb-4">
+<div class="row stats-row g-4">
     <div class="col-md-6">
         <div class="stat-card">
             <div class="stat-icon bg-success-light">
@@ -347,7 +440,7 @@
 </div>
 
 <!-- Поиск -->
-<div class="search-wrapper" style="margin-bottom: 32px;">
+<div class="search-wrapper">
     <i class="bi bi-search"></i>
     <input type="text" id="searchInput" placeholder="Поиск по названию компании, ИНН, email или ФИО контактного лица..." value="{{ search_query }}">
 </div>
@@ -360,7 +453,7 @@
 {% endif %}
 
 <!-- Список клиентов -->
-<div id="clientsList" style="margin-top: 32px;">
+<div id="clientsList">
     {% if page_obj %}
         {% for client in page_obj %}
         <div class="client-card" data-client-id="{{ client.user.id }}">
@@ -450,12 +543,12 @@
 </div>
 
 <!-- Модальное окно деталей клиента -->
-<div class="modal fade" id="clientDetailsModal" tabindex="-1">
-    <div class="modal-dialog modal-lg">
+<div class="modal fade custom-modal" id="clientDetailsModal" tabindex="-1">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
         <div class="modal-content">
-            <div class="modal-header bg-info text-white">
+            <div class="modal-header">
                 <h5 class="modal-title"><i class="bi bi-building me-2"></i>Детали клиента</h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body" id="clientDetailsContent">
                 <div class="text-center py-4">
@@ -465,7 +558,7 @@
                 </div>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Закрыть</button>
+                <button type="button" class="btn-secondary" data-bs-dismiss="modal">Закрыть</button>
             </div>
         </div>
     </div>
@@ -524,68 +617,122 @@
                     if (data.success) {
                         const d = data.data;
                         contentDiv.innerHTML = `
-                            <div class="row">
-                                <div class="col-md-6 mb-3">
-                                    <div class="card h-100">
-                                        <div class="card-header bg-light"><strong>Личная информация</strong></div>
-                                        <div class="card-body">
-                                            <p><strong>ФИО:</strong> ${d.last_name} ${d.first_name} ${d.patronymic}<br>
-                                            <strong>Email:</strong> ${d.email}<br>
-                                            <strong>Телефон:</strong> ${d.phone || '—'}<br>
-                                            <strong>Дата регистрации:</strong> ${d.date_joined}</p>
+                            <div class="details-row">
+                                <div class="details-col">
+                                    <div class="detail-card">
+                                        <div class="detail-card-header"><i class="bi bi-person me-1"></i> ЛИЧНАЯ ИНФОРМАЦИЯ</div>
+                                        <div class="detail-card-body">
+                                            <div class="detail-row">
+                                                <div class="detail-label">ФИО:</div>
+                                                <div class="detail-value"><strong>${d.last_name} ${d.first_name} ${d.patronymic}</strong></div>
+                                            </div>
+                                            <div class="detail-row">
+                                                <div class="detail-label">Email:</div>
+                                                <div class="detail-value">${d.email}</div>
+                                            </div>
+                                            <div class="detail-row">
+                                                <div class="detail-label">Телефон:</div>
+                                                <div class="detail-value">${d.phone || '—'}</div>
+                                            </div>
+                                            <div class="detail-row">
+                                                <div class="detail-label">Дата регистрации:</div>
+                                                <div class="detail-value">${d.date_joined}</div>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
-                                <div class="col-md-6 mb-3">
-                                    <div class="card h-100">
-                                        <div class="card-header bg-light"><strong>Компания</strong></div>
-                                        <div class="card-body">
-                                            <p><strong>Название:</strong> ${d.company_name}<br>
-                                            <strong>ИНН:</strong> ${d.inn}<br>
-                                            <strong>КПП:</strong> ${d.kpp}<br>
-                                            <strong>Телефон:</strong> ${d.company_phone}<br>
-                                            <strong>Email:</strong> ${d.company_email}</p>
+                                <div class="details-col">
+                                    <div class="detail-card">
+                                        <div class="detail-card-header"><i class="bi bi-building me-1"></i> КОМПАНИЯ</div>
+                                        <div class="detail-card-body">
+                                            <div class="detail-row">
+                                                <div class="detail-label">Название:</div>
+                                                <div class="detail-value"><strong>${d.company_name}</strong></div>
+                                            </div>
+                                            <div class="detail-row">
+                                                <div class="detail-label">ИНН:</div>
+                                                <div class="detail-value">${d.inn}</div>
+                                            </div>
+                                            <div class="detail-row">
+                                                <div class="detail-label">КПП:</div>
+                                                <div class="detail-value">${d.kpp}</div>
+                                            </div>
+                                            <div class="detail-row">
+                                                <div class="detail-label">Телефон:</div>
+                                                <div class="detail-value">${d.company_phone}</div>
+                                            </div>
+                                            <div class="detail-row">
+                                                <div class="detail-label">Email:</div>
+                                                <div class="detail-value">${d.company_email}</div>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
                             </div>
-                            <div class="row">
-                                <div class="col-md-6 mb-3">
-                                    <div class="card h-100">
-                                        <div class="card-header bg-light"><strong>Адреса</strong></div>
-                                        <div class="card-body">
-                                            <p><strong>Юридический:</strong><br>${d.legal_address}<br><br>
-                                            <strong>Фактический:</strong><br>${d.actual_address}</p>
+                            <div class="details-row">
+                                <div class="details-col">
+                                    <div class="detail-card">
+                                        <div class="detail-card-header"><i class="bi bi-geo-alt me-1"></i> АДРЕСА</div>
+                                        <div class="detail-card-body">
+                                            <div class="detail-row">
+                                                <div class="detail-label">Юридический:</div>
+                                                <div class="detail-value">${d.legal_address}</div>
+                                            </div>
+                                            <div class="detail-row">
+                                                <div class="detail-label">Фактический:</div>
+                                                <div class="detail-value">${d.actual_address}</div>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
-                                <div class="col-md-6 mb-3">
-                                    <div class="card h-100">
-                                        <div class="card-header bg-light"><strong>Банковские реквизиты</strong></div>
-                                        <div class="card-body">
-                                            <p><strong>Банк:</strong> ${d.bank}<br>
-                                            <strong>Расчетный счет:</strong> ${d.settlement_account}<br>
-                                            <strong>Корр. счет:</strong> ${d.correspondent_account}</p>
+                                <div class="details-col">
+                                    <div class="detail-card">
+                                        <div class="detail-card-header"><i class="bi bi-bank me-1"></i> БАНКОВСКИЕ РЕКВИЗИТЫ</div>
+                                        <div class="detail-card-body">
+                                            <div class="detail-row">
+                                                <div class="detail-label">Банк:</div>
+                                                <div class="detail-value">${d.bank}</div>
+                                            </div>
+                                            <div class="detail-row">
+                                                <div class="detail-label">Расчетный счет:</div>
+                                                <div class="detail-value">${d.settlement_account}</div>
+                                            </div>
+                                            <div class="detail-row">
+                                                <div class="detail-label">Корр. счет:</div>
+                                                <div class="detail-value">${d.correspondent_account}</div>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
                             </div>
-                            <div class="row">
-                                <div class="col-md-6 mb-3">
-                                    <div class="card h-100">
-                                        <div class="card-header bg-light"><strong>Контактное лицо</strong></div>
-                                        <div class="card-body">
-                                            <p><strong>ФИО:</strong> ${d.contact_person_last_name} ${d.contact_person_first_name} ${d.contact_person_patronymic}<br>
-                                            <strong>Телефон:</strong> ${d.contact_person_phone}<br>
-                                            <strong>Email:</strong> ${d.contact_person_email}</p>
+                            <div class="details-row">
+                                <div class="details-col">
+                                    <div class="detail-card">
+                                        <div class="detail-card-header"><i class="bi bi-person-badge me-1"></i> КОНТАКТНОЕ ЛИЦО</div>
+                                        <div class="detail-card-body">
+                                            <div class="detail-row">
+                                                <div class="detail-label">ФИО:</div>
+                                                <div class="detail-value"><strong>${d.contact_person_last_name} ${d.contact_person_first_name} ${d.contact_person_patronymic}</strong></div>
+                                            </div>
+                                            <div class="detail-row">
+                                                <div class="detail-label">Телефон:</div>
+                                                <div class="detail-value">${d.contact_person_phone}</div>
+                                            </div>
+                                            <div class="detail-row">
+                                                <div class="detail-label">Email:</div>
+                                                <div class="detail-value">${d.contact_person_email}</div>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
-                                <div class="col-md-6 mb-3">
-                                    <div class="card h-100">
-                                        <div class="card-header bg-light"><strong>Статистика</strong></div>
-                                        <div class="card-body">
-                                            <p><strong>Всего заказов:</strong> ${d.orders_count}</p>
+                                <div class="details-col">
+                                    <div class="detail-card">
+                                        <div class="detail-card-header"><i class="bi bi-graph-up me-1"></i> СТАТИСТИКА</div>
+                                        <div class="detail-card-body">
+                                            <div class="detail-row">
+                                                <div class="detail-label">Всего заказов:</div>
+                                                <div class="detail-value"><span class="highlight-badge">${d.orders_count}</span></div>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
