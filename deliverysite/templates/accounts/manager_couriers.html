@@ -1,33 +1,668 @@
 {% extends 'accounts/manager_lk_base.html' %}
-{% block title %}Курьеры{% endblock %}
+{% load static %}
+{% block title %}Управление курьерами{% endblock %}
+
 {% block manager_content %}
-<div class="card shadow-sm">
-    <div class="card-header bg-white">
-        <h5 class="mb-0">Курьеры</h5>
+<style>
+    /* Шапка раздела */
+    .section-header {
+        margin-bottom: 28px;
+    }
+    .section-title {
+        font-size: 1.5rem;
+        font-weight: 600;
+        color: #1E1E1E;
+    }
+    .section-subtitle {
+        font-size: 0.85rem;
+        color: #6B6B6B;
+    }
+    .header-divider {
+        height: 3px;
+        background: linear-gradient(90deg, #1E7A57 0%, #C8E0D6 50%, transparent 100%);
+        border-radius: 3px;
+        margin-top: 12px;
+    }
+    
+    /* Кнопка добавления */
+    .btn-add {
+        background: #1E7A57;
+        border: none;
+        border-radius: 50px;
+        padding: 10px 24px;
+        font-weight: 600;
+        font-size: 0.9rem;
+        color: #FFFFFF !important;
+        transition: all 0.3s;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        box-shadow: 0 2px 6px rgba(30, 122, 87, 0.3);
+    }
+    .btn-add:hover {
+        background: #155f44;
+        color: #FFFFFF !important;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(30, 122, 87, 0.4);
+    }
+    
+    /* Поиск */
+    .search-wrapper {
+        position: relative;
+        margin-bottom: 32px;
+    }
+    .search-wrapper input {
+        width: 100%;
+        padding: 12px 20px 12px 45px;
+        border: none;
+        border-bottom: 2px solid #E8E0D5;
+        font-size: 0.9rem;
+        background: transparent;
+        transition: all 0.3s;
+    }
+    .search-wrapper input:focus {
+        border-bottom-color: #1E7A57;
+        outline: none;
+        box-shadow: none;
+    }
+    .search-wrapper i {
+        position: absolute;
+        left: 8px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: #1E7A57;
+        font-size: 1.1rem;
+    }
+    
+    /* Статистические карточки */
+    .stats-row {
+        margin-bottom: 28px;
+    }
+    .stat-card {
+        background: white;
+        border-radius: 16px;
+        padding: 20px;
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        transition: all 0.3s;
+        border: 1px solid #E8E0D5;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.03);
+    }
+    .stat-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 8px 20px rgba(0,0,0,0.08);
+        border-color: #C8E0D6;
+    }
+    .stat-icon {
+        width: 55px;
+        height: 55px;
+        border-radius: 14px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    .stat-icon i {
+        font-size: 26px;
+    }
+    .bg-courier {
+        background: linear-gradient(135deg, #F3E5F5 0%, #E1BEE7 100%);
+        color: #7B1FA2;
+    }
+    .stat-number {
+        font-size: 1.8rem;
+        font-weight: 700;
+        color: #1E1E1E;
+        margin-bottom: 4px;
+        line-height: 1;
+    }
+    .stat-text {
+        font-size: 0.7rem;
+        color: #6B6B6B;
+        margin-bottom: 0;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    
+    /* Карточка курьера */
+    .courier-card {
+        background: white;
+        border-radius: 16px;
+        margin-bottom: 12px;
+        padding: 20px;
+        border: 1px solid #E8E0D5;
+        border-left: 4px solid #d1ecf1;
+        transition: all 0.3s;
+    }
+    .courier-card:hover {
+        border-color: #bfccce;
+        border-left-color: #bfccce !important;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.06);
+        transform: translateX(4px);
+    }
+    .courier-avatar {
+        width: 48px;
+        height: 48px;
+        background: linear-gradient(135deg, #C8E0D6 0%, #E8E0D5 100%);
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    .courier-avatar i {
+        font-size: 24px;
+        color: #1E7A57;
+    }
+    .courier-name {
+        font-weight: 700;
+        font-size: 1rem;
+        color: #1E1E1E;
+    }
+    .shift-badge {
+        background: #F5F3F0;
+        padding: 4px 12px;
+        border-radius: 30px;
+        font-size: 0.7rem;
+        font-weight: 500;
+        display: inline-block;
+    }
+    .shift-on { background: #d4edda; color: #155724; }
+    .shift-off { background: #f8d7da; color: #721c24; }
+    .shift-break { background: #fff3cd; color: #856404; }
+    
+    .info-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 20px;
+        margin-top: 16px;
+    }
+    .info-item {
+        flex: 1;
+        min-width: 140px;
+    }
+    .info-label {
+        font-size: 0.65rem;
+        text-transform: uppercase;
+        color: #6B6B6B;
+        margin-bottom: 4px;
+        letter-spacing: 0.5px;
+    }
+    .info-value {
+        font-size: 0.85rem;
+        font-weight: 500;
+        color: #1E1E1E;
+    }
+    .btn-action {
+        padding: 6px 14px;
+        border-radius: 30px;
+        font-size: 0.75rem;
+        margin-left: 8px;
+        font-weight: 500;
+        transition: all 0.2s;
+        border: none;
+        cursor: pointer;
+    }
+    .btn-outline-edit {
+        background: white;
+        border: 1px solid #C8E0D6;
+        color: #1E7A57;
+    }
+    .btn-outline-edit:hover {
+        background: #1E7A57;
+        color: white;
+    }
+    .btn-outline-detail {
+        background: white;
+        border: 1px solid #E8E0D5;
+        color: #6B6B6B;
+    }
+    .btn-outline-detail:hover {
+        background: #6B6B6B;
+        color: white;
+    }
+    
+    /* Пагинация */
+    .pagination {
+        margin-top: 24px;
+        justify-content: center;
+    }
+    .page-link {
+        border-radius: 10px;
+        margin: 0 4px;
+        color: #1E7A57;
+        border: 1px solid #E8E0D5;
+        padding: 8px 14px;
+    }
+    .page-link:hover {
+        background: #C8E0D6;
+        border-color: #1E7A57;
+        color: #1E7A57;
+    }
+    .page-item.active .page-link {
+        background-color: #1E7A57;
+        border-color: #1E7A57;
+        color: white;
+    }
+    
+    /* Пустое состояние */
+    .empty-state {
+        text-align: center;
+        padding: 60px 20px;
+        background: white;
+        border-radius: 16px;
+        border: 1px solid #E8E0D5;
+    }
+    .empty-state i {
+        font-size: 4rem;
+        color: #C8E0D6;
+    }
+    .empty-state h5 {
+        margin-top: 16px;
+        color: #1E1E1E;
+    }
+    .empty-state p {
+        color: #6B6B6B;
+    }
+    
+    /* Модальное окно */
+    .custom-modal .modal-content {
+        border: none;
+        border-radius: 20px;
+        overflow: hidden;
+        box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+    }
+    .custom-modal .modal-header {
+        background: white;
+        border-bottom: 1px solid #E8E0D5;
+        padding: 20px 24px;
+    }
+    .custom-modal .modal-header .modal-title {
+        color: #1E7A57;
+        font-weight: 600;
+        font-size: 1.2rem;
+    }
+    .custom-modal .modal-body {
+        padding: 24px;
+        background: white;
+    }
+    .custom-modal .modal-footer {
+        border-top: 1px solid #E8E0D5;
+        padding: 16px 24px;
+        background: white;
+    }
+    .custom-modal .btn-secondary {
+        background: white;
+        border: 1px solid #E8E0D5;
+        border-radius: 30px;
+        padding: 8px 24px;
+        color: #6B6B6B;
+        font-weight: 500;
+    }
+    .custom-modal .btn-secondary:hover {
+        background: #F5F3F0;
+        border-color: #C8E0D6;
+    }
+    
+    .details-row {
+        display: flex;
+        flex-wrap: wrap;
+        margin: 0 -10px;
+    }
+    .details-col {
+        flex: 1;
+        min-width: 250px;
+        padding: 0 10px;
+        margin-bottom: 20px;
+    }
+    .detail-card {
+        background: #F8F9FA;
+        border-radius: 16px;
+        padding: 20px;
+        border: 1px solid #E8E0D5;
+        height: 100%;
+    }
+    .detail-card-header {
+        font-size: 0.75rem;
+        text-transform: uppercase;
+        color: #1E7A57;
+        font-weight: 700;
+        margin-bottom: 16px;
+        padding-bottom: 8px;
+        border-bottom: 2px solid #C8E0D6;
+    }
+    .detail-row {
+        display: flex;
+        margin-bottom: 12px;
+    }
+    .detail-label {
+        width: 110px;
+        font-size: 0.75rem;
+        color: #6B6B6B;
+        font-weight: 500;
+    }
+    .detail-value {
+        flex: 1;
+        font-size: 0.85rem;
+        color: #1E1E1E;
+        font-weight: 500;
+    }
+</style>
+
+<!-- Шапка раздела -->
+<div class="section-header">
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
+        <div>
+            <h2 class="section-title mb-1">
+                <i class="bi bi-people me-2" style="color: #1E7A57;"></i>
+                Курьеры
+            </h2>
+            <p class="section-subtitle mb-0">Управление курьерами компании</p>
+        </div>
+        <a href="{% url 'accounts:manager_courier_add' %}" class="btn-add" style="background: #1E7A57 !important; color: #FFFFFF !important;">
+            <i class="bi bi-plus-lg" style="color: #FFFFFF !important;"></i> Добавить курьера
+        </a>
     </div>
-    <div class="card-body">
-        <div class="table-responsive">
-            <table class="table table-hover">
-                <thead>
-                    <tr>
-                        <th>ФИО</th>
-                        <th>Email</th>
-                        <th>Статус смены</th>
-                        <th>Рейтинг</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for courier in couriers %}
-                    <tr>
-                        <td>{{ courier.user.get_full_name }}</td>
-                        <td>{{ courier.user.email }}</td>
-                        <td>{{ courier.get_shift_status_display }}</td>
-                        <td>{{ courier.avg_rating }}</td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
+    <div class="header-divider"></div>
+</div>
+
+<!-- Статистика -->
+<div class="row stats-row g-4">
+    <div class="col-md-12">
+        <div class="stat-card">
+            <div class="stat-icon bg-courier">
+                <i class="bi bi-people"></i>
+            </div>
+            <div class="stat-info">
+                <h3 class="stat-number">{{ total_count }}</h3>
+                <p class="stat-text">Всего курьеров</p>
+            </div>
         </div>
     </div>
 </div>
+
+<!-- Поиск -->
+<div class="search-wrapper">
+    <i class="bi bi-search"></i>
+    <input type="text" id="searchInput" placeholder="Поиск по фамилии, имени или email" value="{{ search_query }}">
+</div>
+{% if search_query %}
+<div class="mb-3">
+    <a href="{% url 'accounts:manager_couriers' %}" class="text-muted small">
+        <i class="bi bi-x-circle"></i> Сбросить поиск
+    </a>
+</div>
+{% endif %}
+
+<!-- Список курьеров -->
+{% if page_obj %}
+    {% for courier in page_obj %}
+    <div class="courier-card" data-courier-id="{{ courier.user.id }}">
+        <div class="d-flex justify-content-between align-items-start flex-wrap">
+            <div class="d-flex align-items-center gap-3">
+                <div class="courier-avatar">
+                    <i class="bi bi-person-badge"></i>
+                </div>
+                <div>
+                    <div class="courier-name">{{ courier.user.get_full_name }}</div>
+                    <div class="small text-muted">{{ courier.user.email }}</div>
+                </div>
+            </div>
+            <div class="mt-2 mt-sm-0">
+                <span class="shift-badge shift-{{ courier.shift_status }}">
+                    {{ courier.get_shift_status_display }}
+                </span>
+                <button class="btn-action btn-outline-edit edit-courier" data-user-id="{{ courier.user.id }}">
+                    <i class="bi bi-pencil"></i> Редактировать
+                </button>
+                <button class="btn-action btn-outline-detail details-courier" data-user-id="{{ courier.user.id }}">
+                    <i class="bi bi-eye"></i> Подробнее
+                </button>
+            </div>
+        </div>
+        <div class="info-row">
+            <div class="info-item">
+                <div class="info-label"><i class="bi bi-telephone"></i> ТЕЛЕФОН</div>
+                <div class="info-value">{{ courier.user.phone|default:"—" }}</div>
+            </div>
+            <div class="info-item">
+                <div class="info-label"><i class="bi bi-calendar"></i> ДАТА ПРИЕМА</div>
+                <div class="info-value">{{ courier.hire_date|date:"d.m.Y" }}</div>
+            </div>
+            <div class="info-item">
+                <div class="info-label"><i class="bi bi-truck"></i> ДОСТАВОК</div>
+                <div class="info-value">{{ courier.total_orders }}</div>
+            </div>
+            <div class="info-item">
+                <div class="info-label"><i class="bi bi-star"></i> РЕЙТИНГ</div>
+                <div class="info-value">{{ courier.avg_rating }}</div>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+    
+    <!-- Пагинация -->
+    {% if page_obj.has_other_pages %}
+    <nav>
+        <ul class="pagination">
+            {% if page_obj.has_previous %}
+            <li class="page-item"><a class="page-link" href="#" data-page="1">&laquo;&laquo;</a></li>
+            <li class="page-item"><a class="page-link" href="#" data-page="{{ page_obj.previous_page_number }}">&laquo;</a></li>
+            {% endif %}
+            
+            {% for num in page_obj.paginator.page_range %}
+                {% if page_obj.number == num %}
+                    <li class="page-item active"><span class="page-link">{{ num }}</span></li>
+                {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                    <li class="page-item"><a class="page-link" href="#" data-page="{{ num }}">{{ num }}</a></li>
+                {% endif %}
+            {% endfor %}
+            
+            {% if page_obj.has_next %}
+            <li class="page-item"><a class="page-link" href="#" data-page="{{ page_obj.next_page_number }}">&raquo;</a></li>
+            <li class="page-item"><a class="page-link" href="#" data-page="{{ page_obj.paginator.num_pages }}">&raquo;&raquo;</a></li>
+            {% endif %}
+        </ul>
+    </nav>
+    {% endif %}
+    
+    <div class="text-muted small mt-3">
+        Показано {{ page_obj|length }} из {{ total_count }} курьеров
+    </div>
+{% else %}
+    <div class="empty-state">
+        <i class="bi bi-inbox"></i>
+        <h5>Нет курьеров</h5>
+        <p>Добавьте первого курьера, нажав кнопку "Добавить курьера"</p>
+        <a href="{% url 'accounts:manager_courier_add' %}" class="btn-add mt-2">
+            <i class="bi bi-plus-lg"></i> Добавить курьера
+        </a>
+    </div>
+{% endif %}
+
+<!-- Модальное окно деталей курьера -->
+<div class="modal fade custom-modal" id="courierDetailsModal" tabindex="-1">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="bi bi-person-badge me-2"></i>Детали курьера</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="courierDetailsContent">
+                <div class="text-center py-4">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Загрузка...</span>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn-secondary" data-bs-dismiss="modal">Закрыть</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Автоматический поиск
+    let typingTimer;
+    const searchInput = document.getElementById('searchInput');
+    if (searchInput) {
+        searchInput.addEventListener('keyup', function() {
+            clearTimeout(typingTimer);
+            typingTimer = setTimeout(() => {
+                const search = this.value;
+                let url = "{% url 'accounts:manager_couriers' %}?";
+                if (search) url += `search=${encodeURIComponent(search)}`;
+                window.location.href = url;
+            }, 500);
+        });
+    }
+    
+    // Пагинация
+    document.querySelectorAll('.pagination a').forEach(link => {
+        link.addEventListener('click', function(e) {
+            e.preventDefault();
+            const page = this.dataset.page;
+            if (page) {
+                const url = new URL(window.location.href);
+                url.searchParams.set('page', page);
+                window.location.href = url.toString();
+            }
+        });
+    });
+    
+    // Редактирование курьера
+    document.querySelectorAll('.edit-courier').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const userId = this.dataset.userId;
+            window.location.href = `/manager/couriers/${userId}/edit/`;
+        });
+    });
+    
+    // Просмотр деталей курьера
+    document.querySelectorAll('.details-courier').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const userId = this.dataset.userId;
+            const modal = new bootstrap.Modal(document.getElementById('courierDetailsModal'));
+            modal.show();
+            
+            const contentDiv = document.getElementById('courierDetailsContent');
+            contentDiv.innerHTML = '<div class="text-center py-4"><div class="spinner-border text-primary" role="status"></div></div>';
+            
+            fetch(`/manager/couriers/${userId}/detail/`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        const d = data.data;
+                        contentDiv.innerHTML = `
+                            <div class="details-row">
+                                <div class="details-col">
+                                    <div class="detail-card">
+                                        <div class="detail-card-header"><i class="bi bi-person"></i> ЛИЧНАЯ ИНФОРМАЦИЯ</div>
+                                        <div class="detail-row">
+                                            <div class="detail-label">ФИО:</div>
+                                            <div class="detail-value"><strong>${d.last_name} ${d.first_name} ${d.patronymic}</strong></div>
+                                        </div>
+                                        <div class="detail-row">
+                                            <div class="detail-label">Email:</div>
+                                            <div class="detail-value">${d.email}</div>
+                                        </div>
+                                        <div class="detail-row">
+                                            <div class="detail-label">Телефон:</div>
+                                            <div class="detail-value">${d.phone || '—'}</div>
+                                        </div>
+                                        <div class="detail-row">
+                                            <div class="detail-label">Дата регистрации:</div>
+                                            <div class="detail-value">${d.date_joined}</div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="details-col">
+                                    <div class="detail-card">
+                                        <div class="detail-card-header"><i class="bi bi-briefcase"></i> РАБОЧАЯ ИНФОРМАЦИЯ</div>
+                                        <div class="detail-row">
+                                            <div class="detail-label">Должность:</div>
+                                            <div class="detail-value">${d.position}</div>
+                                        </div>
+                                        <div class="detail-row">
+                                            <div class="detail-label">Дата приема:</div>
+                                            <div class="detail-value">${d.hire_date}</div>
+                                        </div>
+                                        <div class="detail-row">
+                                            <div class="detail-label">Статус смены:</div>
+                                            <div class="detail-value"><span class="shift-badge shift-${d.shift_status === 'На смене' ? 'on' : (d.shift_status === 'Не на смене' ? 'off' : 'break')}">${d.shift_status}</span></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="details-row">
+                                <div class="details-col">
+                                    <div class="detail-card">
+                                        <div class="detail-card-header"><i class="bi bi-passport"></i> ПАСПОРТНЫЕ ДАННЫЕ</div>
+                                        <div class="detail-row">
+                                            <div class="detail-label">Гражданство:</div>
+                                            <div class="detail-value">${d.citizenship}</div>
+                                        </div>
+                                        <div class="detail-row">
+                                            <div class="detail-label">Паспорт:</div>
+                                            <div class="detail-value">${d.passport_series} ${d.passport_number}</div>
+                                        </div>
+                                        <div class="detail-row">
+                                            <div class="detail-label">Код подразделения:</div>
+                                            <div class="detail-value">${d.passport_department_code}</div>
+                                        </div>
+                                        <div class="detail-row">
+                                            <div class="detail-label">Кем выдан:</div>
+                                            <div class="detail-value">${d.passport_issued_by}</div>
+                                        </div>
+                                        <div class="detail-row">
+                                            <div class="detail-label">Дата выдачи:</div>
+                                            <div class="detail-value">${d.passport_issue_date}</div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="details-col">
+                                    <div class="detail-card">
+                                        <div class="detail-card-header"><i class="bi bi-geo-alt"></i> АДРЕСА</div>
+                                        <div class="detail-row">
+                                            <div class="detail-label">Регистрации:</div>
+                                            <div class="detail-value">${d.registration_address}</div>
+                                        </div>
+                                        <div class="detail-row">
+                                            <div class="detail-label">Фактический:</div>
+                                            <div class="detail-value">${d.actual_address}</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="details-row">
+                                <div class="details-col">
+                                    <div class="detail-card">
+                                        <div class="detail-card-header"><i class="bi bi-graph-up"></i> СТАТИСТИКА</div>
+                                        <div class="detail-row">
+                                            <div class="detail-label">Всего доставок:</div>
+                                            <div class="detail-value"><strong>${d.total_orders}</strong></div>
+                                        </div>
+                                        <div class="detail-row">
+                                            <div class="detail-label">Рейтинг:</div>
+                                            <div class="detail-value"><strong>${d.avg_rating}</strong> ★</div>
+                                        </div>
+                                        <div class="detail-row">
+                                            <div class="detail-label">Отработано часов:</div>
+                                            <div class="detail-value"><strong>${d.total_work_hours}</strong> ч.</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                    } else {
+                        contentDiv.innerHTML = `<div class="alert alert-danger">Ошибка: ${data.error}</div>`;
+                    }
+                })
+                .catch(error => {
+                    contentDiv.innerHTML = '<div class="alert alert-danger">Ошибка загрузки данных</div>';
+                });
+        });
+    });
+</script>
 {% endblock %}

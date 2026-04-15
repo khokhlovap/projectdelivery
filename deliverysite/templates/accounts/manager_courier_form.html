@@ -1,0 +1,293 @@
+{% extends 'accounts/manager_lk_base.html' %}
+{% load static %}
+{% block title %}{{ title }}{% endblock %}
+
+{% block manager_content %}
+<style>
+    /* Шапка раздела */
+    .section-header {
+        margin-bottom: 28px;
+    }
+    .section-title {
+        font-size: 1.5rem;
+        font-weight: 600;
+        color: #1E1E1E;
+    }
+    .section-subtitle {
+        font-size: 0.85rem;
+        color: #6B6B6B;
+    }
+    .header-divider {
+        height: 3px;
+        background: linear-gradient(90deg, #1E7A57 0%, #C8E0D6 50%, transparent 100%);
+        border-radius: 3px;
+        margin-top: 12px;
+    }
+    
+    /* Контейнер формы */
+    .form-container {
+        background: white;
+        border-radius: 20px;
+        padding: 28px;
+        border: 1px solid #E8E0D5;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.03);
+    }
+    
+    /* Секции формы */
+    .form-section {
+        margin-bottom: 28px;
+        padding-bottom: 20px;
+        border-bottom: 1px solid #E8E0D5;
+    }
+    .form-section:last-child {
+        border-bottom: none;
+        margin-bottom: 0;
+        padding-bottom: 0;
+    }
+    .form-section-title {
+        font-size: 1rem;
+        font-weight: 600;
+        color: #1E7A57;
+        margin-bottom: 20px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+    
+    /* Поля формы */
+    .form-label {
+        font-size: 0.75rem;
+        text-transform: uppercase;
+        font-weight: 600;
+        color: #6B6B6B;
+        margin-bottom: 6px;
+        letter-spacing: 0.5px;
+    }
+    .form-control {
+        border-radius: 12px;
+        border: 1px solid #E8E0D5;
+        padding: 10px 14px;
+        font-size: 0.9rem;
+        transition: all 0.2s;
+        background: white;
+    }
+    .form-control:focus {
+        border-color: #1E7A57;
+        box-shadow: 0 0 0 3px rgba(30, 122, 87, 0.1);
+        outline: none;
+    }
+    textarea.form-control {
+        resize: vertical;
+        min-height: 80px;
+    }
+    
+    /* Кнопки */
+    .btn-cancel {
+        background: white;
+        border: 1px solid #E8E0D5;
+        border-radius: 30px;
+        padding: 8px 28px;
+        color: #6B6B6B;
+        font-weight: 500;
+        transition: all 0.2s;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+    }
+    .btn-cancel:hover {
+        background: #F5F3F0;
+        border-color: #C8E0D6;
+        color: #1E1E1E;
+    }
+    .btn-save {
+        background: #1E7A57;
+        border: none;
+        border-radius: 30px;
+        padding: 8px 32px;
+        color: white;
+        font-weight: 500;
+        transition: all 0.2s;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+    }
+    .btn-save:hover {
+        background: #155f44;
+        transform: translateY(-1px);
+    }
+    
+    /* Информация о пароле */
+    .password-info {
+        background: #F5F3F0;
+        border-radius: 12px;
+        padding: 14px 18px;
+        margin-top: 20px;
+        border-left: 3px solid #1E7A57;
+    }
+    .password-info i {
+        color: #1E7A57;
+        margin-right: 8px;
+    }
+    
+    /* Адаптивность */
+    @media (max-width: 768px) {
+        .form-container {
+            padding: 20px;
+        }
+        .btn-cancel, .btn-save {
+            width: 100%;
+            justify-content: center;
+            margin-bottom: 8px;
+        }
+        .text-end {
+            text-align: center !important;
+        }
+    }
+</style>
+
+<!-- Шапка раздела -->
+<div class="section-header">
+    <div>
+        <h2 class="section-title mb-1">
+            <i class="bi bi-person-plus me-2" style="color: #1E7A57;"></i>
+            {{ title }}
+        </h2>
+        <p class="section-subtitle mb-0">Заполните информацию о курьере</p>
+    </div>
+    <div class="header-divider"></div>
+</div>
+
+<!-- Форма -->
+<div class="form-container">
+    <form method="post" autocomplete="off">
+        {% csrf_token %}
+        
+        <!-- Личная информация -->
+        <div class="form-section">
+            <div class="form-section-title">
+                <i class="bi bi-person"></i> Личная информация
+            </div>
+            <div class="row">
+                <div class="col-md-4 mb-3">
+                    <label class="form-label">Фамилия *</label>
+                    <input type="text" name="last_name" class="form-control" value="{% if courier_user %}{{ courier_user.last_name|default:'' }}{% endif %}" required autocomplete="off">
+                </div>
+                <div class="col-md-4 mb-3">
+                    <label class="form-label">Имя *</label>
+                    <input type="text" name="first_name" class="form-control" value="{% if courier_user %}{{ courier_user.first_name|default:'' }}{% endif %}" required autocomplete="off">
+                </div>
+                <div class="col-md-4 mb-3">
+                    <label class="form-label">Отчество</label>
+                    <input type="text" name="patronymic" class="form-control" value="{% if courier_user %}{{ courier_user.patronymic|default:'' }}{% endif %}" autocomplete="off">
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label class="form-label">Email *</label>
+                    <input type="email" name="email" class="form-control" value="{% if courier_user %}{{ courier_user.email|default:'' }}{% endif %}" {% if courier_user and courier_user.email %}readonly{% endif %} required autocomplete="off">
+                    {% if courier_user and courier_user.email %}
+                        <small class="text-muted">Email нельзя изменить</small>
+                    {% else %}
+                        <small class="text-muted">На этот email будет отправлен пароль</small>
+                    {% endif %}
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label class="form-label">Телефон</label>
+                    <input type="text" name="phone" class="form-control" value="{% if courier_user %}{{ courier_user.phone|default:'' }}{% endif %}" autocomplete="off">
+                </div>
+            </div>
+        </div>
+        
+        <!-- Рабочая информация -->
+        <div class="form-section">
+            <div class="form-section-title">
+                <i class="bi bi-briefcase"></i> Рабочая информация
+            </div>
+            <div class="row">
+                <div class="col-md-4 mb-3">
+                    <label class="form-label">Должность</label>
+                    <input type="text" name="position" class="form-control" value="{% if courier %}{{ courier.position|default:'Курьер' }}{% else %}Курьер{% endif %}">
+                </div>
+                <div class="col-md-4 mb-3">
+                    <label class="form-label">Дата приема *</label>
+                    <input type="date" name="hire_date" class="form-control" value="{% if courier %}{{ courier.hire_date|date:'Y-m-d' }}{% endif %}" required>
+                </div>
+                <div class="col-md-4 mb-3">
+                    <label class="form-label">Статус смены</label>
+                    <select name="shift_status" class="form-control">
+                        <option value="off" {% if courier and courier.shift_status == 'off' %}selected{% endif %}>Не на смене</option>
+                        <option value="on" {% if courier and courier.shift_status == 'on' %}selected{% endif %}>На смене</option>
+                        <option value="break" {% if courier and courier.shift_status == 'break' %}selected{% endif %}>На перерыве</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Паспортные данные -->
+        <div class="form-section">
+            <div class="form-section-title">
+                <i class="bi bi-passport"></i> Паспортные данные
+            </div>
+            <div class="row">
+                <div class="col-md-12 mb-3">
+                    <label class="form-label">Гражданство *</label>
+                    <input type="text" name="citizenship" class="form-control" value="{% if courier %}{{ courier.citizenship|default:'' }}{% endif %}" required>
+                </div>
+                <div class="col-md-3 mb-3">
+                    <label class="form-label">Серия паспорта *</label>
+                    <input type="text" name="passport_series" class="form-control" value="{% if courier %}{{ courier.passport_series|default:'' }}{% endif %}" required>
+                </div>
+                <div class="col-md-3 mb-3">
+                    <label class="form-label">Номер паспорта *</label>
+                    <input type="text" name="passport_number" class="form-control" value="{% if courier %}{{ courier.passport_number|default:'' }}{% endif %}" required>
+                </div>
+                <div class="col-md-3 mb-3">
+                    <label class="form-label">Код подразделения *</label>
+                    <input type="text" name="passport_department_code" class="form-control" value="{% if courier %}{{ courier.passport_department_code|default:'' }}{% endif %}" required>
+                </div>
+                <div class="col-md-3 mb-3">
+                    <label class="form-label">Дата выдачи *</label>
+                    <input type="date" name="passport_issue_date" class="form-control" value="{% if courier %}{{ courier.passport_issue_date|date:'Y-m-d' }}{% endif %}" required>
+                </div>
+                <div class="col-md-12 mb-3">
+                    <label class="form-label">Кем выдан *</label>
+                    <input type="text" name="passport_issued_by" class="form-control" value="{% if courier %}{{ courier.passport_issued_by|default:'' }}{% endif %}" required>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Адреса -->
+        <div class="form-section">
+            <div class="form-section-title">
+                <i class="bi bi-geo-alt"></i> Адреса
+            </div>
+            <div class="mb-3">
+                <label class="form-label">Адрес регистрации *</label>
+                <textarea name="registration_address" class="form-control" rows="2" required>{% if courier %}{{ courier.registration_address|default:'' }}{% endif %}</textarea>
+            </div>
+            <div class="mb-3">
+                <label class="form-label">Фактический адрес *</label>
+                <textarea name="actual_address" class="form-control" rows="2" required>{% if courier %}{{ courier.actual_address|default:'' }}{% endif %}</textarea>
+            </div>
+        </div>
+        
+        <!-- Информация о пароле -->
+        {% if not courier_user %}
+        <div class="password-info">
+            <i class="bi bi-info-circle"></i>
+            <strong>Информация о пароле:</strong><br>
+            <span class="text-muted">После создания курьера на указанный email будет отправлено письмо с временным паролем.</span>
+        </div>
+        {% endif %}
+        
+        <!-- Кнопки -->
+        <div class="text-end mt-4">
+            <a href="{% url 'accounts:manager_couriers' %}" class="btn-cancel me-2">
+                <i class="bi bi-x-lg"></i> Отмена
+            </a>
+            <button type="submit" class="btn-save">
+                <i class="bi bi-save"></i> Сохранить
+            </button>
+        </div>
+    </form>
+</div>
+{% endblock %}

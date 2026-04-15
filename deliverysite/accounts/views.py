@@ -359,13 +359,237 @@ def manager_couriers(request):
         messages.error(request, 'У вас нет доступа к этой странице')
         return redirect('accounts:home')
     
-    couriers = Courier.objects.select_related('user').all()
+    couriers = Courier.objects.select_related('user').all().order_by('-user__date_joined')
+    
+    # Поиск по ФИО
+    search_query = request.GET.get('search', '')
+    if search_query:
+        couriers = couriers.filter(
+            Q(user__first_name__icontains=search_query) |
+            Q(user__last_name__icontains=search_query) |
+            Q(user__email__icontains=search_query)
+        )
+    
+    # Пагинация
+    paginator = Paginator(couriers, 4)
+    page_number = request.GET.get('page', 1)
+    page_obj = paginator.get_page(page_number)
     
     context = {
-        'couriers': couriers,
+        'page_obj': page_obj,
+        'search_query': search_query,
+        'total_count': couriers.count(),
     }
     return render(request, 'accounts/manager_couriers.html', context)
 
+@login_required
+def manager_courier_add(request):
+    "Добавление нового курьера менеджером"
+    if request.user.role != 'manager':
+        messages.error(request, 'У вас нет доступа к этой странице')
+        return redirect('accounts:home')
+    
+    if request.method == 'POST':
+        # Генерируем временный пароль
+        temp_password = ''.join(random.choices(string.ascii_letters + string.digits, k=10))
+        
+        email = request.POST.get('email')
+        first_name = request.POST.get('first_name')
+        last_name = request.POST.get('last_name')
+        
+        # Создаем пользователя
+        user = User.objects.create(
+            email=email,
+            first_name=first_name,
+            last_name=last_name,
+            patronymic=request.POST.get('patronymic', ''),
+            phone=request.POST.get('phone'),
+            role='courier',
+            password=make_password(temp_password)
+        )
+        
+        # Создаем профиль курьера
+        from django.utils import timezone
+        Courier.objects.create(
+            user=user,
+            hire_date=request.POST.get('hire_date') or timezone.now().date(),
+            position=request.POST.get('position', 'Курьер'),
+            shift_status=request.POST.get('shift_status', 'off'),
+            citizenship=request.POST.get('citizenship'),
+            passport_series=request.POST.get('passport_series'),
+            passport_number=request.POST.get('passport_number'),
+            passport_department_code=request.POST.get('passport_department_code'),
+            passport_issued_by=request.POST.get('passport_issued_by'),
+            passport_issue_date=request.POST.get('passport_issue_date'),
+            registration_address=request.POST.get('registration_address'),
+            actual_address=request.POST.get('actual_address'),
+        )
+        
+        # Отправляем email с паролем
+        try:
+            send_mail(
+                subject='Добро пожаловать в АВН Бизнес Курьер!',
+                message=f"""
+            Здравствуйте, {first_name} {last_name}!
+
+            Вы были добавлены в систему АВН Бизнес Курьер в качестве курьера.
+
+            Ваши данные для входа:
+            Email: {email}
+            Временный пароль: {temp_password}
+
+            Пожалуйста, войдите в систему и смените пароль при первом входе.
+
+            Ссылка для входа: http://127.0.0.1:8000/login/
+
+            С уважением,
+            Команда АВН Бизнес Курьер
+                """,
+                from_email=settings.DEFAULT_FROM_EMAIL,
+                recipient_list=[email],
+                fail_silently=False,
+            )
+            messages.success(request, f'Курьер {email} успешно создан. Пароль отправлен на почту.')
+        except Exception as e:
+            messages.warning(request, f'Курьер создан, но не удалось отправить email: {e}. Временный пароль: {temp_password}')
+        
+        return redirect('accounts:manager_couriers')
+    
+    context = {
+        'title': 'Добавить курьера',
+        'courier_user': None,
+        'courier': None,
+    }
+    return render(request, 'accounts/manager_courier_form.html', context)
+
+@login_required
+def manager_courier_edit(request, user_id):
+    "Редактирование курьера"
+    if request.user.role != 'manager':
+        messages.error(request, 'У вас нет доступа к этой странице')
+        return redirect('accounts:home')
+    
+    try:
+        user = User.objects.get(id=user_id, role='courier')
+        courier = user.courier_profile
+    except (User.DoesNotExist, Courier.DoesNotExist):
+        messages.error(request, 'Курьер не найден')
+        return redirect('accounts:manager_couriers')
+    
+    if request.method == 'POST':
+        # Обновляем пользователя
+        user.first_name = request.POST.get('first_name')
+        user.last_name = request.POST.get('last_name')
+        user.patronymic = request.POST.get('patronymic', '')
+        user.phone = request.POST.get('phone')
+        user.save()
+        
+        # Обновляем курьера
+        courier.hire_date = request.POST.get('hire_date')
+        courier.position = request.POST.get('position')
+        courier.shift_status = request.POST.get('shift_status')
+        courier.citizenship = request.POST.get('citizenship')
+        courier.passport_series = request.POST.get('passport_series')
+        courier.passport_number = request.POST.get('passport_number')
+        courier.passport_department_code = request.POST.get('passport_department_code')
+        courier.passport_issued_by = request.POST.get('passport_issued_by')
+        courier.passport_issue_date = request.POST.get('passport_issue_date')
+        courier.registration_address = request.POST.get('registration_address')
+        courier.actual_address = request.POST.get('actual_address')
+        courier.save()
+        
+        messages.success(request, 'Данные курьера обновлены')
+        return redirect('accounts:manager_couriers')
+    
+    context = {
+        'title': 'Редактировать курьера',
+        'courier_user': user, 
+        'courier': courier,
+    }
+    return render(request, 'accounts/manager_courier_form.html', context)
+
+@login_required
+def manager_courier_edit(request, user_id):
+    "Редактирование курьера"
+    if request.user.role != 'manager':
+        messages.error(request, 'У вас нет доступа к этой странице')
+        return redirect('accounts:home')
+    
+    try:
+        user = User.objects.get(id=user_id, role='courier')
+        courier = user.courier_profile
+    except (User.DoesNotExist, Courier.DoesNotExist):
+        messages.error(request, 'Курьер не найден')
+        return redirect('accounts:manager_couriers')
+    
+    if request.method == 'POST':
+        # Обновляем пользователя
+        user.first_name = request.POST.get('first_name')
+        user.last_name = request.POST.get('last_name')
+        user.patronymic = request.POST.get('patronymic', '')
+        user.phone = request.POST.get('phone')
+        user.save()
+        
+        # Обновляем курьера
+        courier.hire_date = request.POST.get('hire_date')
+        courier.position = request.POST.get('position')
+        courier.shift_status = request.POST.get('shift_status')
+        courier.citizenship = request.POST.get('citizenship')
+        courier.passport_series = request.POST.get('passport_series')
+        courier.passport_number = request.POST.get('passport_number')
+        courier.passport_department_code = request.POST.get('passport_department_code')
+        courier.passport_issued_by = request.POST.get('passport_issued_by')
+        courier.passport_issue_date = request.POST.get('passport_issue_date')
+        courier.registration_address = request.POST.get('registration_address')
+        courier.actual_address = request.POST.get('actual_address')
+        courier.save()
+        
+        messages.success(request, 'Данные курьера обновлены')
+        return redirect('accounts:manager_couriers')
+    
+    context = {
+        'title': 'Редактировать курьера',
+        'courier_user': user,  
+        'courier': courier,
+    }
+    return render(request, 'accounts/manager_courier_form.html', context)
+
+@login_required
+def manager_courier_detail(request, user_id):
+    "Получение деталей курьера - модальное окно"
+    if request.user.role != 'manager':
+        return JsonResponse({'error': 'Доступ запрещен'}, status=403)
+    
+    try:
+        user = User.objects.get(id=user_id, role='courier')
+        courier = user.courier_profile
+        
+        data = {
+            'id': user.id,
+            'email': user.email,
+            'first_name': user.first_name,
+            'last_name': user.last_name,
+            'patronymic': user.patronymic or '',
+            'phone': user.phone or '',
+            'date_joined': user.date_joined.strftime('%d.%m.%Y %H:%M'),
+            'hire_date': courier.hire_date.strftime('%d.%m.%Y'),
+            'position': courier.position,
+            'shift_status': courier.get_shift_status_display(),
+            'citizenship': courier.citizenship,
+            'passport_series': courier.passport_series,
+            'passport_number': courier.passport_number,
+            'passport_department_code': courier.passport_department_code,
+            'passport_issued_by': courier.passport_issued_by,
+            'passport_issue_date': courier.passport_issue_date.strftime('%d.%m.%Y'),
+            'registration_address': courier.registration_address,
+            'actual_address': courier.actual_address,
+            'total_orders': courier.total_orders,
+            'avg_rating': float(courier.avg_rating),
+            'total_work_hours': float(courier.total_work_hours),
+        }
+        return JsonResponse({'success': True, 'data': data})
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=404)
 
 @login_required
 def manager_clients(request):
