@@ -4,31 +4,19 @@
 
 {% block lk_content %}
 <style>
-    /* Приветственная карточка */
-    .welcome-card {
-        background: white;
-        border-radius: 20px;
-        padding: 24px;
+    /* Приветствие */
+    .welcome-section {
         margin-bottom: 28px;
-        border: 1px solid #E8E0D5;
-        transition: all 0.2s;
     }
-    .welcome-card:hover {
-        border-color: #C8E0D6;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+    .welcome-greeting {
+        font-size: 1.5rem;
+        font-weight: 600;
+        color: #1E1E1E;
+        margin-bottom: 4px;
     }
-    .greeting-icon {
-        width: 55px;
-        height: 55px;
-        background: linear-gradient(135deg, #C8E0D6 0%, #E8E0D5 100%);
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-    }
-    .greeting-icon i {
-        font-size: 1.6rem;
-        color: #1E7A57;
+    .welcome-text {
+        font-size: 0.85rem;
+        color: #6B6B6B;
     }
     
     /* Статистические карточки */
@@ -147,13 +135,15 @@
     .badge-assigned { background: #d1ecf1; color: #0c5460; }
     .badge-in_progress { background: #cfe2ff; color: #084298; }
     .badge-delivered { background: #d4edda; color: #155724; }
+    
+    /* Кнопки */
     .btn-outline-sm {
         padding: 4px 12px;
         border-radius: 30px;
         font-size: 0.7rem;
-        border: 1px solid #C8E0D6;
         background: white;
-        color: #1E7A57;
+        border: 1px solid #E8E0D5;
+        color: #6B6B6B !important;
         transition: all 0.2s;
         text-decoration: none;
         display: inline-flex;
@@ -161,28 +151,11 @@
         gap: 4px;
     }
     .btn-outline-sm:hover {
-        background: #1E7A57;
-        color: white;
-        border-color: #1E7A57;
+        background: #6B6B6B;
+        border-color: #6B6B6B;
+        color: white !important;
     }
-    .empty-state {
-        text-align: center;
-        padding: 60px 20px;
-    }
-    .empty-state i {
-        font-size: 3rem;
-        color: #C8E0D5;
-    }
-    .empty-state p {
-        color: #6B6B6B;
-        margin-top: 12px;
-    }
-    .orders-card-footer {
-        padding: 16px 20px;
-        border-top: 1px solid #E8E0D5;
-        background: white;
-        text-align: center;
-    }
+
     .btn-create {
         background: #1E7A57;
         border: none;
@@ -201,19 +174,30 @@
         transform: translateY(-1px);
         color: white;
     }
+
+    .empty-state {
+        text-align: center;
+        padding: 60px 20px;
+    }
+    .empty-state i {
+        font-size: 3rem;
+        color: #C8E0D5;
+    }
+    .empty-state p {
+        color: #6B6B6B;
+        margin-top: 12px;
+    }
+    .orders-card-footer {
+        padding: 16px 20px;
+        border-top: 1px solid #E8E0D5;
+        background: white;
+        text-align: center;
+    }
 </style>
 
-<!-- Приветственная карточка -->
-<div class="welcome-card">
-    <div class="d-flex align-items-center justify-content-between flex-wrap">
-        <div>
-            <h3 class="mb-2" id="greetingMessage" style="color: #1E1E1E; font-weight: 600;"></h3>
-            <p class="mb-0" style="color: #6B6B6B;">Добро пожаловать в личный кабинет. Здесь вы можете отслеживать заказы и управлять доставкой.</p>
-        </div>
-        <div class="greeting-icon mt-2 mt-sm-0">
-            <i class="bi bi-emoji-smile"></i>
-        </div>
-    </div>
+<div class="welcome-section">
+    <h2 class="welcome-greeting" id="greetingMessage"></h2>
+    <p class="welcome-text">Добро пожаловать в личный кабинет. Здесь вы можете отслеживать заказы и управлять доставкой.</p>
 </div>
 
 <!-- Статистические карточки -->
@@ -288,14 +272,14 @@
                             {% else %}badge-created{% endif %}">
                             {{ order.get_status_display }}
                         </span>
-                    </td>
+                    </span>
                     <td style="color: #6B6B6B;">{{ order.created_at|date:"d.m.Y H:i" }}</td>
                     <td>
                         <a href="{% url 'delivery:order_detail' order.id %}" class="btn-outline-sm">
                             <i class="bi bi-eye"></i> Подробнее
                         </a>
-                    </td>
-                </tr>
+                     </span>
+                </span>
                 {% endfor %}
             </tbody>
         </table>
@@ -308,9 +292,31 @@
         {% endif %}
     </div>
     <div class="orders-card-footer">
-        <a href="{% url 'delivery:create_order' %}" class="btn-create">
-            <i class="bi bi-plus-circle"></i> {% if active_orders %}Создать новый заказ{% else %}Создать первый заказ{% endif %}
+        <a href="{% url 'delivery:create_order' %}" class="btn-create" style="background: #1E7A57 !important; color: #FFFFFF !important;">
+            <i class="bi bi-plus-circle"></i> Создать новый заказ
         </a>
     </div>
 </div>
+
+<script>
+    // Приветствие в зависимости от времени дня
+    function updateGreeting() {
+        const now = new Date();
+        const hours = now.getHours();
+        const userName = "{{ user.first_name|default:user.username }}";
+        let greeting;
+        
+        if (hours >= 5 && hours < 12) {
+            greeting = "Доброе утро";
+        } else if (hours >= 12 && hours < 16) {
+            greeting = "Добрый день";
+        } else {
+            greeting = "Добрый вечер";
+        }
+        
+        document.getElementById('greetingMessage').innerHTML = `${greeting}, ${userName}!`;
+    }
+    
+    updateGreeting();
+</script>
 {% endblock %}

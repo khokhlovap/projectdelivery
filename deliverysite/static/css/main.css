@@ -56,7 +56,7 @@ body {
 }
 
 .btn-outline-primary {
-    color: var(--green) !important;
+    color: var(--green);
     border-color: var(--green) !important;
     border-radius: 40px !important;
 }
