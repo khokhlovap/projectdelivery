@@ -1,0 +1,471 @@
+{% extends 'accounts/lk_base.html' %}
+{% load static %}
+{% block title %}Настройки профиля{% endblock %}
+
+{% block lk_content %}
+<style>
+    /* Шапка раздела */
+    .section-header {
+        margin-bottom: 28px;
+    }
+    .section-title {
+        font-size: 1.5rem;
+        font-weight: 600;
+        color: #1E1E1E;
+    }
+    .section-subtitle {
+        font-size: 0.85rem;
+        color: #6B6B6B;
+    }
+    .header-divider {
+        height: 3px;
+        background: linear-gradient(90deg, #1E7A57 0%, #C8E0D6 50%, transparent 100%);
+        border-radius: 3px;
+        margin-top: 12px;
+    }
+    
+    /* Карточка настроек */
+    .settings-card {
+        background: white;
+        border-radius: 20px;
+        border: 1px solid #E8E0D5;
+        overflow: hidden;
+        margin-top: 20px;
+    }
+    
+    /* Навигация по настройкам */
+    .settings-nav {
+        display: flex;
+        border-bottom: 1px solid #E8E0D5;
+        background: white;
+        padding: 0 24px;
+    }
+    .settings-nav-item {
+        padding: 16px 24px;
+        font-size: 0.9rem;
+        font-weight: 500;
+        color: #6B6B6B;
+        cursor: pointer;
+        transition: all 0.2s;
+        border-bottom: 2px solid transparent;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+    .settings-nav-item i {
+        font-size: 1.1rem;
+    }
+    .settings-nav-item:hover {
+        color: #1E7A57;
+    }
+    .settings-nav-item.active {
+        color: #1E7A57;
+        border-bottom-color: #1E7A57;
+    }
+    
+    /* Контент настроек */
+    .settings-content {
+        padding: 28px 24px;
+    }
+    .settings-tab {
+        display: none;
+    }
+    .settings-tab.active {
+        display: block;
+    }
+    
+    /* Сетка полей */
+    .form-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 20px;
+    }
+    .form-field {
+        margin-bottom: 0;
+    }
+    .form-field-full {
+        grid-column: span 2;
+    }
+    .form-label {
+        font-size: 0.7rem;
+        text-transform: uppercase;
+        font-weight: 600;
+        color: #6B6B6B;
+        margin-bottom: 6px;
+        letter-spacing: 0.5px;
+        display: block;
+    }
+    .form-control {
+        width: 100%;
+        border-radius: 12px;
+        border: 1px solid #E8E0D5;
+        padding: 10px 14px;
+        font-size: 0.9rem;
+        transition: all 0.2s;
+        background: white;
+    }
+    .form-control:focus {
+        border-color: #1E7A57;
+        background: white;
+        box-shadow: 0 0 0 3px rgba(30, 122, 87, 0.1);
+        outline: none;
+    }
+    .form-control[readonly] {
+        background: #F5F3F0;
+        cursor: not-allowed;
+    }
+    textarea.form-control {
+        resize: vertical;
+        min-height: 80px;
+    }
+    .form-hint {
+        font-size: 0.7rem;
+        color: #6B6B6B;
+        margin-top: 6px;
+    }
+    
+    /* Кнопки */
+    .btn-save {
+        background: #1E7A57;
+        border: none;
+        border-radius: 40px;
+        padding: 10px 28px;
+        color: white;
+        font-weight: 500;
+        font-size: 0.85rem;
+        transition: all 0.2s;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        margin-top: 24px;
+    }
+    .btn-save:hover {
+        background: #155f44;
+        transform: translateY(-1px);
+    }
+    
+    /* Сообщения */
+    .alert-message {
+        border-radius: 12px;
+        padding: 12px 16px;
+        margin-bottom: 20px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+    .alert-success {
+        background: #d4edda;
+        border-left: 4px solid #28a745;
+        color: #155724;
+    }
+    .alert-error {
+        background: #f8d7da;
+        border-left: 4px solid #dc3545;
+        color: #721c24;
+    }
+    
+    /* Пароль с кнопкой показать */
+    .password-wrapper {
+        position: relative;
+    }
+    .password-wrapper input {
+        padding-right: 40px;
+    }
+    .toggle-password {
+        position: absolute;
+        right: 12px;
+        top: 50%;
+        transform: translateY(-50%);
+        cursor: pointer;
+        color: #6B6B6B;
+        background: none;
+        border: none;
+        font-size: 1rem;
+    }
+    .toggle-password:hover {
+        color: #1E7A57;
+    }
+    
+    /* Разделитель */
+    .section-divider {
+        margin: 24px 0 20px;
+        padding-bottom: 8px;
+        border-bottom: 1px solid #E8E0D5;
+        font-size: 0.9rem;
+        font-weight: 600;
+        color: #1E7A57;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+    
+    /* Адаптивность */
+    @media (max-width: 768px) {
+        .settings-nav {
+            overflow-x: auto;
+            padding: 0 16px;
+        }
+        .settings-nav-item {
+            padding: 12px 16px;
+            white-space: nowrap;
+        }
+        .settings-content {
+            padding: 20px;
+        }
+        .form-grid {
+            grid-template-columns: 1fr;
+            gap: 16px;
+        }
+        .form-field-full {
+            grid-column: span 1;
+        }
+    }
+</style>
+
+<!-- Шапка раздела -->
+<div class="section-header">
+    <div>
+        <h2 class="section-title mb-1">
+            <i class="bi bi-gear me-2" style="color: #1E7A57;"></i>
+            Настройки профиля
+        </h2>
+        <p class="section-subtitle mb-0">Управление личными данными и информацией о компании</p>
+    </div>
+    <div class="header-divider"></div>
+</div>
+
+<!-- Карточка настроек -->
+<div class="settings-card">
+    <!-- Навигация -->
+    <div class="settings-nav">
+        <div class="settings-nav-item active" data-tab="personal">
+            <i class="bi bi-person"></i> Личные данные
+        </div>
+        <div class="settings-nav-item" data-tab="company">
+            <i class="bi bi-building"></i> Данные компании
+        </div>
+        <div class="settings-nav-item" data-tab="security">
+            <i class="bi bi-shield-lock"></i> Безопасность
+        </div>
+    </div>
+    
+    <!-- Контент -->
+    <div class="settings-content">
+        <!-- Вкладка: Личные данные -->
+        <div class="settings-tab active" id="tab-personal">
+            <form method="post">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="update_profile">
+                
+                <div class="form-grid">
+                    <div class="form-field">
+                        <label class="form-label">Фамилия</label>
+                        <input type="text" name="last_name" class="form-control" value="{{ user.last_name|default:'' }}" required>
+                    </div>
+                    <div class="form-field">
+                        <label class="form-label">Имя</label>
+                        <input type="text" name="first_name" class="form-control" value="{{ user.first_name|default:'' }}" required>
+                    </div>
+                    <div class="form-field">
+                        <label class="form-label">Отчество</label>
+                        <input type="text" name="patronymic" class="form-control" value="{{ user.patronymic|default:'' }}">
+                    </div>
+                    <div class="form-field">
+                        <label class="form-label">Телефон</label>
+                        <input type="tel" name="phone" class="form-control" value="{{ user.phone|default:'' }}" placeholder="+7 (___) ___-__-__">
+                    </div>
+                    <div class="form-field form-field-full">
+                        <label class="form-label">Email</label>
+                        <input type="email" class="form-control" value="{{ user.email }}" readonly>
+                        <div class="form-hint"><i class="bi bi-info-circle"></i> Email используется как логин и не может быть изменен</div>
+                    </div>
+                </div>
+                
+                <button type="submit" class="btn-save">
+                    <i class="bi bi-save"></i> Сохранить изменения
+                </button>
+            </form>
+        </div>
+        
+        <!-- Вкладка: Данные компании -->
+        <div class="settings-tab" id="tab-company">
+            <form method="post">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="update_company">
+                
+                <div class="form-grid">
+                    <div class="form-field form-field-full">
+                        <label class="form-label">Название компании</label>
+                        <input type="text" name="company_name" class="form-control" value="{{ client.company_name|default:'' }}" required>
+                    </div>
+                    <div class="form-field">
+                        <label class="form-label">ИНН</label>
+                        <input type="text" name="inn" class="form-control" value="{{ client.inn|default:'' }}" required>
+                    </div>
+                    <div class="form-field">
+                        <label class="form-label">КПП</label>
+                        <input type="text" name="kpp" class="form-control" value="{{ client.kpp|default:'' }}" required>
+                    </div>
+                    <div class="form-field">
+                        <label class="form-label">Телефон компании</label>
+                        <input type="text" name="company_phone" class="form-control" value="{{ client.company_phone|default:'' }}">
+                    </div>
+                    <div class="form-field">
+                        <label class="form-label">Email компании</label>
+                        <input type="email" name="company_email" class="form-control" value="{{ client.company_email|default:'' }}">
+                    </div>
+                </div>
+                
+                <div class="section-divider">
+                    <i class="bi bi-geo-alt"></i> Адреса
+                </div>
+                
+                <div class="form-grid">
+                    <div class="form-field form-field-full">
+                        <label class="form-label">Юридический адрес</label>
+                        <textarea name="legal_address" class="form-control" rows="2" required>{{ client.legal_address|default:'' }}</textarea>
+                    </div>
+                    <div class="form-field form-field-full">
+                        <label class="form-label">Фактический адрес</label>
+                        <textarea name="actual_address" class="form-control" rows="2" required>{{ client.actual_address|default:'' }}</textarea>
+                    </div>
+                </div>
+                
+                <div class="section-divider">
+                    <i class="bi bi-bank"></i> Банковские реквизиты
+                </div>
+                
+                <div class="form-grid">
+                    <div class="form-field form-field-full">
+                        <label class="form-label">Банк</label>
+                        <input type="text" name="bank" class="form-control" value="{{ client.bank|default:'' }}">
+                    </div>
+                    <div class="form-field">
+                        <label class="form-label">Расчетный счет</label>
+                        <input type="text" name="settlement_account" class="form-control" value="{{ client.settlement_account|default:'' }}">
+                    </div>
+                    <div class="form-field">
+                        <label class="form-label">Корреспондентский счет</label>
+                        <input type="text" name="correspondent_account" class="form-control" value="{{ client.correspondent_account|default:'' }}">
+                    </div>
+                </div>
+                
+                <div class="section-divider">
+                    <i class="bi bi-person-badge"></i> Контактное лицо
+                </div>
+                
+                <div class="form-grid">
+                    <div class="form-field">
+                        <label class="form-label">Фамилия</label>
+                        <input type="text" name="contact_person_last_name" class="form-control" value="{{ client.contact_person_last_name|default:'' }}" required>
+                    </div>
+                    <div class="form-field">
+                        <label class="form-label">Имя</label>
+                        <input type="text" name="contact_person_first_name" class="form-control" value="{{ client.contact_person_first_name|default:'' }}" required>
+                    </div>
+                    <div class="form-field">
+                        <label class="form-label">Отчество</label>
+                        <input type="text" name="contact_person_patronymic" class="form-control" value="{{ client.contact_person_patronymic|default:'' }}">
+                    </div>
+                    <div class="form-field">
+                        <label class="form-label">Телефон</label>
+                        <input type="text" name="contact_person_phone" class="form-control" value="{{ client.contact_person_phone|default:'' }}" required>
+                    </div>
+                    <div class="form-field">
+                        <label class="form-label">Email</label>
+                        <input type="email" name="contact_person_email" class="form-control" value="{{ client.contact_person_email|default:'' }}" required>
+                    </div>
+                </div>
+                
+                <button type="submit" class="btn-save">
+                    <i class="bi bi-save"></i> Сохранить данные компании
+                </button>
+            </form>
+        </div>
+        
+        <!-- Вкладка: Безопасность -->
+        <div class="settings-tab" id="tab-security">
+            <form method="post">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="change_password">
+                
+                <div class="form-grid">
+                    <div class="form-field form-field-full">
+                        <label class="form-label">Текущий пароль</label>
+                        <div class="password-wrapper">
+                            <input type="password" name="current_password" class="form-control" id="current_password" placeholder="Введите текущий пароль" required>
+                            <button type="button" class="toggle-password" onclick="togglePassword('current_password')">
+                                <i class="bi bi-eye"></i>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="form-field form-field-full">
+                        <label class="form-label">Новый пароль</label>
+                        <div class="password-wrapper">
+                            <input type="password" name="new_password" class="form-control" id="new_password" placeholder="Введите новый пароль" required>
+                            <button type="button" class="toggle-password" onclick="togglePassword('new_password')">
+                                <i class="bi bi-eye"></i>
+                            </button>
+                        </div>
+                        <div class="form-hint">
+                            <i class="bi bi-info-circle"></i> Пароль должен содержать минимум 8 символов
+                        </div>
+                    </div>
+                    
+                    <div class="form-field form-field-full">
+                        <label class="form-label">Подтверждение пароля</label>
+                        <div class="password-wrapper">
+                            <input type="password" name="confirm_password" class="form-control" id="confirm_password" placeholder="Подтвердите новый пароль" required>
+                            <button type="button" class="toggle-password" onclick="togglePassword('confirm_password')">
+                                <i class="bi bi-eye"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <button type="submit" class="btn-save">
+                    <i class="bi bi-key"></i> Изменить пароль
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Переключение вкладок
+    document.querySelectorAll('.settings-nav-item').forEach(item => {
+        item.addEventListener('click', function() {
+            const tab = this.dataset.tab;
+            
+            document.querySelectorAll('.settings-nav-item').forEach(nav => {
+                nav.classList.remove('active');
+            });
+            this.classList.add('active');
+            
+            document.querySelectorAll('.settings-tab').forEach(tabEl => {
+                tabEl.classList.remove('active');
+            });
+            document.getElementById(`tab-${tab}`).classList.add('active');
+        });
+    });
+    
+    // Показать/скрыть пароль
+    function togglePassword(fieldId) {
+        const field = document.getElementById(fieldId);
+        const button = field.nextElementSibling;
+        const icon = button.querySelector('i');
+        
+        if (field.type === 'password') {
+            field.type = 'text';
+            icon.classList.remove('bi-eye');
+            icon.classList.add('bi-eye-slash');
+        } else {
+            field.type = 'password';
+            icon.classList.remove('bi-eye-slash');
+            icon.classList.add('bi-eye');
+        }
+    }
+</script>
+{% endblock %}

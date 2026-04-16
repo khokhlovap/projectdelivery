@@ -224,18 +224,83 @@ def check_order_rating(request):
     
 @login_required
 def client_settings(request):
-    "Настройки профиля"
-    if request.method == 'POST':
-        user = request.user
-        user.first_name = request.POST.get('first_name')
-        user.last_name = request.POST.get('last_name')
-        user.patronymic = request.POST.get('patronymic')
-        user.phone = request.POST.get('phone')
-        user.save()
-        messages.success(request, 'Профиль успешно обновлен')
-        return redirect('accounts:settings')
+    "Настройки профиля клиента"
+    try:
+        client = request.user.client_profile
+    except:
+        client = None
     
-    return render(request, 'accounts/settings.html')
+    if request.method == 'POST':
+        action = request.POST.get('action')
+        
+        # Обновление личных данных
+        if action == 'update_profile':
+            user = request.user
+            user.first_name = request.POST.get('first_name', '').strip()
+            user.last_name = request.POST.get('last_name', '').strip()
+            user.patronymic = request.POST.get('patronymic', '').strip()
+            user.phone = request.POST.get('phone', '').strip()
+            user.save()
+            messages.success(request, 'Личные данные успешно обновлены')
+            return redirect('accounts:client_settings')
+        
+        # Обновление данных компании
+        elif action == 'update_company':
+            if client:
+                client.company_name = request.POST.get('company_name', '').strip()
+                client.inn = request.POST.get('inn', '').strip()
+                client.kpp = request.POST.get('kpp', '').strip()
+                client.legal_address = request.POST.get('legal_address', '').strip()
+                client.actual_address = request.POST.get('actual_address', '').strip()
+                client.company_phone = request.POST.get('company_phone', '').strip()
+                client.company_email = request.POST.get('company_email', '').strip()
+                client.bank = request.POST.get('bank', '').strip()
+                client.settlement_account = request.POST.get('settlement_account', '').strip()
+                client.correspondent_account = request.POST.get('correspondent_account', '').strip()
+                client.contact_person_first_name = request.POST.get('contact_person_first_name', '').strip()
+                client.contact_person_last_name = request.POST.get('contact_person_last_name', '').strip()
+                client.contact_person_patronymic = request.POST.get('contact_person_patronymic', '').strip()
+                client.contact_person_phone = request.POST.get('contact_person_phone', '').strip()
+                client.contact_person_email = request.POST.get('contact_person_email', '').strip()
+                client.save()
+                messages.success(request, 'Данные компании успешно обновлены')
+            else:
+                messages.error(request, 'Профиль компании не найден')
+            return redirect('accounts:client_settings')
+        
+        # Смена пароля
+        elif action == 'change_password':
+            current_password = request.POST.get('current_password')
+            new_password = request.POST.get('new_password')
+            confirm_password = request.POST.get('confirm_password')
+            
+            if not request.user.check_password(current_password):
+                messages.error(request, 'Текущий пароль введен неверно')
+                return redirect('accounts:client_settings')
+            
+            if not new_password:
+                messages.error(request, 'Введите новый пароль')
+                return redirect('accounts:client_settings')
+            
+            if new_password != confirm_password:
+                messages.error(request, 'Новый пароль и подтверждение не совпадают')
+                return redirect('accounts:client_settings')
+            
+            if len(new_password) < 8:
+                messages.error(request, 'Пароль должен содержать минимум 8 символов')
+                return redirect('accounts:client_settings')
+            
+            request.user.set_password(new_password)
+            request.user.save()
+            
+            messages.success(request, 'Пароль успешно изменен. Пожалуйста, войдите снова.')
+            return redirect('accounts:login')
+    
+    context = {
+        'user': request.user,
+        'client': client,
+    }
+    return render(request, 'accounts/client_settings.html', context)
 
 @login_required
 def ai_assistant(request):
