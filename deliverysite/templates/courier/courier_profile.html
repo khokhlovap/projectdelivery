@@ -1,0 +1,48 @@
+{% extends 'courier/courier_base.html' %}
+{% load static %}
+{% block title %}Мой профиль{% endblock %}
+
+{% block courier_content %}
+<div class="profile-card">
+    <div class="profile-header">
+        <div class="profile-avatar">
+            <i class="bi bi-person-badge"></i>
+        </div>
+        <div class="profile-info">
+            <h3>{{ user.get_full_name|default:user.username }}</h3>
+            <p>{{ user.email }}</p>
+        </div>
+    </div>
+</div>
+
+<div class="profile-card">
+    <div style="margin-bottom: 12px;">
+        <span style="font-size: 0.7rem; color: #6B6B6B;">Статистика</span>
+        <div style="display: flex; gap: 20px; margin-top: 8px;">
+            <div>
+                <div style="font-size: 1.5rem; font-weight: 700;">{{ total_deliveries }}</div>
+                <div style="font-size: 0.7rem; color: #6B6B6B;">Доставок</div>
+            </div>
+            <div>
+                <div style="font-size: 1.5rem; font-weight: 700;">{{ rating|floatformat:1 }}</div>
+                <div style="font-size: 0.7rem; color: #6B6B6B;">Рейтинг</div>
+            </div>
+            <div>
+                <div style="font-size: 1.5rem; font-weight: 700;">{{ courier.total_work_hours|floatformat:0 }}</div>
+                <div style="font-size: 0.7rem; color: #6B6B6B;">Часов</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="profile-card">
+    <div style="margin-bottom: 12px;">
+        <span style="font-size: 0.7rem; color: #6B6B6B;">Личные данные</span>
+        <div style="margin-top: 8px;">
+            <p><strong>Телефон:</strong> {{ user.phone|default:"Не указан" }}</p>
+            <p><strong>Дата приема:</strong> {{ courier.hire_date|date:"d.m.Y" }}</p>
+            <p><strong>Должность:</strong> {{ courier.position }}</p>
+        </div>
+    </div>
+</div>
+{% endblock %}

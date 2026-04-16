@@ -492,10 +492,10 @@ class Order(models.Model):
 
         if not is_new:
             old = Order.objects.get(pk=self.pk)
-            old_courier = old.courier
+            
             old_status = old.status
         else:
-            old_courier = None
+            
             old_status = None
 
         # Если статус меняется на 'delivered' и delivered_at пустой - устанавливаем дату
@@ -504,25 +504,12 @@ class Order(models.Model):
 
         super().save(*args, **kwargs)
 
-        # 1. Новый заказ
+        # Новый заказ
         if is_new:
             OrderStatusHistory.objects.create(
                 order=self,
                 status=self.status,
                 comment='Заказ создан'
-            )
-
-        # 2. Назначение курьера
-        if old_courier != self.courier and self.courier:
-            # обновляем статус
-            if self.status != 'assigned':
-                self.status = 'assigned'
-                super().save(update_fields=['status'])
-
-            OrderStatusHistory.objects.create(
-                order=self,
-                status='assigned',
-                comment=f'Назначен курьер {self.courier.user.get_full_name()}'
             )
     
     def __str__(self):

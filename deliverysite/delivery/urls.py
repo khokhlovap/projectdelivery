@@ -12,4 +12,13 @@ urlpatterns = [
     path('courier/accept/<int:order_id>/', views.courier_accept_order, name='courier_accept_order'),
     path('courier/reject/<int:order_id>/', views.courier_reject_order, name='courier_reject_order'),
     path('order/<int:order_id>/complete/', views.complete_order, name='complete_order'),
+    path('courier/dashboard/', views.courier_dashboard, name='courier_dashboard'),
+    path('courier/active-orders/', views.courier_active_orders, name='courier_active_orders'),
+    path('courier/profile/', views.courier_profile, name='courier_profile'),
+    path('courier/update-shift/', views.courier_update_shift, name='courier_update_shift'),
+    path('courier/accept/<int:order_id>/', views.courier_accept_order, name='courier_accept_order'),
+    path('courier/reject/<int:order_id>/', views.courier_reject_order, name='courier_reject_order'),
+    path('courier/active-count/', views.courier_active_count, name='courier_active_count'),
+    path('courier/start-break/', views.courier_start_break, name='courier_start_break'),
+    path('courier/end-break/', views.courier_end_break, name='courier_end_break'),
 ]

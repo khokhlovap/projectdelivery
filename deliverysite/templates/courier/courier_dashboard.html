@@ -1,0 +1,788 @@
+{% extends 'courier/courier_base.html' %}
+{% load static %}
+{% block title %}Главная - Курьер{% endblock %}
+
+{% block courier_content %}
+<!-- Приветствие -->
+<div class="welcome-card">
+    <div class="welcome-text">
+        <span class="welcome-greeting">Привет,</span>
+        <h1 class="welcome-name">{{ user.first_name|default:user.email|truncatechars:20 }}</h1>
+        <p class="welcome-subtitle">{{ user.email }}</p>
+    </div>
+    <div class="welcome-avatar">
+        <i class="bi bi-person-circle"></i>
+    </div>
+</div>
+
+<!-- Текущая смена -->
+<div class="shift-status-card">
+    <div class="shift-title">
+        <div class="shift-title-icon">
+            <i class="bi bi-clock-history"></i>
+        </div>
+        <span>Управление сменой</span>
+    </div>
+    <div class="shift-buttons">
+        <button class="shift-btn shift-on {% if shift_status == 'on' %}shift-active{% endif %}" 
+                onclick="updateShift('on')" {% if shift_status == 'on' %}disabled{% endif %}>
+            <i class="bi bi-play-circle"></i>
+            <span>Начать смену</span>
+        </button>
+        <button class="shift-btn shift-break {% if shift_status == 'break' %}shift-active{% endif %}" 
+                onclick="toggleBreak()" {% if shift_status == 'off' %}disabled{% endif %}>
+            <i class="bi bi-cup-hot"></i>
+            <span>{% if shift_status == 'break' %}Вернуться{% else %}Перерыв{% endif %}</span>
+        </button>
+        <button class="shift-btn shift-off {% if shift_status == 'off' %}shift-active{% endif %}" 
+                onclick="updateShift('off')" {% if shift_status == 'off' %}disabled{% endif %}>
+            <i class="bi bi-power"></i>
+            <span>Завершить</span>
+        </button>
+    </div>
+    <div class="shift-timer" id="shiftTimer">
+        {% if shift_status == 'on' %}
+            <div class="status-active">
+                <div class="status-dot green"></div>
+                <span>Рабочая смена активна</span>
+            </div>
+        {% elif shift_status == 'break' %}
+            <div class="status-active">
+                <div class="status-dot orange"></div>
+                <span>Перерыв</span>
+            </div>
+        {% else %}
+            <div class="status-inactive">
+                <div class="status-dot gray"></div>
+                <span>Смена не начата</span>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Новые заказы -->
+<div class="new-orders-card">
+    <div class="new-orders-title">
+        <div class="new-orders-icon">
+            <i class="bi bi-bell-fill"></i>
+        </div>
+        <span>Новые заказы</span>
+        {% if new_orders %}
+            <span class="orders-badge">{{ new_orders|length }}</span>
+        {% endif %}
+    </div>
+    
+    {% if new_orders %}
+        {% for order in new_orders %}
+        <div class="order-card" id="order-{{ order.id }}">
+            <div class="order-header">
+                <div class="order-id-wrapper">
+                    <i class="bi bi-receipt"></i>
+                    <span class="order-id">Заказ #{{ order.id }}</span>
+                </div>
+                <span class="order-time">{{ order.created_at|date:"d.m в H:i" }}</span>
+            </div>
+            
+            <div class="order-details">
+                <div class="order-address">
+                    <div class="address-icon pickup">
+                        <i class="bi bi-box-seam"></i>
+                    </div>
+                    <div class="address-text">
+                        <span class="address-label">Отправка</span>
+                        <span class="address-value">{{ order.pickup_address|truncatechars:50 }}</span>
+                    </div>
+                </div>
+                <div class="order-arrow">
+                    <i class="bi bi-arrow-down-short"></i>
+                </div>
+                <div class="order-address">
+                    <div class="address-icon delivery">
+                        <i class="bi bi-geo-alt-fill"></i>
+                    </div>
+                    <div class="address-text">
+                        <span class="address-label">Доставка</span>
+                        <span class="address-value">{{ order.delivery_address|truncatechars:50 }}</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="order-meta">
+                <div class="meta-item">
+                    <i class="bi bi-tag"></i>
+                    <span>{{ order.get_order_type_display }}</span>
+                </div>
+                <div class="meta-divider"></div>
+                <div class="meta-item">
+                    <i class="bi bi-weight"></i>
+                    <span>{{ order.weight|default:"вес не указан" }} кг</span>
+                </div>
+                <div class="meta-divider"></div>
+                <div class="meta-item">
+                    <i class="bi bi-calendar-event"></i>
+                    <span>{{ order.requested_delivery_date|date:"d.m.Y" }}</span>
+                </div>
+            </div>
+            
+            <!-- Комментарий клиента -->
+            {% if order.client_comment %}
+            <div class="order-comment">
+                <div class="comment-icon">
+                    <i class="bi bi-chat-dots"></i>
+                </div>
+                <div class="comment-text">
+                    <span class="comment-label">Комментарий клиента:</span>
+                    <span class="comment-value">{{ order.client_comment|truncatechars:80 }}</span>
+                </div>
+            </div>
+            {% endif %}
+            
+            <div class="order-buttons">
+                <button class="btn-accept" onclick="acceptOrder({{ order.id }})">
+                    <i class="bi bi-check-lg"></i>
+                    <span>Принять заказ</span>
+                </button>
+                <button class="btn-reject" onclick="rejectOrder({{ order.id }})">
+                    <i class="bi bi-x-lg"></i>
+                    <span>Отклонить</span>
+                </button>
+            </div>
+            
+            <!-- Дополнительная кнопка с деталями -->
+            <button class="btn-detail" onclick="openOrderDetails({{ order.id }})">
+                <i class="bi bi-info-circle"></i>
+                <span>Подробнее о заказе</span>
+            </button>
+        </div>
+        {% endfor %}    
+    {% else %}
+        <div class="empty-state">
+            <div class="empty-icon">
+                <i class="bi bi-inbox"></i>
+            </div>
+            <h3>Нет новых заказов</h3>
+            <p>Когда появятся новые заказы, они отобразятся здесь</p>
+        </div>
+    {% endif %}
+</div>
+
+<style>
+    /* Приветствие */
+    .welcome-card {
+        background: white;
+        border-radius: 24px;
+        padding: 20px;
+        margin-bottom: 20px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        border: 1px solid #E8E0D5;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.03);
+    }
+    .welcome-text {
+        flex: 1;
+    }
+    .welcome-greeting {
+        font-size: 0.85rem;
+        color: #6B6B6B;
+        display: block;
+        margin-bottom: 4px;
+    }
+    .welcome-name {
+        font-size: 1.4rem;
+        font-weight: 700;
+        margin: 0 0 4px 0;
+        line-height: 1.2;
+        color: #1E1E1E;
+    }
+    .welcome-subtitle {
+        font-size: 0.7rem;
+        color: #ADB5BD;
+        margin: 0;
+    }
+    .welcome-avatar {
+        width: 56px;
+        height: 56px;
+        background: linear-gradient(135deg, #F8F6F3 0%, #F0EDE8 100%);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    .welcome-avatar i {
+        font-size: 2rem;
+        color: #1E7A57;
+    }
+
+    /* Карточка статуса смены */
+    .shift-status-card {
+        background: white;
+        border-radius: 24px;
+        padding: 20px;
+        margin-bottom: 20px;
+        border: 1px solid #E8E0D5;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.03);
+    }
+
+    /* Карточка новых заказов */
+    .new-orders-card {
+        background: white;
+        border-radius: 24px;
+        padding: 20px;
+        border: 1px solid #E8E0D5;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.03);
+    }
+
+    /* Заголовок с иконкой для управления сменой */
+    .shift-title {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 20px;
+    }
+    .shift-title-icon {
+        width: 40px;
+        height: 40px;
+        background: linear-gradient(135deg, #C8E0D6 0%, #E8E0D5 100%);
+        border-radius: 14px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    .shift-title-icon i {
+        font-size: 1.3rem;
+        color: #1E7A57;
+    }
+    .shift-title span {
+        font-size: 1rem;
+        font-weight: 700;
+        color: #1E1E1E;
+    }
+
+    /* Заголовок с иконкой для новых заказов */
+    .new-orders-title {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 20px;
+    }
+    .new-orders-icon {
+        width: 40px;
+        height: 40px;
+        background: linear-gradient(135deg, #C8E0D6 0%, #E8E0D5 100%);
+        border-radius: 14px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    .new-orders-icon i {
+        font-size: 1.3rem;
+        color: #1E7A57;
+    }
+    .new-orders-title span {
+        font-size: 1rem;
+        font-weight: 700;
+        color: #1E1E1E;
+    }
+    .orders-badge {
+        background: linear-gradient(135deg, #1E7A57 0%, #2E9B6E 100%);
+        color: white;
+        font-size: 0.7rem;
+        font-weight: 700;
+        padding: 2px 10px;
+        border-radius: 20px;
+        margin-left: 8px;
+    }
+
+    /* Кнопки смены */
+    .shift-buttons {
+        display: flex;
+        gap: 8px;
+        margin-bottom: 16px;
+    }
+    .shift-btn {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 6px;
+        padding: 10px 6px;
+        border-radius: 16px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        text-align: center;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        border: none;
+        font-family: inherit;
+        background: #F5F3F0;
+        color: #6B6B6B;
+    }
+    .shift-btn i {
+        font-size: 1.2rem;
+    }
+    .shift-btn span {
+        font-size: 0.65rem;
+    }
+    .shift-on {
+        background: #1E7A57;
+        color: white;
+    }
+    .shift-off {
+        background: #F5F3F0;
+        color: #6B6B6B;
+    }
+    .shift-break {
+        background: #FFB74D;
+        color: #7B5E00;
+    }
+    .shift-active {
+        outline: 2px solid #1E7A57;
+        outline-offset: 2px;
+        transform: scale(0.98);
+    }
+    .shift-btn:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+    }
+
+    /* Статус смены */
+    .shift-timer {
+        text-align: center;
+        padding-top: 12px;
+        border-top: 1px solid #F0EDE8;
+    }
+    .status-active, .status-inactive {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+    }
+    .status-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+    }
+    .status-dot.green {
+        background: #1E7A57;
+        box-shadow: 0 0 6px rgba(30, 122, 87, 0.5);
+        animation: pulse 1.5s infinite;
+    }
+    .status-dot.orange {
+        background: #FFB74D;
+        box-shadow: 0 0 6px rgba(255, 183, 77, 0.5);
+    }
+    .status-dot.gray {
+        background: #ADB5BD;
+    }
+
+    @keyframes pulse {
+        0%, 100% { opacity: 1; transform: scale(1); }
+        50% { opacity: 0.5; transform: scale(1.2); }
+    }
+
+    /* Карточка заказа */
+    .order-card {
+        background: white;
+        border-radius: 20px;
+        padding: 16px;
+        margin-bottom: 12px;
+        border: 1px solid #E8E0D5;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.03);
+        transition: all 0.2s ease;
+    }
+    .order-card:last-child {
+        margin-bottom: 0;
+    }
+    .order-card:hover {
+        box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+        transform: translateY(-1px);
+    }
+    .order-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 12px;
+        padding-bottom: 10px;
+        border-bottom: 1px solid #F0EDE8;
+    }
+    .order-id-wrapper {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+    .order-id-wrapper i {
+        color: #1E7A57;
+        font-size: 0.9rem;
+    }
+    .order-id {
+        font-weight: 700;
+        color: #1E7A57;
+        font-size: 0.9rem;
+    }
+    .order-time {
+        font-size: 0.7rem;
+        color: #ADB5BD;
+    }
+    .order-details {
+        margin: 12px 0;
+    }
+    .order-address {
+        display: flex;
+        gap: 12px;
+        margin-bottom: 8px;
+    }
+    .address-icon {
+        width: 32px;
+        height: 32px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+    }
+    .address-icon.pickup {
+        background: linear-gradient(135deg, #E8F0FE 0%, #D4E4FC 100%);
+    }
+    .address-icon.pickup i {
+        color: #1E7A57;
+        font-size: 0.9rem;
+    }
+    .address-icon.delivery {
+        background: linear-gradient(135deg, #E8F5E9 0%, #C8E6D9 100%);
+    }
+    .address-icon.delivery i {
+        color: #1E7A57;
+        font-size: 0.9rem;
+    }
+    .address-text {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+    }
+    .address-label {
+        font-size: 0.65rem;
+        font-weight: 600;
+        color: #1E7A57;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    .address-value {
+        font-size: 0.85rem;
+        color: #1E1E1E;
+        font-weight: 500;
+    }
+    .order-arrow {
+        display: flex;
+        justify-content: center;
+        margin: 4px 0 4px 16px;
+    }
+    .order-arrow i {
+        font-size: 1.2rem;
+        color: #ADB5BD;
+    }
+    .order-meta {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 10px 0;
+        margin: 8px 0;
+        border-top: 1px solid #F0EDE8;
+        border-bottom: 1px solid #F0EDE8;
+        flex-wrap: wrap;
+    }
+    .meta-item {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+    }
+    .meta-item i {
+        font-size: 0.7rem;
+        color: #1E7A57;
+    }
+    .meta-item span {
+        font-size: 0.7rem;
+        color: #6B6B6B;
+    }
+    .meta-divider {
+        width: 1px;
+        height: 10px;
+        background: #E8E0D5;
+    }
+    .order-comment {
+        display: flex;
+        gap: 10px;
+        padding: 10px;
+        margin: 10px 0;
+        background: #F8F9FA;
+        border-radius: 12px;
+        border-left: 3px solid #FFB74D;
+    }
+    .comment-icon {
+        width: 28px;
+        height: 28px;
+        background: linear-gradient(135deg, #FFF3E0 0%, #FFE0B2 100%);
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+    }
+    .comment-icon i {
+        font-size: 0.8rem;
+        color: #FF9800;
+    }
+    .comment-text {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+    }
+    .comment-label {
+        font-size: 0.6rem;
+        font-weight: 600;
+        color: #FF9800;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    .comment-value {
+        font-size: 0.75rem;
+        color: #495057;
+        line-height: 1.4;
+    }
+    .order-buttons {
+        display: flex;
+        gap: 10px;
+        margin-top: 12px;
+    }
+    .btn-accept, .btn-reject {
+        flex: 1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        padding: 10px;
+        border-radius: 40px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s;
+        border: none;
+    }
+    .btn-accept {
+        background: #1E7A57;
+        color: white;
+    }
+    .btn-accept:hover {
+        background: #155E43;
+    }
+    .btn-reject {
+        background: white;
+        color: #E53935;
+        border: 1px solid #FFCDD2;
+    }
+    .btn-reject:hover {
+        background: #FFEBEE;
+    }
+    .btn-accept i, .btn-reject i {
+        font-size: 0.9rem;
+    }
+    .btn-detail {
+        width: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        background: white;
+        border: 1px solid #E8E0D5;
+        border-radius: 40px;
+        padding: 10px;
+        margin-top: 10px;
+        font-size: 0.7rem;
+        font-weight: 500;
+        color: #6B6B6B;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+    .btn-detail:hover {
+        background: #F5F3F0;
+        border-color: #1E7A57;
+    }
+    .btn-detail i {
+        font-size: 0.85rem;
+        color: #1E7A57;
+    }
+
+    /* Пустое состояние внутри рамки */
+    .empty-state {
+        text-align: center;
+        padding: 48px 24px;
+    }
+    .empty-icon {
+        width: 80px;
+        height: 80px;
+        background: linear-gradient(135deg, #F8F6F3 0%, #F0EDE8 100%);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 16px;
+    }
+    .empty-icon i {
+        font-size: 2.5rem;
+        color: #C8E0D6;
+    }
+    .empty-state h3 {
+        font-size: 1rem;
+        font-weight: 700;
+        color: #1E1E1E;
+        margin-bottom: 6px;
+    }
+    .empty-state p {
+        font-size: 0.8rem;
+        color: #ADB5BD;
+        margin: 0;
+    }
+</style>
+
+
+<script>
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+    
+    const csrftoken = getCookie('csrftoken');
+    
+    function updateShift(status) {
+        fetch('/delivery/courier/update-shift/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrftoken
+            },
+            body: JSON.stringify({ status: status })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert('Ошибка: ' + data.error);
+            }
+        })
+        .catch(error => {
+            alert('Ошибка сервера');
+        });
+    }
+    
+    function toggleBreak() {
+        const currentStatus = "{{ shift_status }}";
+        
+        if (currentStatus === 'break') {
+            fetch('/delivery/courier/end-break/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': csrftoken
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    location.reload();
+                } else {
+                    alert('Ошибка: ' + data.error);
+                }
+            });
+        } else if (currentStatus === 'on') {
+            fetch('/delivery/courier/start-break/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': csrftoken
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    location.reload();
+                } else {
+                    alert('Ошибка: ' + data.error);
+                }
+            });
+        } else {
+            alert('Сначала начните рабочую смену');
+        }
+    }
+    
+    function acceptOrder(orderId) {
+        fetch(`/delivery/courier/accept/${orderId}/`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': csrftoken
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            document.getElementById(`order-${orderId}`).remove();
+            loadActiveOrdersCount();
+        } else {
+            alert('Ошибка: ' + data.error);
+        }
+    });
+}
+    
+    function rejectOrder(orderId) {
+        if (confirm('Вы уверены, что хотите отклонить этот заказ?')) {
+            fetch(`/delivery/courier/reject/${orderId}/`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': csrftoken
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    document.getElementById(`order-${orderId}`).remove();
+                    alert('Заказ отклонен');
+                } else {
+                    alert('Ошибка: ' + data.error);
+                }
+            });
+        }
+    }
+    
+    function openOrderDetails(orderId) {
+        window.location.href = `/delivery/order/${orderId}/`;
+    }
+    
+    function loadActiveOrdersCount() {
+        fetch('/delivery/courier/active-count/')
+            .then(response => response.json())
+            .then(data => {
+                const badge = document.getElementById('activeOrdersCount');
+                if (badge && data.count > 0) {
+                    badge.textContent = data.count;
+                    badge.style.display = 'inline-block';
+                } else if (badge) {
+                    badge.style.display = 'none';
+                }
+            });
+    }
+</script>
+{% endblock %}

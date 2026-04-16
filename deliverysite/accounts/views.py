@@ -7,7 +7,7 @@ from django.http import JsonResponse
 from django.utils import timezone  
 from .forms import RegistrationForm
 from django.contrib.auth.forms import AuthenticationForm
-from delivery.models import Order, Client, Courier, OrderRating, OrderStatusHistory, User 
+from delivery.models import Order, Client, Courier, OrderRating, OrderStatusHistory, User, CourierNotification 
 from django.db.models import Count, Avg, Q
 from datetime import datetime, timedelta
 from django.core.paginator import Paginator
@@ -17,6 +17,8 @@ import string
 from django.db.models import Sum
 from django.core.mail import send_mail
 from django.conf import settings
+from django.shortcuts import get_object_or_404
+
 
 # ЛК Клиент
 def register_view(request):
@@ -1023,7 +1025,7 @@ def manager_settings(request):
 
 @login_required
 def manager_tasks_count(request):
-    """API для получения количества задач менеджера"""
+    "API для получения количества задач менеджера"
     if request.user.role != 'manager':
         return JsonResponse({'error': 'Access denied'}, status=403)
     
@@ -1046,7 +1048,6 @@ def manager_tasks_count(request):
 
 @login_required
 def assign_courier_ajax(request):
-    "AJAX назначение курьера на заказ"
     if request.user.role != 'manager':
         return JsonResponse({'error': 'Доступ запрещен'}, status=403)
     
@@ -1056,32 +1057,43 @@ def assign_courier_ajax(request):
             order_id = data.get('order_id')
             user_id = data.get('courier_id')
             
-            print(f"DEBUG: order_id={order_id}, user_id={user_id}")
+            order = get_object_or_404(Order, pk=order_id)
+            courier = get_object_or_404(Courier, user_id=user_id)
             
-            if not order_id or not user_id:
-                return JsonResponse({'error': 'Не указаны ID заказа или курьера'}, status=400)
+            # Проверки
+            if order.status not in ['created', 'pending']:
+                return JsonResponse({'error': 'Нельзя назначить курьера'}, status=400)
             
-            order = Order.objects.get(pk=order_id)
-            # Ищем курьера по user_id
-            courier = Courier.objects.get(user_id=user_id)
+            if not courier.is_available():
+                return JsonResponse({'error': 'Курьер недоступен'}, status=400)
             
-            # Обновляем заказ
+            # Назначение
             order.courier = courier
-            order.status = 'assigned'
+            order.status = 'pending'
             order.save()
-
-            return JsonResponse({'success': True, 'message': 'Курьер успешно назначен'})
             
-        except Order.DoesNotExist:
-            return JsonResponse({'error': f'Заказ с ID {order_id} не найден'}, status=404)
-        except Courier.DoesNotExist:
-            return JsonResponse({'error': f'Курьер с ID {user_id} не найден'}, status=404)
+            # История
+            OrderStatusHistory.objects.create(
+                order=order,
+                status='pending',
+                comment=f'Назначен курьер {courier.user.get_full_name()}, ожидает подтверждения'
+            )
+            
+            # Уведомление
+            CourierNotification.objects.create(
+                courier=courier,
+                order=order,
+                message=f'Вам назначен заказ №{order.id}',
+                notification_type='new'
+            )
+            
+            return JsonResponse({'success': True})
+            
         except Exception as e:
-            print(f"DEBUG: Ошибка: {str(e)}")
             return JsonResponse({'error': str(e)}, status=500)
     
     return JsonResponse({'error': 'Метод не разрешен'}, status=405)
-  
+
 @login_required
 def delete_order_ajax(request):
     "AJAX удаление заказа"
@@ -1107,7 +1119,6 @@ def delete_order_ajax(request):
 def get_order_details(request):
     "Получение деталей заказа для модального окна"
     # Разрешаем доступ и менеджеру, и клиенту (владельцу заказа)
-    
     order_id = request.GET.get('order_id')
     
     try:

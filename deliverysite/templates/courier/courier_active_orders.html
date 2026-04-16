@@ -1,0 +1,51 @@
+{% extends 'courier/courier_base.html' %}
+{% load static %}
+{% block title %}Активные заказы{% endblock %}
+
+{% block courier_content %}
+<div class="section-title">
+    <i class="bi bi-truck"></i>
+    <span>Активные заказы</span>
+</div>
+
+{% if active_orders %}
+    {% for order in active_orders %}
+    <div class="active-order-card">
+        <div class="active-order-header">
+            <span class="order-id">Заказ #{{ order.id }}</span>
+            <span class="active-order-status">{{ order.get_status_display }}</span>
+        </div>
+        <div class="order-address" style="margin-bottom: 10px;">
+            <i class="bi bi-geo-alt"></i>
+            <span>Отправка: {{ order.pickup_address|truncatechars:40 }}</span>
+        </div>
+        <div class="order-address" style="margin-bottom: 10px;">
+            <i class="bi bi-geo-alt-fill"></i>
+            <span>Доставка: {{ order.delivery_address|truncatechars:40 }}</span>
+        </div>
+        <div class="order-type" style="margin-bottom: 8px;">
+            <i class="bi bi-person"></i>
+            <span>Получатель: {{ order.recipient_last_name }} {{ order.recipient_first_name }}</span>
+        </div>
+        <div class="order-type" style="margin-bottom: 14px;">
+            <i class="bi bi-telephone"></i>
+            <span>Телефон: {{ order.recipient_phone }}</span>
+        </div>
+        <button class="btn-detail" onclick="openOrderDetails({{ order.id }})">
+            Подробнее о заказе
+        </button>
+    </div>
+    {% endfor %}
+{% else %}
+    <div class="empty-state">
+        <i class="bi bi-check-circle"></i>
+        <p>Нет активных заказов</p>
+    </div>
+{% endif %}
+
+<script>
+    function openOrderDetails(orderId) {
+        window.location.href = `/delivery/order/${orderId}/`;
+    }
+</script>
+{% endblock %}
