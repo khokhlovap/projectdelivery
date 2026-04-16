@@ -141,16 +141,87 @@ def client_dashboard(request):
 
 @login_required
 def client_orders(request):
-    "Все заказы клиента"
+    "Все заказы клиента с пагинацией"
     try:
         orders = Order.objects.filter(
             client=request.user.client_profile
         ).order_by('-created_at')
-    except:
-        orders = []
-    
-    return render(request, 'accounts/orders.html', {'orders': orders})
 
+        # Добавляем информацию об оценке для каждого заказа
+        for order in orders:
+            try:
+                order.rating_value = order.rating.rating
+                order.has_rating = True
+            except:
+                order.rating_value = None
+                order.has_rating = False
+        
+        # Пагинация (4 заказов на страницу)
+        paginator = Paginator(orders, 4)
+        page_number = request.GET.get('page')
+        page_obj = paginator.get_page(page_number)
+        total_count = orders.count()
+        
+    except Exception as e:
+        print(f"Error in client_orders: {e}")
+        page_obj = []
+        total_count = 0
+    
+    return render(request, 'accounts/clients_orders.html', {
+        'page_obj': page_obj,
+        'total_count': total_count
+    })
+
+@login_required
+def rate_order(request):
+    "Оценка заказа клиентом"
+    if request.method != 'POST':
+        return JsonResponse({'error': 'Метод не разрешен'}, status=405)
+    
+    try:
+        data = json.loads(request.body)
+        order_id = data.get('order_id')
+        rating = data.get('rating')
+        
+        if not rating or rating < 1 or rating > 5:
+            return JsonResponse({'error': 'Некорректная оценка'}, status=400)
+        
+        order = Order.objects.get(id=order_id, client=request.user.client_profile)
+        
+        # Проверка, есть ли уже оценка
+        if hasattr(order, 'rating'):
+            return JsonResponse({'error': 'Оценка уже была оставлена'}, status=400)
+        
+        # Проверка, что заказ доставлен
+        if order.status != 'delivered':
+            return JsonResponse({'error': 'Оценку можно оставить только после доставки'}, status=400)
+        
+        # Создаем оценку
+        OrderRating.objects.create(
+            order=order,
+            client=request.user.client_profile,
+            courier=order.courier,
+            rating=rating
+        )
+        
+        return JsonResponse({'success': True, 'message': 'Спасибо за оценку!'})
+    except Order.DoesNotExist:
+        return JsonResponse({'error': 'Заказ не найден'}, status=404)
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
+    
+@login_required
+def check_order_rating(request):
+    "Проверка, есть ли уже оценка у заказа"
+    order_id = request.GET.get('order_id')
+    
+    try:
+        order = Order.objects.get(id=order_id, client=request.user.client_profile)
+        has_rating = hasattr(order, 'rating')
+        return JsonResponse({'has_rating': has_rating})
+    except Order.DoesNotExist:
+        return JsonResponse({'has_rating': True, 'error': 'Заказ не найден'}, status=404)
+    
 @login_required
 def client_settings(request):
     "Настройки профиля"
@@ -958,19 +1029,29 @@ def delete_order_ajax(request):
     
     return JsonResponse({'error': 'Метод не разрешен'}, status=405)
 
-
 @login_required
 def get_order_details(request):
     "Получение деталей заказа для модального окна"
-    if request.user.role != 'manager':
-        return JsonResponse({'error': 'Доступ запрещен'}, status=403)
+    # Разрешаем доступ и менеджеру, и клиенту (владельцу заказа)
     
     order_id = request.GET.get('order_id')
     
     try:
         order = Order.objects.get(id=order_id)
         
-        # Получаем Всю историю статусов в хронологическом порядке
+        # Проверка прав доступа:
+        # - Менеджер может смотреть любой заказ
+        # - Клиент может смотреть только свои заказы
+        if request.user.role == 'manager':
+            pass  # менеджеру всё можно
+        elif request.user.role == 'client':
+            # Проверяем, что заказ принадлежит этому клиенту
+            if order.client != request.user.client_profile:
+                return JsonResponse({'error': 'Доступ запрещен'}, status=403)
+        else:
+            return JsonResponse({'error': 'Доступ запрещен'}, status=403)
+        
+        # Получаем всю историю статусов в хронологическом порядке
         status_history = OrderStatusHistory.objects.filter(order=order).order_by('changed_at')
         history_list = []
         for status in status_history:
@@ -983,34 +1064,42 @@ def get_order_details(request):
         # Получаем последний статус
         last_status = status_history.last()
         
+        # Определяем статус оплаты из поля payment_status (уже есть в модели)
+        payment_status_display = dict(Order.PAYMENT_CHOICES).get(order.payment_status, 'Не указан')
+        
+        # Данные для клиента
         data = {
             'id': order.id,
             'client_name': order.client.company_name,
-            'client_inn': order.client.inn,
             'contact_person': order.client.get_contact_person_full_name(),
             'contact_phone': order.client.contact_person_phone,
-            'contact_email': order.client.contact_person_email,
             'pickup_address': order.pickup_address,
             'delivery_address': order.delivery_address,
             'order_type': order.get_order_type_display(),
             'tariff': order.get_tariff_display(),
             'weight': str(order.weight) if order.weight else 'не указан',
-            'courier_name': order.courier.user.get_full_name() if order.courier else 'Не назначен',
-            'client_comment': order.client_comment or 'Нет комментария',
             'recipient_name': order.get_recipient_full_name(),
             'recipient_phone': order.recipient_phone,
             'recipient_company': order.recipient_company or '—',
             'created_at': order.created_at.strftime('%d.%m.%Y %H:%M'),
-            'requested_delivery_date': order.requested_delivery_date.strftime('%d.%m.%Y'),
             'current_status': order.get_status_display(),
-            'last_status_time': last_status.changed_at.strftime('%d.%m.%Y %H:%M') if last_status else order.created_at.strftime('%d.%m.%Y %H:%M'),
-            'last_status_comment': last_status.comment if last_status else 'Заказ создан',
-            'status_history': history_list
+            'payment_status': payment_status_display,  # используем правильное поле
+            'total_amount': str(order.total_amount) if order.total_amount else '0',
+            'status_history': history_list,
+            'client_comment': order.client_comment or 'Нет комментария',
         }
         
+        # Добавляем информацию о курьере, если есть
+        if order.courier:
+            data['courier_name'] = order.courier.user.get_full_name()
+            data['courier_phone'] = order.courier.user.phone or '—'
+        else:
+            data['courier_name'] = 'Не назначен'
+            data['courier_phone'] = '—'
+        
         return JsonResponse({'success': True, 'data': data})
+        
     except Order.DoesNotExist:
         return JsonResponse({'error': 'Заказ не найден'}, status=404)
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=500)
-    

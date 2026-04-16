@@ -1,0 +1,900 @@
+{% extends 'accounts/lk_base.html' %}
+{% load static %}
+{% block title %}Мои заказы{% endblock %}
+
+{% block lk_content %}
+<style>
+    /* Шапка раздела */
+    .section-header {
+        margin-bottom: 28px;
+    }
+    .section-title {
+        font-size: 1.5rem;
+        font-weight: 600;
+        color: #1E1E1E;
+    }
+    .section-subtitle {
+        font-size: 0.85rem;
+        color: #6B6B6B;
+    }
+    .header-divider {
+        height: 3px;
+        background: linear-gradient(90deg, #1E7A57 0%, #C8E0D6 50%, transparent 100%);
+        border-radius: 3px;
+        margin-top: 12px;
+    }
+    
+    .orders-list {
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+    }
+    
+    .order-card {
+        background: white;
+        border-radius: 20px;
+        border: 1px solid #E8E0D5;
+        padding: 20px;
+        transition: all 0.3s;
+    }
+    .order-card:hover {
+        border-color: #C8E0D6;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.06);
+        transform: translateX(4px);
+    }
+    
+    .order-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        margin-bottom: 16px;
+        padding-bottom: 12px;
+        border-bottom: 1px solid #E8E0D5;
+    }
+    .order-number {
+        font-weight: 700;
+        font-size: 1rem;
+        color: #1E7A57;
+    }
+    .order-status {
+        padding: 4px 12px;
+        border-radius: 30px;
+        font-size: 0.7rem;
+        font-weight: 500;
+    }
+    .status-created { background: #e9ecef; color: #495057; }
+    .status-pending { background: #fff3cd; color: #856404; }
+    .status-assigned { background: #d1ecf1; color: #0c5460; }
+    .status-in_progress { background: #cfe2ff; color: #084298; }
+    .status-delivered { background: #d4edda; color: #155724; }
+    
+    /* Информация о курьере */
+    .courier-assigned {
+        background: #F0F7F4;
+        border-radius: 12px;
+        padding: 10px 16px;
+        margin-bottom: 16px;
+        font-size: 0.85rem;
+        color: #1E7A57;
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+    .courier-assigned i {
+        font-size: 1rem;
+    }
+    .courier-assigned .courier-phone {
+        color: #1E7A57;
+        text-decoration: none;
+        font-weight: 500;
+    }
+    .courier-assigned .courier-phone:hover {
+        text-decoration: underline;
+    }
+    
+    /* Отображение оценки звездами */
+    .rating-stars-display {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        background: #F8F9FA;
+        padding: 6px 14px;
+        border-radius: 30px;
+    }
+    .rating-stars-display .stars {
+        color: #FFC107;
+        font-size: 0.85rem;
+        letter-spacing: 2px;
+    }
+    .rating-stars-display .rating-value {
+        font-weight: 600;
+        color: #1E7A57;
+        font-size: 0.8rem;
+    }
+    
+    .order-info {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 20px;
+        margin-bottom: 16px;
+    }
+    .info-item {
+        flex: 1;
+        min-width: 150px;
+    }
+    .info-label {
+        font-size: 0.65rem;
+        text-transform: uppercase;
+        color: #6B6B6B;
+        margin-bottom: 4px;
+        letter-spacing: 0.5px;
+    }
+    .info-value {
+        font-size: 0.85rem;
+        font-weight: 500;
+        color: #1E1E1E;
+    }
+    
+    .order-actions {
+        display: flex;
+        gap: 12px;
+        flex-wrap: wrap;
+        margin-top: 12px;
+        align-items: center;
+    }
+    
+    .btn-order {
+        padding: 6px 20px;
+        border-radius: 30px;
+        font-size: 0.75rem;
+        font-weight: 500;
+        transition: all 0.2s;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        cursor: pointer;
+        border: none;
+    }
+    .btn-primary-outline {
+        background: white;
+        border: 1px solid #C8E0D6;
+        color: #1E7A57;
+    }
+    .btn-primary-outline:hover {
+        background: #1E7A57;
+        color: white !important;
+    }
+    .btn-warning-outline {
+        background: white;
+        border: 1px solid #ffe0b2;
+        color: #E65100;
+    }
+    .btn-warning-outline:hover {
+        background: #E65100;
+        color: white;
+        border-color: #E65100;
+    }
+    
+    /* Кнопка Подробнее */
+    .btn-outline-info {
+        background: white;
+        border: 1px solid #E8E0D5;
+        color: #6B6B6B;
+    }
+    .btn-outline-info:hover {
+        background: #6B6B6B;
+        color: white;
+    }
+    
+    /* Пагинация */
+    .pagination {
+        margin-top: 32px;
+        justify-content: center;
+    }
+    .page-link {
+        border-radius: 10px;
+        margin: 0 4px;
+        color: #1E7A57;
+        border: 1px solid #E8E0D5;
+        padding: 8px 14px;
+    }
+    .page-link:hover {
+        background: #C8E0D6;
+        border-color: #1E7A57;
+        color: #1E7A57;
+    }
+    .page-item.active .page-link {
+        background-color: #1E7A57;
+        border-color: #1E7A57;
+        color: white;
+    }
+    
+    /* Звезды рейтинга для оценки */
+    .star-rating {
+        display: flex;
+        flex-direction: row-reverse;
+        justify-content: flex-end;
+        gap: 8px;
+    }
+    .star-rating input {
+        display: none;
+    }
+    .star-rating label {
+        font-size: 2rem;
+        color: #ddd;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+    .star-rating label:hover,
+    .star-rating label:hover ~ label,
+    .star-rating input:checked ~ label {
+        color: #FFC107;
+    }
+    
+    .rating-text {
+        text-align: center;
+        margin-top: 10px;
+        font-size: 0.85rem;
+        color: #6B6B6B;
+    }
+    
+    /* Модальное окно */
+    .custom-modal .modal-content {
+        border: none;
+        border-radius: 20px;
+        overflow: hidden;
+    }
+    .custom-modal .modal-header {
+        background: white;
+        border-bottom: 1px solid #E8E0D5;
+        padding: 20px 24px;
+    }
+    .custom-modal .modal-header .modal-title {
+        color: #1E7A57;
+        font-weight: 600;
+    }
+    .custom-modal .modal-body {
+        padding: 24px;
+    }
+    .custom-modal .modal-footer {
+        border-top: 1px solid #E8E0D5;
+        padding: 16px 24px;
+    }
+    .btn-secondary-custom {
+        background: white;
+        border: 1px solid #E8E0D5;
+        border-radius: 30px;
+        padding: 8px 24px;
+        color: #6B6B6B;
+    }
+    .btn-primary-custom {
+        background: #1E7A57;
+        border: none;
+        border-radius: 30px;
+        padding: 8px 28px;
+        color: white;
+    }
+    .btn-primary-custom:hover {
+        background: #155f44;
+    }
+    
+    /* Кастомный скролл */
+    .status-timeline {
+        background: #F8F9FA;
+        border-radius: 16px;
+        padding: 16px;
+        margin-top: 16px;
+        max-height: 250px;
+        overflow-y: auto;
+        padding-right: 8px;
+    }
+    .status-timeline::-webkit-scrollbar {
+        width: 6px;
+    }
+    .status-timeline::-webkit-scrollbar-track {
+        background: #E8E0D5;
+        border-radius: 10px;
+    }
+    .status-timeline::-webkit-scrollbar-thumb {
+        background: #C8E0D6;
+        border-radius: 10px;
+    }
+    .status-timeline::-webkit-scrollbar-thumb:hover {
+        background: #1E7A57;
+    }
+    
+    .status-item {
+        display: flex;
+        align-items: flex-start;
+        gap: 12px;
+        padding: 12px 0;
+        border-bottom: 1px solid #E8E0D5;
+    }
+    .status-item:last-child {
+        border-bottom: none;
+    }
+    .status-icon {
+        width: 32px;
+        height: 32px;
+        background: white;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #1E7A57;
+        border: 1px solid #C8E0D6;
+    }
+    .status-content {
+        flex: 1;
+    }
+    .status-title {
+        font-weight: 600;
+        font-size: 0.85rem;
+        color: #1E1E1E;
+    }
+    .status-time {
+        font-size: 0.7rem;
+        color: #6B6B6B;
+    }
+    .status-comment {
+        font-size: 0.75rem;
+        color: #6B6B6B;
+        margin-top: 4px;
+    }
+    
+    /* Стили для блоков в модальном окне */
+    .details-row {
+        display: flex;
+        flex-wrap: wrap;
+        margin: 0 -10px;
+    }
+    .details-col {
+        flex: 1;
+        min-width: 250px;
+        padding: 0 10px;
+        margin-bottom: 20px;
+    }
+    .detail-card {
+        background: #F8F9FA;
+        border-radius: 16px;
+        padding: 20px;
+        border: 1px solid #E8E0D5;
+        transition: all 0.2s;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+    }
+    .detail-card:hover {
+        background: white;
+        border-color: #C8E0D6;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    }
+    .detail-card-header {
+        font-size: 0.75rem;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        color: #1E7A57;
+        font-weight: 700;
+        margin-bottom: 16px;
+        padding-bottom: 8px;
+        border-bottom: 2px solid #C8E0D6;
+        display: inline-block;
+        flex-shrink: 0;
+    }
+    .detail-card-body {
+        flex: 1;
+    }
+    .detail-row {
+        display: flex;
+        flex-wrap: wrap;
+        margin-bottom: 12px;
+    }
+    .detail-label {
+        width: 110px;
+        font-size: 0.75rem;
+        color: #6B6B6B;
+        font-weight: 500;
+        flex-shrink: 0;
+    }
+    .detail-value {
+        flex: 1;
+        font-size: 0.85rem;
+        color: #1E1E1E;
+        font-weight: 500;
+        word-break: break-word;
+    }
+    .detail-value strong {
+        color: #1E7A57;
+    }
+    .highlight-badge {
+        background: #E8F5E9;
+        color: #2E7D32;
+        padding: 4px 12px;
+        border-radius: 30px;
+        font-size: 0.75rem;
+        font-weight: 500;
+        display: inline-block;
+    }
+    
+    /* Пустое состояние */
+    .empty-state {
+        text-align: center;
+        padding: 60px 20px;
+        background: white;
+        border-radius: 20px;
+        border: 1px solid #E8E0D5;
+    }
+    .empty-state i {
+        font-size: 4rem;
+        color: #C8E0D6;
+    }
+    .empty-state p {
+        color: #6B6B6B;
+    }
+    .btn-create {
+        display: inline-block;
+        background: #1E7A57;
+        color: white;
+        border-radius: 40px;
+        padding: 10px 28px;
+        text-decoration: none;
+        transition: all 0.2s;
+    }
+    .btn-create:hover {
+        background: #155f44;
+        color: white;
+    }
+</style>
+
+<!-- Шапка раздела -->
+<div class="section-header">
+    <div>
+        <h2 class="section-title mb-1">
+            <i class="bi bi-box-seam me-2" style="color: #1E7A57;"></i>
+            Мои заказы
+        </h2>
+        <p class="section-subtitle mb-0">Управление и отслеживание ваших заказов</p>
+    </div>
+    <div class="header-divider"></div>
+</div>
+
+<!-- Список заказов -->
+<div class="orders-list">
+    {% if page_obj %}
+        {% for order in page_obj %}
+        <div class="order-card">
+            <div class="order-header">
+                <span class="order-number">№ {{ order.invoice_number|default:order.id }}</span>
+                <span class="order-status status-{{ order.status }}">
+                    {{ order.get_status_display }}
+                </span>
+            </div>
+            
+            <!-- Информация о назначенном курьере (если есть и заказ не доставлен) -->
+            {% if order.courier and order.status != 'delivered' %}
+            <div class="courier-assigned">
+                <i class="bi bi-truck"></i>
+                <span>Вам назначен курьер: <strong>{{ order.courier.user.get_full_name }}</strong></span>
+                <span>|</span>
+                <i class="bi bi-telephone"></i>
+                <span>тел: <a href="tel:{{ order.courier.user.phone }}" class="courier-phone">{{ order.courier.user.phone|default:"номер не указан" }}</a></span>
+            </div>
+            {% endif %}
+            
+            <div class="order-info">
+                <div class="info-item">
+                    <div class="info-label">Дата создания</div>
+                    <div class="info-value">{{ order.created_at|date:"d.m.Y H:i" }}</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">Тип заказа</div>
+                    <div class="info-value">{{ order.get_order_type_display }}</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">Адрес доставки</div>
+                    <div class="info-value">{{ order.delivery_address|truncatechars:40 }}</div>
+                </div>
+            </div>
+            
+            <div class="order-actions">
+                {% if order.status == 'delivered' %}
+    
+                    {% if order.has_rating %}
+                        <!-- Просто показываем оценку -->
+                        <div class="rating-stars-display">
+                            <i class="bi bi-star-fill" style="color: #FFC107;"></i>
+                            <span class="rating-value">
+                                {{ order.rating_value|floatformat:1 }} / 5
+                            </span>
+                        </div>
+                        
+                    {% else %}
+                        <!-- Даем возможность оценить -->
+                        <button class="btn-order btn-warning-outline" onclick="openRatingModal({{ order.id }})">
+                            <i class="bi bi-star"></i> Оценить доставку
+                        </button>
+                    {% endif %}
+
+                {% endif %}
+                
+                
+                {% if order.courier and order.status != 'delivered' %}
+                    <a href="tel:{{ order.courier.user.phone }}" class="btn-order btn-primary-outline">
+                        <i class="bi bi-telephone"></i> Позвонить курьеру
+                    </a>
+                {% endif %}
+                
+                <button class="btn-order btn-outline-info" onclick="openOrderDetails({{ order.id }})">
+                    <i class="bi bi-eye"></i> Подробнее
+                </button>
+            </div>
+        </div>
+        {% endfor %}
+        
+        <!-- Пагинация -->
+        {% if page_obj.has_other_pages %}
+        <nav>
+            <ul class="pagination">
+                {% if page_obj.has_previous %}
+                <li class="page-item">
+                    <a class="page-link" href="?page=1">&laquo;&laquo;</a>
+                </li>
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ page_obj.previous_page_number }}">&laquo;</a>
+                </li>
+                {% endif %}
+                
+                {% for num in page_obj.paginator.page_range %}
+                    {% if page_obj.number == num %}
+                        <li class="page-item active"><span class="page-link">{{ num }}</span></li>
+                    {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ num }}">{{ num }}</a>
+                        </li>
+                    {% endif %}
+                {% endfor %}
+                
+                {% if page_obj.has_next %}
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ page_obj.next_page_number }}">&raquo;</a>
+                </li>
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}">&raquo;&raquo;</a>
+                </li>
+                {% endif %}
+            </ul>
+        </nav>
+        {% endif %}
+        
+        <div class="text-muted small mt-3">
+            Показано {{ page_obj|length }} из {{ total_count }} заказов
+        </div>
+        
+    {% else %}
+        <div class="empty-state">
+            <i class="bi bi-inbox"></i>
+            <p class="mt-3 mb-1">У вас пока нет заказов</p>
+            <p class="small">Создайте новый заказ, чтобы начать</p>
+            <a href="{% url 'delivery:create_order' %}" class="btn-create mt-3">
+                <i class="bi bi-plus-circle"></i> Создать заказ
+            </a>
+        </div>
+    {% endif %}
+</div>
+
+<!-- Модальное окно оценки -->
+<div class="modal fade custom-modal" id="ratingModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="bi bi-star me-2"></i>Оцените доставку</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body text-center">
+                <input type="hidden" id="ratingOrderId">
+                <div class="star-rating">
+                    <input type="radio" id="star5" name="rating" value="5">
+                    <label for="star5" title="Отлично">★</label>
+                    <input type="radio" id="star4" name="rating" value="4">
+                    <label for="star4" title="Хорошо">★</label>
+                    <input type="radio" id="star3" name="rating" value="3">
+                    <label for="star3" title="Нормально">★</label>
+                    <input type="radio" id="star2" name="rating" value="2">
+                    <label for="star2" title="Плохо">★</label>
+                    <input type="radio" id="star1" name="rating" value="1">
+                    <label for="star1" title="Ужасно">★</label>
+                </div>
+                <div class="rating-text mt-3" id="ratingText">Нажмите на звезду, чтобы оценить</div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn-secondary-custom" data-bs-dismiss="modal">Отмена</button>
+                <button type="button" class="btn-primary-custom" id="submitRatingBtn">Отправить</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Модальное окно деталей заказа -->
+<div class="modal fade custom-modal" id="orderDetailsModal" tabindex="-1">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="bi bi-info-circle me-2"></i>Детали заказа №<span id="detailOrderId"></span></h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="orderDetailsContent">
+                <div class="text-center py-4">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Загрузка...</span>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn-secondary-custom" data-bs-dismiss="modal">Закрыть</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<script>
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+    
+    const csrftoken = getCookie('csrftoken');
+    let currentOrderIdForRating = null;
+    
+    // Обновление текста при выборе звезды
+    function updateRatingText(rating) {
+        const texts = {
+            1: 'Очень плохо',
+            2: 'Плохо',
+            3: 'Нормально',
+            4: 'Хорошо',
+            5: 'Отлично!'
+        };
+        document.getElementById('ratingText').innerHTML = texts[rating] || 'Нажмите на звезду, чтобы оценить';
+    }
+    
+    document.querySelectorAll('.star-rating input').forEach(star => {
+        star.addEventListener('change', function() {
+            updateRatingText(this.value);
+        });
+    });
+    
+    // Открытие модального окна оценки
+    function openRatingModal(orderId) {
+        // Проверяем через AJAX, есть ли уже оценка
+        fetch('/check-order-rating/?order_id=' + orderId, {
+            method: 'GET',
+            headers: {
+                'X-CSRFToken': csrftoken
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.has_rating) {
+                alert('Вы уже оценили этот заказ. Спасибо!');
+                return;
+            }
+            
+            currentOrderIdForRating = orderId;
+            document.getElementById('ratingOrderId').value = orderId;
+            // Сбрасываем выбор
+            document.querySelectorAll('.star-rating input').forEach(star => {
+                star.checked = false;
+            });
+            document.getElementById('ratingText').innerHTML = 'Нажмите на звезду, чтобы оценить';
+            new bootstrap.Modal(document.getElementById('ratingModal')).show();
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Ошибка при проверке оценки');
+        });
+    }
+    
+    // Отправка оценки
+    document.getElementById('submitRatingBtn')?.addEventListener('click', function() {
+        const orderId = currentOrderIdForRating;
+        
+        if (!orderId) {
+            alert('Ошибка: ID заказа не найден');
+            return;
+        }
+        
+        const selectedRating = document.querySelector('.star-rating input:checked');
+        
+        if (!selectedRating) {
+            alert('Пожалуйста, выберите оценку');
+            return;
+        }
+        
+        const rating = selectedRating.value;
+        
+        const btn = this;
+        const originalText = btn.innerHTML;
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Отправка...';
+        btn.disabled = true;
+        
+        fetch('/rate-order/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrftoken
+            },
+            body: JSON.stringify({ order_id: orderId, rating: parseInt(rating) })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert(data.message);
+                // Закрываем модальное окно
+                const modal = bootstrap.Modal.getInstance(document.getElementById('ratingModal'));
+                if (modal) modal.hide();
+                location.reload();
+            } else {
+                alert('Ошибка: ' + data.error);
+            }
+        })
+        .catch(error => {
+            alert('Ошибка сервера');
+        })
+        .finally(() => {
+            btn.innerHTML = originalText;
+            btn.disabled = false;
+        });
+    });
+    
+    // При закрытии модального окна сбрасываем currentOrderIdForRating
+    document.getElementById('ratingModal')?.addEventListener('hidden.bs.modal', function () {
+        currentOrderIdForRating = null;
+    });
+    
+    // Открытие деталей заказа
+    function openOrderDetails(orderId) {
+        document.getElementById('detailOrderId').textContent = orderId;
+        const modal = new bootstrap.Modal(document.getElementById('orderDetailsModal'));
+        modal.show();
+        
+        const contentDiv = document.getElementById('orderDetailsContent');
+        contentDiv.innerHTML = '<div class="text-center py-4"><div class="spinner-border text-primary" role="status"></div></div>';
+        
+        fetch('/api/order-details/?order_id=' + orderId)
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    const d = data.data;
+                    const totalAmount = d.total_amount || (d.total_amount === 0 ? 'Не указана' : d.total_amount + ' ₽');
+                    contentDiv.innerHTML = `
+                        <div class="details-row">
+                            <div class="details-col">
+                                <div class="detail-card">
+                                    <div class="detail-card-header"><i class="bi bi-person me-1"></i> ОТПРАВИТЕЛЬ</div>
+                                    <div class="detail-card-body">
+                                        <div class="detail-row">
+                                            <div class="detail-label">Контактное лицо:</div>
+                                            <div class="detail-value"><strong>${d.contact_person || d.client_name}</strong></div>
+                                        </div>
+                                        <div class="detail-row">
+                                            <div class="detail-label">Телефон:</div>
+                                            <div class="detail-value">${d.contact_phone || '—'}</div>
+                                        </div>
+                                        <div class="detail-row">
+                                            <div class="detail-label">Адрес:</div>
+                                            <div class="detail-value">${d.pickup_address}</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="details-col">
+                                <div class="detail-card">
+                                    <div class="detail-card-header"><i class="bi bi-person me-1"></i> ПОЛУЧАТЕЛЬ</div>
+                                    <div class="detail-card-body">
+                                        <div class="detail-row">
+                                            <div class="detail-label">ФИО:</div>
+                                            <div class="detail-value"><strong>${d.recipient_name || '—'}</strong></div>
+                                        </div>
+                                        <div class="detail-row">
+                                            <div class="detail-label">Телефон:</div>
+                                            <div class="detail-value">${d.recipient_phone || '—'}</div>
+                                        </div>
+                                        <div class="detail-row">
+                                            <div class="detail-label">Адрес:</div>
+                                            <div class="detail-value">${d.delivery_address}</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="details-row">
+                            <div class="details-col">
+                                <div class="detail-card">
+                                    <div class="detail-card-header"><i class="bi bi-box-seam me-1"></i> ИНФОРМАЦИЯ О ЗАКАЗЕ</div>
+                                    <div class="detail-card-body">
+                                        <div class="detail-row">
+                                            <div class="detail-label">Тип:</div>
+                                            <div class="detail-value"><span class="highlight-badge">${d.order_type}</span></div>
+                                        </div>
+                                        <div class="detail-row">
+                                            <div class="detail-label">Тариф:</div>
+                                            <div class="detail-value">${d.tariff}</div>
+                                        </div>
+                                        <div class="detail-row">
+                                            <div class="detail-label">Вес:</div>
+                                            <div class="detail-value">${d.weight} кг</div>
+                                        </div>
+                                        <div class="detail-row">
+                                            <div class="detail-label">Дата создания:</div>
+                                            <div class="detail-value">${d.created_at}</div>
+                                        </div>
+                                        <div class="detail-row">
+                                            <div class="detail-label">Статус:</div>
+                                            <div class="detail-value"><strong>${d.current_status}</strong></div>
+                                        </div>
+                                        ${d.courier_name && d.courier_name !== 'Не назначен' ? `
+                                        <div class="detail-row">
+                                            <div class="detail-label">Курьер:</div>
+                                            <div class="detail-value"><strong>${d.courier_name}</strong> ${d.courier_phone ? `(${d.courier_phone})` : ''}</div>
+                                        </div>
+                                        ` : ''}
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="details-col">
+                                <div class="detail-card">
+                                    <div class="detail-card-header"><i class="bi bi-credit-card me-1"></i> ОПЛАТА</div>
+                                    <div class="detail-card-body">
+                                        <div class="detail-row">
+                                            <div class="detail-label">Сумма:</div>
+                                            <div class="detail-value"><strong>${totalAmount}</strong></div>
+                                        </div>
+                                        <div class="detail-row">
+                                            <div class="detail-label">Статус оплаты:</div>
+                                            <div class="detail-value">${d.payment_status || 'Не указан'}</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="detail-card">
+                            <div class="detail-card-header"><i class="bi bi-clock-history me-1"></i> ИСТОРИЯ СТАТУСОВ</div>
+                            <div class="status-timeline">
+                                ${d.status_history && d.status_history.length > 0 ? d.status_history.slice().reverse().map(h => `
+                                    <div class="status-item">
+                                        <div class="status-icon"><i class="bi bi-arrow-right-circle"></i></div>
+                                        <div class="status-content">
+                                            <div class="status-title">${h.status}</div>
+                                            <div class="status-time">${h.time}</div>
+                                            <div class="status-comment">${h.comment || '—'}</div>
+                                        </div>
+                                    </div>
+                                `).join('') : '<div class="text-muted small">Нет записей в истории</div>'}
+                            </div>
+                        </div>
+                    `;
+                } else {
+                    contentDiv.innerHTML = '<div class="alert alert-danger">Ошибка: ' + data.error + '</div>';
+                }
+            })
+            .catch(error => {
+                contentDiv.innerHTML = '<div class="alert alert-danger">Ошибка загрузки данных</div>';
+            });
+    }
+</script>
+ 
+{% endblock %}

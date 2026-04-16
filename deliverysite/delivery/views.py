@@ -30,7 +30,7 @@ def create_order(request):
             )
             
             messages.success(request, 'Заказ успешно создан!')
-            return redirect('accounts:orders')
+            return redirect('accounts:clients_orders')
     else:
         form = OrderForm()
     
