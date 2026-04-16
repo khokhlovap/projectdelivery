@@ -22,31 +22,31 @@
                 
                 <ul class="nav nav-pills flex-column gap-1">
                     <li class="nav-item">
-                        <a class="nav-link {% if request.resolver_match.url_name == 'home' %}active{% endif %}" 
+                        <a class="nav-link {% if active_tab == 'home' %}active{% endif %}" 
                            href="{% url 'accounts:home' %}">
                             <i class="bi bi-house me-2"></i> Главная
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" 
+                        <a class="nav-link {% if active_tab == 'create_order' %}active{% endif %}" 
                            href="{% url 'delivery:create_order' %}">
                             <i class="bi bi-plus-circle me-2"></i> Новый заказ
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link {% if request.resolver_match.url_name == 'orders' %}active{% endif %}" 
-                           href="{% url 'accounts:clients_orders' %}">
+                        <a class="nav-link {% if active_tab == 'orders' %}active{% endif %}" 
+                        href="{% url 'accounts:clients_orders' %}">
                             <i class="bi bi-list-check me-2"></i> Мои заказы
                         </a>
                     </li>
-                    <li class="nav-item">
-                        <a class="nav-link {% if request.resolver_match.url_name == 'settings' %}active{% endif %}" 
-                           href="{% url 'accounts:client_settings' %}">
+                   <li class="nav-item">
+                        <a class="nav-link {% if active_tab == 'settings' %}active{% endif %}" 
+                        href="{% url 'accounts:client_settings' %}">
                             <i class="bi bi-gear me-2"></i> Настройки
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link {% if request.resolver_match.url_name == 'ai_assistant' %}active{% endif %}" 
+                        <a class="nav-link {% if active_tab == 'ai_assistant' %}active{% endif %}" 
                            href="{% url 'accounts:ai_assistant' %}">
                             <i class="bi bi-robot me-2"></i> AI помощник
                         </a>

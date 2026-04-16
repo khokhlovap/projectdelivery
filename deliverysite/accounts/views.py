@@ -136,41 +136,46 @@ def client_dashboard(request):
         'active_orders_count': active_orders_count,
         'total_orders': total_orders,
         'delivered_count': delivered_count,
+        'active_tab': 'home',
     }
     return render(request, 'accounts/dashboard.html', context)
 
 @login_required
 def client_orders(request):
-    "Все заказы клиента с пагинацией"
+    "Все заказы клиента"
     try:
-        orders = Order.objects.filter(
-            client=request.user.client_profile
-        ).order_by('-created_at')
-
-        # Добавляем информацию об оценке для каждого заказа
+        client_profile = request.user.client_profile
+        orders = Order.objects.filter(client=client_profile).order_by('-created_at')
+        
+        active_count = orders.filter(status__in=['created', 'pending', 'assigned', 'in_progress']).count()
+        delivered_count = orders.filter(status='delivered').count()
+        total_orders = orders.count()
+        
         for order in orders:
             try:
-                order.rating_value = order.rating.rating
-                order.has_rating = True
+                order.has_rating = hasattr(order, 'rating')
             except:
-                order.rating_value = None
                 order.has_rating = False
         
-        # Пагинация (4 заказов на страницу)
         paginator = Paginator(orders, 4)
-        page_number = request.GET.get('page')
+        page_number = request.GET.get('page', 1)
         page_obj = paginator.get_page(page_number)
-        total_count = orders.count()
         
-    except Exception as e:
-        print(f"Error in client_orders: {e}")
+    except:
         page_obj = []
-        total_count = 0
+        active_count = 0
+        delivered_count = 0
+        total_orders = 0
     
-    return render(request, 'accounts/clients_orders.html', {
+    context = {
         'page_obj': page_obj,
-        'total_count': total_count
-    })
+        'active_count': active_count,
+        'delivered_count': delivered_count,
+        'total_orders': total_orders,
+        'total_count': orders.count() if 'orders' in locals() else 0,
+        'active_tab': 'orders',
+    }
+    return render(request, 'accounts/clients_orders.html', context)
 
 @login_required
 def rate_order(request):
@@ -299,12 +304,16 @@ def client_settings(request):
     context = {
         'user': request.user,
         'client': client,
+        'active_tab': 'settings',
     }
     return render(request, 'accounts/client_settings.html', context)
 
 @login_required
 def ai_assistant(request):
     "AI помощник"
+    context = {
+    'active_tab': 'ai_assistant', 
+    }
     return render(request, 'accounts/ai_assistant.html')
 
 def privacy_policy(request):
@@ -1129,7 +1138,7 @@ def get_order_details(request):
         # Получаем последний статус
         last_status = status_history.last()
         
-        # Определяем статус оплаты из поля payment_status (уже есть в модели)
+        # Определяем статус оплаты из поля payment_status
         payment_status_display = dict(Order.PAYMENT_CHOICES).get(order.payment_status, 'Не указан')
         
         # Данные для клиента
@@ -1148,7 +1157,7 @@ def get_order_details(request):
             'recipient_company': order.recipient_company or '—',
             'created_at': order.created_at.strftime('%d.%m.%Y %H:%M'),
             'current_status': order.get_status_display(),
-            'payment_status': payment_status_display,  # используем правильное поле
+            'payment_status': payment_status_display, 
             'total_amount': str(order.total_amount) if order.total_amount else '0',
             'status_history': history_list,
             'client_comment': order.client_comment or 'Нет комментария',

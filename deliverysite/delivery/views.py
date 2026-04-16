@@ -19,10 +19,9 @@ def create_order(request):
         if form.is_valid():
             order = form.save(commit=False)
             order.client = client_profile
-            order.status = 'created'  # Устанавливаем статус
+            order.status = 'created'
             order.save()
             
-            # СОЗДАЕМ ЗАПИСЬ В ИСТОРИИ
             OrderStatusHistory.objects.create(
                 order=order,
                 status='created',
@@ -34,7 +33,12 @@ def create_order(request):
     else:
         form = OrderForm()
     
-    return render(request, 'delivery/order_create.html', {'form': form})
+    context = {
+        'form': form,
+        'active_tab': 'create_order',
+    }
+    
+    return render(request, 'delivery/order_create.html', context) 
 
 @login_required
 def order_list(request):
@@ -125,7 +129,7 @@ def courier_reject_order(request, order_id):
 
 @login_required
 def courier_accept_order(request, order_id):
-    """Курьер принимает заказ"""
+    "Курьер принимает заказ"
     if request.user.role != 'courier':
         return JsonResponse({'error': 'Доступ запрещен'}, status=403)
     
