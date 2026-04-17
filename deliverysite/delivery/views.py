@@ -453,3 +453,74 @@ def courier_active_count(request):
     ).count()
     
     return JsonResponse({'count': count})
+
+@login_required
+def courier_order_detail(request, order_id):
+    "Страница деталей заказа для курьера"
+    if request.user.role != 'courier':
+        messages.error(request, 'У вас нет доступа к этой странице')
+        return redirect('accounts:home')
+    
+    courier = request.user.courier_profile
+    order = get_object_or_404(Order, id=order_id, courier=courier)
+    
+    # Получаем историю статусов
+    status_history = OrderStatusHistory.objects.filter(order=order).order_by('-changed_at')
+    
+    context = {
+        'order': order,
+        'status_history': status_history,
+        'active_tab': 'active_orders',
+    }
+    return render(request, 'courier/courier_order_detail.html', context)
+
+@login_required
+def courier_update_order_status(request):
+    "Курьер обновляет статус заказа"
+    if request.user.role != 'courier':
+        return JsonResponse({'error': 'Доступ запрещен'}, status=403)
+    
+    if request.method != 'POST':
+        return JsonResponse({'error': 'Метод не разрешен'}, status=405)
+    
+    try:
+        data = json.loads(request.body)
+        order_id = data.get('order_id')
+        new_status = data.get('status')
+        
+        courier = request.user.courier_profile
+        order = get_object_or_404(Order, id=order_id, courier=courier)
+        
+        # Проверка допустимости перехода
+        valid_transitions = {
+            'assigned': ['in_progress'],
+            'in_progress': ['delivered'],
+            'delivered': []  # из доставленного нельзя изменить статус
+        }
+        
+        if new_status not in valid_transitions.get(order.status, []):
+            return JsonResponse({'error': f'Невозможно изменить статус с "{order.status}" на "{new_status}"'}, status=400)
+        
+        old_status = order.status
+        order.status = new_status
+        
+        # Если статус меняется на delivered - устанавливаем время доставки
+        if new_status == 'delivered' and not order.delivered_at:
+            order.delivered_at = timezone.now()
+        
+        order.save()
+        
+        # Создаем запись в истории
+        status_display = dict(Order.STATUS_CHOICES).get(new_status, new_status)
+        OrderStatusHistory.objects.create(
+            order=order,
+            status=new_status,
+            comment=f'Курьер {request.user.get_full_name()} изменил статус на "{status_display}"'
+        )
+        
+        return JsonResponse({'success': True, 'message': 'Статус обновлен'})
+        
+    except json.JSONDecodeError:
+        return JsonResponse({'error': 'Неверный JSON'}, status=400)
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=400)

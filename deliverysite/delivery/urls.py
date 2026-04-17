@@ -21,4 +21,6 @@ urlpatterns = [
     path('courier/active-count/', views.courier_active_count, name='courier_active_count'),
     path('courier/start-break/', views.courier_start_break, name='courier_start_break'),
     path('courier/end-break/', views.courier_end_break, name='courier_end_break'),
+    path('courier/order/<int:order_id>/', views.courier_order_detail, name='courier_order_detail'),
+    path('courier/update-order-status/', views.courier_update_order_status, name='courier_update_order_status'),
 ]

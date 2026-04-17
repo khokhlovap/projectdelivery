@@ -3,37 +3,214 @@
 {% block title %}Активные заказы{% endblock %}
 
 {% block courier_content %}
-<div class="section-title">
-    <i class="bi bi-truck"></i>
-    <span>Активные заказы</span>
+<style>
+    .shift-status-card {
+        background: white;
+        border-radius: 24px;
+        padding: 20px;
+        margin-bottom: 20px;
+        border: 1px solid #E8E0D5;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.03);
+    }
+    .shift-title {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 20px;
+    }
+    .shift-title-icon {
+        width: 40px;
+        height: 40px;
+        background: linear-gradient(135deg, #C8E0D6 0%, #E8E0D5 100%);
+        border-radius: 14px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    .shift-title-icon i {
+        font-size: 1.3rem;
+        color: #1E7A57;
+    }
+    .shift-title span {
+        font-size: 1rem;
+        font-weight: 700;
+        color: #1E1E1E;
+    }
+    
+    /* Карточка заказа */
+    .active-order-card {
+        background: white !important;
+        border-radius: 16px;
+        margin-bottom: 12px;
+        padding: 20px;
+        border: 1px solid #E8E0D5;
+        transition: all 0.3s;
+        border-left: 4px solid #d1ecf1;
+    }
+    .active-order-card:hover {
+        border-color: #bfccce;
+        border-left-color: #bfccce !important;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.06);
+        transform: translateX(4px);
+    }
+    .order-id {
+        font-weight: 600;
+        color: #1E7A57;
+        font-size: 0.9rem;
+    }
+    .active-order-status {
+        font-size: 0.7rem;
+        padding: 4px 10px;
+        border-radius: 30px;
+        background: #d4edda;
+        color: #155724;
+    }
+    .order-address {
+        font-size: 0.8rem;
+        margin-bottom: 10px;
+        display: flex;
+        align-items: flex-start;
+        gap: 8px;
+    }
+    .order-address i {
+        color: #1E7A57;
+        margin-top: 2px;
+        flex-shrink: 0;
+    }
+    .order-date {
+        font-size: 0.7rem;
+        color: #6B6B6B;
+        margin-bottom: 8px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+    .order-date i {
+        color: #1E7A57;
+        font-size: 0.8rem;
+    }
+    .order-type {
+        font-size: 0.75rem;
+        color: #6B6B6B;
+        margin-bottom: 8px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+    .order-type i {
+        color: #1E7A57;
+        width: 16px;
+    }
+    .action-buttons {
+        display: flex;
+        gap: 10px;
+        margin-top: 12px;
+    }
+    .btn-contact {
+        flex: 1;
+        background: #1E7A57;
+        color: white;
+        border: none;
+        border-radius: 30px;
+        padding: 8px 12px;
+        font-size: 0.75rem;
+        cursor: pointer;
+        transition: all 0.2s;
+        text-align: center;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+    }
+    .btn-contact:hover {
+        background: #155f44;
+        transform: translateY(-1px);
+    }
+    .btn-detail {
+        flex: 1;
+        background: white;
+        border: 1px solid #E8E0D5;
+        border-radius: 30px;
+        padding: 8px 12px;
+        font-size: 0.75rem;
+        color: #6B6B6B;
+        cursor: pointer;
+        transition: all 0.2s;
+        text-align: center;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+    }
+    .btn-detail:hover {
+        background: #6B6B6B;
+        color: white;
+        border-color: #6B6B6B;
+    }
+    .empty-state {
+        text-align: center;
+        padding: 40px 20px;
+        background: white;
+        border-radius: 16px;
+        border: 1px solid #E8E0D5;
+    }
+    .empty-state i {
+        font-size: 3rem;
+        color: #C8E0D5;
+    }
+    .empty-state p {
+        color: #6B6B6B;
+        margin-top: 12px;
+    }
+</style>
+
+<!-- Шапка раздела -->
+<div class="shift-status-card">
+    <div class="shift-title">
+        <div class="shift-title-icon">
+            <i class="bi bi-truck"></i>
+        </div>
+        <span>Активные заказы</span>
+    </div>
 </div>
 
 {% if active_orders %}
     {% for order in active_orders %}
     <div class="active-order-card">
-        <div class="active-order-header">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
             <span class="order-id">Заказ #{{ order.id }}</span>
             <span class="active-order-status">{{ order.get_status_display }}</span>
         </div>
-        <div class="order-address" style="margin-bottom: 10px;">
+        
+        <div class="order-address">
             <i class="bi bi-geo-alt"></i>
-            <span>Отправка: {{ order.pickup_address|truncatechars:40 }}</span>
+            <span><strong>Отправка:</strong> {{ order.pickup_address|truncatechars:50 }}</span>
         </div>
-        <div class="order-address" style="margin-bottom: 10px;">
+        <div class="order-address">
             <i class="bi bi-geo-alt-fill"></i>
-            <span>Доставка: {{ order.delivery_address|truncatechars:40 }}</span>
+            <span><strong>Доставка:</strong> {{ order.delivery_address|truncatechars:50 }}</span>
         </div>
-        <div class="order-type" style="margin-bottom: 8px;">
+        <div class="order-date">
+            <i class="bi bi-calendar"></i>
+            <span><strong>Желаемая дата:</strong> {{ order.requested_delivery_date|date:"d.m.Y" }}</span>
+        </div>
+        <div class="order-type">
+            <i class="bi bi-box-seam"></i>
+            <span>{{ order.get_order_type_display }} | Вес: {{ order.weight|default:"—" }} кг</span>
+        </div>
+        <div class="order-type">
             <i class="bi bi-person"></i>
             <span>Получатель: {{ order.recipient_last_name }} {{ order.recipient_first_name }}</span>
         </div>
-        <div class="order-type" style="margin-bottom: 14px;">
-            <i class="bi bi-telephone"></i>
-            <span>Телефон: {{ order.recipient_phone }}</span>
+        
+        <div class="action-buttons">
+            <button class="btn-contact" onclick="contactClient('{{ order.recipient_phone }}')">
+                <i class="bi bi-telephone"></i> Связаться
+            </button>
+            <button class="btn-detail" onclick="goToOrderDetail({{ order.id }})">
+                <i class="bi bi-eye"></i> Подробнее
+            </button>
         </div>
-        <button class="btn-detail" onclick="openOrderDetails({{ order.id }})">
-            Подробнее о заказе
-        </button>
     </div>
     {% endfor %}
 {% else %}
@@ -44,8 +221,12 @@
 {% endif %}
 
 <script>
-    function openOrderDetails(orderId) {
-        window.location.href = `/delivery/order/${orderId}/`;
+    function contactClient(phone) {
+        window.location.href = `tel:${phone}`;
+    }
+    
+    function goToOrderDetail(orderId) {
+        window.location.href = `/delivery/courier/order/${orderId}/`;
     }
 </script>
 {% endblock %}

@@ -1,0 +1,404 @@
+{% extends 'courier/courier_base.html' %}
+{% load static %}
+{% block title %}Детали заказа #{{ order.id }}{% endblock %}
+
+{% block courier_content %}
+<style>
+    .back-button {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        background: white;
+        border: 1px solid #E8E0D5;
+        border-radius: 40px;
+        padding: 10px 20px;
+        color: #1E7A57;
+        font-weight: 500;
+        text-decoration: none;
+        margin-bottom: 20px;
+        transition: all 0.2s;
+    }
+    .back-button:hover {
+        background: #1E7A57;
+        color: white;
+        border-color: #1E7A57;
+    }
+    .detail-card {
+        background: white;
+        border-radius: 20px;
+        padding: 24px;
+        margin-bottom: 20px;
+        border: 1px solid #E8E0D5;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.03);
+    }
+    .detail-card-header {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 20px;
+        padding-bottom: 12px;
+        border-bottom: 2px solid #C8E0D6;
+    }
+    .detail-card-header-icon {
+        width: 40px;
+        height: 40px;
+        background: linear-gradient(135deg, #C8E0D6 0%, #E8E0D5 100%);
+        border-radius: 14px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    .detail-card-header-icon i {
+        font-size: 1.3rem;
+        color: #1E7A57;
+    }
+    .detail-card-header h3 {
+        font-size: 1.1rem;
+        font-weight: 700;
+        color: #1E1E1E;
+        margin: 0;
+    }
+    .info-row {
+        display: flex;
+        margin-bottom: 14px;
+        flex-wrap: wrap;
+    }
+    .info-label {
+        width: 130px;
+        font-size: 0.75rem;
+        color: #6B6B6B;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    .info-value {
+        flex: 1;
+        font-size: 0.9rem;
+        color: #1E1E1E;
+        font-weight: 500;
+    }
+    .status-badge {
+        display: inline-block;
+        padding: 6px 14px;
+        border-radius: 30px;
+        font-size: 0.8rem;
+        font-weight: 500;
+    }
+    .status-assigned { background: #d1ecf1; color: #0c5460; }
+    .status-in_progress { background: #cfe2ff; color: #084298; }
+    .status-delivered { background: #d4edda; color: #155724; }
+    
+    .status-select {
+        width: 100%;
+        padding: 12px;
+        border-radius: 12px;
+        border: 1px solid #E8E0D5;
+        font-size: 0.9rem;
+        margin-top: 8px;
+    }
+    .btn-update {
+        background: #1E7A57;
+        color: white;
+        border: none;
+        border-radius: 40px;
+        padding: 12px 24px;
+        font-size: 0.9rem;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.2s;
+        width: 100%;
+        margin-top: 16px;
+    }
+    .btn-update:hover {
+        background: #155f44;
+        transform: translateY(-1px);
+    }
+    .btn-contact-large {
+        background: #1E7A57;
+        color: white;
+        border: none;
+        border-radius: 40px;
+        padding: 12px 24px;
+        font-size: 0.9rem;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.2s;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        width: 100%;
+    }
+    .btn-contact-large:hover {
+        background: #155f44;
+        transform: translateY(-1px);
+        color: white;
+    }
+    .timeline {
+        margin-top: 16px;
+    }
+    .timeline-item {
+        display: flex;
+        gap: 12px;
+        padding: 12px 0;
+        border-bottom: 1px solid #E8E0D5;
+    }
+    .timeline-item:last-child {
+        border-bottom: none;
+    }
+    .timeline-icon {
+        width: 32px;
+        height: 32px;
+        background: #F5F3F0;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+    }
+    .timeline-icon i {
+        font-size: 0.9rem;
+        color: #1E7A57;
+    }
+    .timeline-content {
+        flex: 1;
+    }
+    .timeline-title {
+        font-weight: 600;
+        font-size: 0.85rem;
+        color: #1E1E1E;
+    }
+    .timeline-time {
+        font-size: 0.7rem;
+        color: #6B6B6B;
+    }
+    .timeline-comment {
+        font-size: 0.75rem;
+        color: #6B6B6B;
+        margin-top: 4px;
+    }
+</style>
+
+<!-- Кнопка назад -->
+<a href="{% url 'delivery:courier_active_orders' %}" class="back-button">
+    <i class="bi bi-arrow-left"></i> Назад к заказам
+</a>
+
+<!-- Информация о заказе -->
+<div class="detail-card">
+    <div class="detail-card-header">
+        <div class="detail-card-header-icon">
+            <i class="bi bi-info-circle"></i>
+        </div>
+        <h3>Информация о заказе #{{ order.id }}</h3>
+    </div>
+    <div class="info-row">
+        <div class="info-label">Статус:</div>
+        <div class="info-value">
+            <span class="status-badge status-{{ order.status }}">
+                {{ order.get_status_display }}
+            </span>
+        </div>
+    </div>
+    <div class="info-row">
+        <div class="info-label">Тип заказа:</div>
+        <div class="info-value">{{ order.get_order_type_display }}</div>
+    </div>
+    <div class="info-row">
+        <div class="info-label">Тариф:</div>
+        <div class="info-value">{{ order.get_tariff_display }}</div>
+    </div>
+    <div class="info-row">
+        <div class="info-label">Вес:</div>
+        <div class="info-value">{{ order.weight|default:"—" }} кг</div>
+    </div>
+    <div class="info-row">
+        <div class="info-label">Создан:</div>
+        <div class="info-value">{{ order.created_at|date:"d.m.Y H:i" }}</div>
+    </div>
+    <div class="info-row">
+        <div class="info-label">Желаемая дата:</div>
+        <div class="info-value">{{ order.requested_delivery_date|date:"d.m.Y" }}</div>
+    </div>
+</div>
+
+<!-- Адреса -->
+<div class="detail-card">
+    <div class="detail-card-header">
+        <div class="detail-card-header-icon">
+            <i class="bi bi-geo-alt"></i>
+        </div>
+        <h3>Адреса</h3>
+    </div>
+    <div class="info-row">
+        <div class="info-label">Отправка:</div>
+        <div class="info-value">{{ order.pickup_address }}</div>
+    </div>
+    <div class="info-row">
+        <div class="info-label">Доставка:</div>
+        <div class="info-value">{{ order.delivery_address }}</div>
+    </div>
+</div>
+
+<!-- Изменение статуса -->
+<div class="detail-card">
+    <div class="detail-card-header">
+        <div class="detail-card-header-icon">
+            <i class="bi bi-arrow-repeat"></i>
+        </div>
+        <h3>Изменить статус</h3>
+    </div>
+    <select class="status-select" id="statusSelect">
+        <option value="assigned" {% if order.status == 'assigned' %}selected{% endif %}>Назначен курьер</option>
+        <option value="in_progress" {% if order.status == 'in_progress' %}selected{% endif %}>В пути</option>
+        <option value="delivered" {% if order.status == 'delivered' %}selected{% endif %}>Доставлен</option>
+    </select>
+    <button class="btn-update" onclick="updateOrderStatus()">
+        <i class="bi bi-save"></i> Обновить статус
+    </button>
+</div>
+
+<!-- Получатель -->
+<div class="detail-card">
+    <div class="detail-card-header">
+        <div class="detail-card-header-icon">
+            <i class="bi bi-person"></i>
+        </div>
+        <h3>Получатель</h3>
+    </div>
+    <div class="info-row">
+        <div class="info-label">ФИО:</div>
+        <div class="info-value"><strong>{{ order.get_recipient_full_name }}</strong></div>
+    </div>
+    <div class="info-row">
+        <div class="info-label">Телефон:</div>
+        <div class="info-value">
+            <a href="tel:{{ order.recipient_phone }}" style="color: #1E7A57;">{{ order.recipient_phone }}</a>
+        </div>
+    </div>
+    <div class="info-row">
+        <div class="info-label">Компания:</div>
+        <div class="info-value">{{ order.recipient_company|default:"—" }}</div>
+    </div>
+    <button class="btn-contact-large" onclick="contactClient('{{ order.recipient_phone }}')">
+        <i class="bi bi-telephone"></i> Связаться с получателем
+    </button>
+</div>
+
+<!-- Отправитель -->
+<div class="detail-card">
+    <div class="detail-card-header">
+        <div class="detail-card-header-icon">
+            <i class="bi bi-building"></i>
+        </div>
+        <h3>Отправитель</h3>
+    </div>
+    <div class="info-row">
+        <div class="info-label">Компания:</div>
+        <div class="info-value"><strong>{{ order.client.company_name }}</strong></div>
+    </div>
+    <div class="info-row">
+        <div class="info-label">Контактное лицо:</div>
+        <div class="info-value">{{ order.client.get_contact_person_full_name }}</div>
+    </div>
+    <div class="info-row">
+        <div class="info-label">Телефон:</div>
+        <div class="info-value">
+            <a href="tel:{{ order.client.contact_person_phone }}" style="color: #1E7A57;">{{ order.client.contact_person_phone }}</a>
+        </div>
+    </div>
+</div>
+
+<!-- Комментарий -->
+{% if order.client_comment %}
+<div class="detail-card">
+    <div class="detail-card-header">
+        <div class="detail-card-header-icon">
+            <i class="bi bi-chat"></i>
+        </div>
+        <h3>Комментарий клиента</h3>
+    </div>
+    <div class="info-value" style="font-style: italic; color: #6B6B6B;">
+        {{ order.client_comment }}
+    </div>
+</div>
+{% endif %}
+
+<!-- История статусов -->
+<div class="detail-card">
+    <div class="detail-card-header">
+        <div class="detail-card-header-icon">
+            <i class="bi bi-clock-history"></i>
+        </div>
+        <h3>История статусов</h3>
+    </div>
+    <div class="timeline">
+        {% for history in status_history %}
+        <div class="timeline-item">
+            <div class="timeline-icon">
+                <i class="bi bi-arrow-right-circle"></i>
+            </div>
+            <div class="timeline-content">
+                <div class="timeline-title">{{ history.get_status_display }}</div>
+                <div class="timeline-time">{{ history.changed_at|date:"d.m.Y H:i" }}</div>
+                {% if history.comment %}
+                <div class="timeline-comment">{{ history.comment }}</div>
+                {% endif %}
+            </div>
+        </div>
+        {% empty %}
+        <div class="text-muted text-center py-3">Нет записей в истории</div>
+        {% endfor %}
+    </div>
+</div>
+
+<script>
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+    
+    const csrftoken = getCookie('csrftoken');
+    
+    function contactClient(phone) {
+        window.location.href = `tel:${phone}`;
+    }
+    
+    function updateOrderStatus() {
+    const select = document.getElementById('statusSelect');
+    const newStatus = select.value;
+    const orderId = {{ order.id }};
+    
+    fetch('/delivery/courier/update-order-status/', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': csrftoken
+        },
+        body: JSON.stringify({ order_id: orderId, status: newStatus })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            location.reload();
+        } else {
+            alert('Ошибка: ' + data.error);
+        }
+    })
+    .catch(error => {
+        alert('Ошибка сервера');
+    });
+    }
+</script>
+{% endblock %}
