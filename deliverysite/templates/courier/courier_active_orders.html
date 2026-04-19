@@ -178,7 +178,7 @@
     {% for order in active_orders %}
     <div class="active-order-card">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-            <span class="order-id">Заказ #{{ order.id }}</span>
+            <span class="order-id">Заказ №{{ order.id }}</span>
             <span class="active-order-status">{{ order.get_status_display }}</span>
         </div>
         

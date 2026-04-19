@@ -49,8 +49,18 @@ def order_list(request):
 
 @login_required
 def order_detail(request, order_id):
+    # Если пользователь курьер, перенаправляем на страницу курьера
+    if request.user.role == 'courier':
+        return redirect('delivery:courier_order_detail', order_id=order_id)
+    
+    # Если пользователь не клиент, показываем ошибку
+    if not hasattr(request.user, 'client_profile'):
+        messages.error(request, 'У вас нет доступа к этому заказу')
+        return redirect('accounts:home')
+    
     order = get_object_or_404(Order, id=order_id, client=request.user.client_profile)
     return render(request, 'delivery/order_detail.html', {'order': order})
+    
 
 @login_required
 def assign_courier(request, order_id):
@@ -524,3 +534,23 @@ def courier_update_order_status(request):
         return JsonResponse({'error': 'Неверный JSON'}, status=400)
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=400)
+    
+@login_required
+def courier_order_readonly(request, order_id):
+    "Страница просмотра заказа для курьера (только чтение)"
+    if request.user.role != 'courier':
+        messages.error(request, 'У вас нет доступа к этой странице')
+        return redirect('accounts:home')
+    
+    courier = request.user.courier_profile
+    order = get_object_or_404(Order, id=order_id, courier=courier)
+    
+    # Получаем историю статусов
+    status_history = OrderStatusHistory.objects.filter(order=order).order_by('-changed_at')
+    
+    context = {
+        'order': order,
+        'status_history': status_history,
+        'active_tab': 'dashboard',
+    }
+    return render(request, 'courier/courier_order_readonly.html', context)

@@ -1,0 +1,226 @@
+{% extends 'courier/courier_base.html' %}
+{% load static %}
+{% block title %}Информация о заказе #{{ order.id }}{% endblock %}
+
+{% block courier_content %}
+<style>
+    .back-button {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        background: white;
+        border: 1px solid #E8E0D5;
+        border-radius: 40px;
+        padding: 10px 20px;
+        color: #1E7A57;
+        font-weight: 500;
+        text-decoration: none;
+        margin-bottom: 20px;
+        transition: all 0.2s;
+    }
+    .back-button:hover {
+        background: #1E7A57;
+        color: white;
+        border-color: #1E7A57;
+    }
+    .detail-card {
+        background: white;
+        border-radius: 20px;
+        padding: 24px;
+        margin-bottom: 20px;
+        border: 1px solid #E8E0D5;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.03);
+    }
+    .detail-card-header {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 20px;
+        padding-bottom: 12px;
+        border-bottom: 2px solid #C8E0D6;
+    }
+    .detail-card-header-icon {
+        width: 40px;
+        height: 40px;
+        background: linear-gradient(135deg, #C8E0D6 0%, #E8E0D5 100%);
+        border-radius: 14px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    .detail-card-header-icon i {
+        font-size: 1.3rem;
+        color: #1E7A57;
+    }
+    .detail-card-header h3 {
+        font-size: 1.1rem;
+        font-weight: 700;
+        color: #1E1E1E;
+        margin: 0;
+    }
+    .info-row {
+        display: flex;
+        margin-bottom: 14px;
+        flex-wrap: wrap;
+    }
+    .info-label {
+        width: 130px;
+        font-size: 0.75rem;
+        color: #6B6B6B;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    .info-value {
+        flex: 1;
+        font-size: 0.9rem;
+        color: #1E1E1E;
+        font-weight: 500;
+    }
+    .status-badge {
+        display: inline-block;
+        padding: 6px 14px;
+        border-radius: 30px;
+        font-size: 0.8rem;
+        font-weight: 500;
+    }
+    .status-created { background: #e2e3e5; color: #383d41; }
+    .status-pending { background: #fff3cd; color: #856404; }
+    .status-assigned { background: #d1ecf1; color: #0c5460; }
+    .status-in_progress { background: #cfe2ff; color: #084298; }
+    .status-delivered { background: #d4edda; color: #155724; }
+    .status-cancelled { background: #f8d7da; color: #721c24; }
+    
+    .timeline {
+        margin-top: 16px;
+    }
+    .timeline-item {
+        display: flex;
+        gap: 12px;
+        padding: 12px 0;
+        border-bottom: 1px solid #E8E0D5;
+    }
+    .timeline-item:last-child {
+        border-bottom: none;
+    }
+    .timeline-icon {
+        width: 32px;
+        height: 32px;
+        background: #F5F3F0;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+    }
+    .timeline-icon i {
+        font-size: 0.9rem;
+        color: #1E7A57;
+    }
+    .timeline-content {
+        flex: 1;
+    }
+    .timeline-title {
+        font-weight: 600;
+        font-size: 0.85rem;
+        color: #1E1E1E;
+    }
+    .timeline-time {
+        font-size: 0.7rem;
+        color: #6B6B6B;
+    }
+    .timeline-comment {
+        font-size: 0.75rem;
+        color: #6B6B6B;
+        margin-top: 4px;
+    }
+    .info-highlight {
+        background: #F8F9FA;
+        padding: 12px;
+        border-radius: 12px;
+        margin-top: 8px;
+    }
+</style>
+
+<!-- Кнопка назад -->
+<a href="{% url 'delivery:courier_dashboard' %}" class="back-button" style="background: #1E7A57 !important; color: #FFFFFF !important; text-decoration: none;">
+    <i class="bi bi-arrow-left" style="color: #FFFFFF !important;"></i> На главную
+</a>
+
+<!-- Информация о заказе -->
+<div class="detail-card">
+    <div class="detail-card-header">
+        <div class="detail-card-header-icon">
+            <i class="bi bi-info-circle"></i>
+        </div>
+        <h3>Информация о заказе №{{ order.id }}</h3>
+    </div>
+    <div class="info-row">
+        <div class="info-label">Статус:</div>
+        <div class="info-value">
+            <span class="status-badge status-{{ order.status }}">
+                {{ order.get_status_display }}
+            </span>
+        </div>
+    </div>
+    <div class="info-row">
+        <div class="info-label">Тип заказа:</div>
+        <div class="info-value">{{ order.get_order_type_display }}</div>
+    </div>
+    <div class="info-row">
+        <div class="info-label">Тариф:</div>
+        <div class="info-value">{{ order.get_tariff_display }}</div>
+    </div>
+    <div class="info-row">
+        <div class="info-label">Вес:</div>
+        <div class="info-value">{{ order.weight|default:"—" }} кг</div>
+    </div>
+    <div class="info-row">
+        <div class="info-label">Создан:</div>
+        <div class="info-value">{{ order.created_at|date:"d.m.Y H:i" }}</div>
+    </div>
+    <div class="info-row">
+        <div class="info-label">Желаемая дата:</div>
+        <div class="info-value">{{ order.requested_delivery_date|date:"d.m.Y" }}</div>
+    </div>
+    {% if order.delivered_at %}
+    <div class="info-row">
+        <div class="info-label">Доставлен:</div>
+        <div class="info-value">{{ order.delivered_at|date:"d.m.Y H:i" }}</div>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Адреса -->
+<div class="detail-card">
+    <div class="detail-card-header">
+        <div class="detail-card-header-icon">
+            <i class="bi bi-geo-alt"></i>
+        </div>
+        <h3>Адреса</h3>
+    </div>
+    <div class="info-row">
+        <div class="info-label">Отправка:</div>
+        <div class="info-value">{{ order.pickup_address }}</div>
+    </div>
+    <div class="info-row">
+        <div class="info-label">Доставка:</div>
+        <div class="info-value">{{ order.delivery_address }}</div>
+    </div>
+</div>
+
+<!-- Комментарий -->
+{% if order.client_comment %}
+<div class="detail-card">
+    <div class="detail-card-header">
+        <div class="detail-card-header-icon">
+            <i class="bi bi-chat"></i>
+        </div>
+        <h3>Комментарий клиента</h3>
+    </div>
+    <div class="info-highlight">
+        {{ order.client_comment }}
+    </div>
+</div>
+{% endif %}
+{% endblock %}

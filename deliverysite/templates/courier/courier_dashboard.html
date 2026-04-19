@@ -78,7 +78,7 @@
             <div class="order-header">
                 <div class="order-id-wrapper">
                     <i class="bi bi-receipt"></i>
-                    <span class="order-id">Заказ #{{ order.id }}</span>
+                    <span class="order-id">Заказ №{{ order.id }}</span>
                 </div>
                 <span class="order-time">{{ order.created_at|date:"d.m в H:i" }}</span>
             </div>
@@ -149,10 +149,10 @@
             </div>
             
             <!-- Дополнительная кнопка с деталями -->
-            <button class="btn-detail" onclick="openOrderDetails({{ order.id }})">
+            <a href="{% url 'delivery:courier_order_readonly' order.id %}" class="btn-detail" style="text-decoration: none; display: flex;">
                 <i class="bi bi-info-circle"></i>
                 <span>Подробнее о заказе</span>
-            </button>
+            </a>
         </div>
         {% endfor %}    
     {% else %}
@@ -768,7 +768,7 @@
     }
     
     function openOrderDetails(orderId) {
-        window.location.href = `/delivery/order/${orderId}/`;
+        window.location.href = `/delivery/courier/order/${orderId}/`;
     }
     
     function loadActiveOrdersCount() {
