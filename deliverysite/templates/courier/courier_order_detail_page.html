@@ -1,0 +1,335 @@
+{% extends 'courier/courier_base.html' %}
+{% load static %}
+{% block title %}Детали заказа #{{ order.id }}{% endblock %}
+
+{% block courier_content %}
+<style>
+    .detail-header {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 28px;
+        padding-bottom: 12px;
+        border-bottom: 1px solid #E8E0D5;
+    }
+    
+    .back-icon {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 48px;
+        height: 48px;
+        background: #F5F3F0;
+        border-radius: 50%;
+        color: #1E7A57;
+        text-decoration: none;
+        transition: all 0.2s;
+        cursor: pointer;
+    }
+    
+    .back-icon:hover {
+        background: #1E7A57;
+    }
+    
+    .back-icon:hover i {
+        color: white;
+    }
+    
+    .back-icon:active {
+        background: #1E7A57;
+        transform: scale(0.95);
+    }
+    
+    .back-icon:active i {
+        color: white !important;
+    }
+    
+    .back-icon i {
+        font-size: 1.6rem;
+        transition: color 0.2s;
+        color: #1E7A57;
+    }
+    
+    .detail-title {
+        font-size: 1.8rem;
+        font-weight: 700;
+        color: #1E1E1E;
+        margin: 0;
+    }
+    
+    /* Карточки */
+    .info-card {
+        background: white;
+        border-radius: 20px;
+        padding: 20px;
+        margin-bottom: 16px;
+        border: 1px solid #E8E0D5;
+    }
+    
+    .card-title {
+        font-size: 1rem;
+        font-weight: 700;
+        color: #1E7A57;
+        margin-bottom: 16px;
+        padding-bottom: 10px;
+        border-bottom: 2px solid #C8E0D6;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+    
+    .card-title i {
+        font-size: 1.2rem;
+    }
+    
+    .info-row {
+        display: flex;
+        margin-bottom: 14px;
+    }
+    
+    .info-label {
+        width: 120px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        color: #6B6B6B;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    
+    .info-value {
+        flex: 1;
+        font-size: 0.95rem;
+        color: #1E1E1E;
+        font-weight: 500;
+    }
+    
+    .status-badge {
+        display: inline-block;
+        padding: 6px 14px;
+        border-radius: 30px;
+        font-size: 0.85rem;
+        font-weight: 500;
+    }
+    
+    .status-delivered {
+        background: #d4edda;
+        color: #155724;
+    }
+    
+    .timeline {
+        margin-top: 8px;
+    }
+    
+    .timeline-item {
+        display: flex;
+        gap: 12px;
+        padding: 12px 0;
+        border-bottom: 1px solid #E8E0D5;
+    }
+    
+    .timeline-item:last-child {
+        border-bottom: none;
+    }
+    
+    .timeline-icon {
+        width: 36px;
+        height: 36px;
+        background: #F5F3F0;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+    }
+    
+    .timeline-icon i {
+        font-size: 1rem;
+        color: #1E7A57;
+    }
+    
+    .timeline-content {
+        flex: 1;
+    }
+    
+    .timeline-title {
+        font-weight: 600;
+        font-size: 0.9rem;
+        color: #1E1E1E;
+    }
+    
+    .timeline-time {
+        font-size: 0.75rem;
+        color: #6B6B6B;
+    }
+    
+    .timeline-comment {
+        font-size: 0.8rem;
+        color: #6B6B6B;
+        margin-top: 4px;
+    }
+    
+    @media (max-width: 500px) {
+        .back-icon {
+            width: 42px;
+            height: 42px;
+        }
+        .back-icon i {
+            font-size: 1.4rem;
+        }
+        .detail-title {
+            font-size: 1.5rem;
+        }
+        .info-label {
+            width: 100px;
+            font-size: 0.7rem;
+        }
+        .info-value {
+            font-size: 0.85rem;
+        }
+        .info-card {
+            padding: 16px;
+        }
+    }
+</style>
+
+<div class="detail-header">
+    <a href="{% url 'delivery:courier_settings_history' %}?page={{ page_number }}" class="back-icon" id="backButton">
+        <i class="bi bi-arrow-left"></i>
+    </a>
+    <h1 class="detail-title">Заказ #{{ order.id }}</h1>
+</div>
+
+<div class="info-card">
+    <div class="card-title">
+        <i class="bi bi-info-circle"></i>
+        <span>Информация о заказе</span>
+    </div>
+    <div class="info-row">
+        <div class="info-label">Статус:</div>
+        <div class="info-value">
+            <span class="status-badge status-{{ order.status }}">
+                {{ order.get_status_display }}
+            </span>
+        </div>
+    </div>
+    <div class="info-row">
+        <div class="info-label">Тип заказа:</div>
+        <div class="info-value">{{ order.get_order_type_display }}</div>
+    </div>
+    <div class="info-row">
+        <div class="info-label">Тариф:</div>
+        <div class="info-value">{{ order.get_tariff_display }}</div>
+    </div>
+    <div class="info-row">
+        <div class="info-label">Вес:</div>
+        <div class="info-value">{{ order.weight|default:"—" }} кг</div>
+    </div>
+    <div class="info-row">
+        <div class="info-label">Создан:</div>
+        <div class="info-value">{{ order.created_at|date:"d.m.Y H:i" }}</div>
+    </div>
+    <div class="info-row">
+        <div class="info-label">Доставлен:</div>
+        <div class="info-value">{{ order.delivered_at|date:"d.m.Y H:i" }}</div>
+    </div>
+</div>
+
+<div class="info-card">
+    <div class="card-title">
+        <i class="bi bi-geo-alt"></i>
+        <span>Адреса</span>
+    </div>
+    <div class="info-row">
+        <div class="info-label">Отправка:</div>
+        <div class="info-value">{{ order.pickup_address }}</div>
+    </div>
+    <div class="info-row">
+        <div class="info-label">Доставка:</div>
+        <div class="info-value">{{ order.delivery_address }}</div>
+    </div>
+</div>
+
+<div class="info-card">
+    <div class="card-title">
+        <i class="bi bi-person"></i>
+        <span>Получатель</span>
+    </div>
+    <div class="info-row">
+        <div class="info-label">ФИО:</div>
+        <div class="info-value"><strong>{{ order.get_recipient_full_name }}</strong></div>
+    </div>
+    <div class="info-row">
+        <div class="info-label">Телефон:</div>
+        <div class="info-value">{{ order.recipient_phone }}</div>
+    </div>
+    <div class="info-row">
+        <div class="info-label">Компания:</div>
+        <div class="info-value">{{ order.recipient_company|default:"—" }}</div>
+    </div>
+</div>
+
+<div class="info-card">
+    <div class="card-title">
+        <i class="bi bi-building"></i>
+        <span>Отправитель</span>
+    </div>
+    <div class="info-row">
+        <div class="info-label">Компания:</div>
+        <div class="info-value"><strong>{{ order.client.company_name }}</strong></div>
+    </div>
+    <div class="info-row">
+        <div class="info-label">Контактное лицо:</div>
+        <div class="info-value">{{ order.client.get_contact_person_full_name }}</div>
+    </div>
+    <div class="info-row">
+        <div class="info-label">Телефон:</div>
+        <div class="info-value">{{ order.client.contact_person_phone }}</div>
+    </div>
+</div>
+
+<div class="info-card">
+    <div class="card-title">
+        <i class="bi bi-clock-history"></i>
+        <span>История статусов</span>
+    </div>
+    <div class="timeline">
+        {% for history in status_history %}
+        <div class="timeline-item">
+            <div class="timeline-icon">
+                <i class="bi bi-arrow-right-circle"></i>
+            </div>
+            <div class="timeline-content">
+                <div class="timeline-title">{{ history.get_status_display }}</div>
+                <div class="timeline-time">{{ history.changed_at|date:"d.m.Y H:i" }}</div>
+                {% if history.comment %}
+                <div class="timeline-comment">{{ history.comment }}</div>
+                {% endif %}
+            </div>
+        </div>
+        {% empty %}
+        <div class="text-muted text-center py-3">Нет записей в истории</div>
+        {% endfor %}
+    </div>
+</div>
+
+<script>
+    // Восстанавливаем номер страницы при возврате
+    var backButton = document.getElementById('backButton');
+    var savedPage = sessionStorage.getItem('historyPage');
+    if (savedPage && backButton) {
+        backButton.href = '{% url "delivery:courier_settings_history" %}?page=' + savedPage;
+    }
+    
+    document.querySelectorAll('.back-icon').forEach(function(button) {
+        button.addEventListener('mousedown', function() {
+            this.style.transform = 'scale(0.95)';
+        });
+        button.addEventListener('mouseup', function() {
+            this.style.transform = 'scale(1)';
+        });
+        button.addEventListener('mouseleave', function() {
+            this.style.transform = 'scale(1)';
+        });
+    });
+</script>
+{% endblock %}

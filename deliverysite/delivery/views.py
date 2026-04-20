@@ -7,7 +7,9 @@ from .models import Order, Courier, OrderStatusHistory, CourierNotification, Cou
 from django.utils import timezone
 from datetime import timedelta
 import json
-
+from django.contrib.auth import update_session_auth_hash
+from django.db.models import F 
+from django.core.paginator import Paginator
 @login_required
 def create_order(request):
     try:
@@ -428,28 +430,6 @@ def courier_active_orders(request):
     }
     return render(request, 'courier/courier_active_orders.html', context)
 
-
-@login_required
-def courier_profile(request):
-    "Профиль курьера"
-    if request.user.role != 'courier':
-        messages.error(request, 'У вас нет доступа к этой странице')
-        return redirect('accounts:home')
-    
-    courier = request.user.courier_profile
-    
-    total_deliveries = Order.objects.filter(courier=courier, status='delivered').count()
-    rating = courier.avg_rating
-    
-    context = {
-        'courier': courier,
-        'total_deliveries': total_deliveries,
-        'rating': rating,
-        'active_tab': 'profile',
-    }
-    return render(request, 'courier/courier_profile.html', context)
-
-
 @login_required
 def courier_active_count(request):
     "Количество активных заказов для иконки"
@@ -554,3 +534,182 @@ def courier_order_readonly(request, order_id):
         'active_tab': 'dashboard',
     }
     return render(request, 'courier/courier_order_readonly.html', context)
+
+# ЛК курьер настройки
+@login_required
+def courier_profile(request):
+    "Профиль курьера - меню настроек"
+    if request.user.role != 'courier':
+        messages.error(request, 'У вас нет доступа к этой странице')
+        return redirect('accounts:home')
+    
+    return render(request, 'courier/courier_profile.html', {'active_tab': 'profile'})
+
+
+@login_required
+def courier_settings_menu(request):
+    "Меню настроек курьера"
+    if request.user.role != 'courier':
+        messages.error(request, 'У вас нет доступа к этой странице')
+        return redirect('accounts:home')
+    
+    return render(request, 'courier/courier_settings_menu.html', {'active_tab': 'settings'})
+
+
+@login_required
+def courier_settings_profile(request):
+    "Редактирование профиля курьера"
+    if request.user.role != 'courier':
+        messages.error(request, 'У вас нет доступа к этой странице')
+        return redirect('accounts:home')
+    
+    if request.method == 'POST':
+        user = request.user
+        user.last_name = request.POST.get('last_name', '')
+        user.first_name = request.POST.get('first_name', '')
+        user.patronymic = request.POST.get('patronymic', '')
+        user.phone = request.POST.get('phone', '')
+        user.save()
+        messages.success(request, 'Профиль успешно обновлен')
+        return redirect('delivery:courier_settings_profile')
+    
+    return render(request, 'courier/courier_settings_profile.html', {'active_tab': 'profile'})
+
+
+@login_required
+def courier_settings_statistics(request):
+    "Статистика курьера"
+    if request.user.role != 'courier':
+        messages.error(request, 'У вас нет доступа к этой странице')
+        return redirect('accounts:home')
+    
+    courier = request.user.courier_profile
+    thirty_days_ago = timezone.now() - timedelta(days=30)
+    
+    completed_orders = Order.objects.filter(
+        courier=courier,
+        status='delivered',
+        delivered_at__gte=thirty_days_ago
+    )
+    
+    completed_count = completed_orders.count()
+    
+    delivery_times = []
+    for order in completed_orders:
+        in_progress_history = OrderStatusHistory.objects.filter(
+            order=order,
+            status='in_progress'
+        ).first()
+        
+        if in_progress_history and order.delivered_at:
+            delivery_time = order.delivered_at - in_progress_history.changed_at
+            delivery_times.append(delivery_time.total_seconds() / 60)
+    
+    avg_delivery_time = sum(delivery_times) / len(delivery_times) if delivery_times else 0
+    
+    late_orders = completed_orders.filter(
+        delivered_at__date__gt=F('requested_delivery_date')
+    ).count()
+    
+    context = {
+        'stats': {
+            'completed_orders': completed_count,
+            'avg_delivery_time': round(avg_delivery_time, 1),
+            'late_orders': late_orders,
+            'avg_rating': float(courier.avg_rating) if courier.avg_rating else 0,
+        },
+        'thirty_days_ago': thirty_days_ago,
+        'active_tab': 'profile',
+    }
+    
+    return render(request, 'courier/courier_settings_statistics.html', context)
+
+@login_required
+def courier_settings_security(request):
+    "Безопасность курьера (смена пароля)"
+    if request.user.role != 'courier':
+        messages.error(request, 'У вас нет доступа к этой странице')
+        return redirect('accounts:home')
+    
+    if request.method == 'POST':
+        current_password = request.POST.get('current_password')
+        new_password = request.POST.get('new_password')
+        confirm_password = request.POST.get('confirm_password')
+        
+        if not request.user.check_password(current_password):
+            messages.error(request, 'Неверный текущий пароль')
+        elif new_password != confirm_password:
+            messages.error(request, 'Новый пароль и подтверждение не совпадают')
+        elif len(new_password) < 8:
+            messages.error(request, 'Пароль должен содержать минимум 8 символов')
+        else:
+            request.user.set_password(new_password)
+            request.user.save()
+            update_session_auth_hash(request, request.user)
+            messages.success(request, 'Пароль успешно изменен')
+        return redirect('delivery:courier_settings_security')
+    
+    return render(request, 'courier/courier_settings_security.html', {'active_tab': 'profile'})
+
+@login_required
+def courier_settings_history(request):
+    "История заказов курьера"
+    if request.user.role != 'courier':
+        messages.error(request, 'У вас нет доступа к этой странице')
+        return redirect('accounts:home')
+    
+    courier = request.user.courier_profile
+    
+    completed_orders = Order.objects.filter(
+        courier=courier,
+        status='delivered'
+    ).order_by('-delivered_at')
+    
+    # Пагинация
+    paginator = Paginator(completed_orders, 4)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+    
+    # Добавляем время доставки для каждого заказа
+    for order in page_obj:
+        in_progress_history = OrderStatusHistory.objects.filter(
+            order=order,
+            status='in_progress'
+        ).first()
+        
+        if in_progress_history and order.delivered_at:
+            delivery_time = order.delivered_at - in_progress_history.changed_at
+            order.delivery_time_minutes = int(delivery_time.total_seconds() / 60)
+        else:
+            order.delivery_time_minutes = '—'
+    
+    context = {
+        'page_obj': page_obj,
+        'active_tab': 'settings',
+    }
+    
+    return render(request, 'courier/courier_settings_history.html', context)
+
+@login_required
+def courier_order_detail_page(request, order_id):
+    "Страница деталей заказа для курьера"
+    if request.user.role != 'courier':
+        messages.error(request, 'У вас нет доступа к этой странице')
+        return redirect('accounts:home')
+    
+    courier = request.user.courier_profile
+    order = get_object_or_404(Order, id=order_id, courier=courier)
+    
+    # Получаем номер страницы из GET параметра
+    page_number = request.GET.get('page', '1')
+    
+    # Получаем историю статусов
+    status_history = OrderStatusHistory.objects.filter(order=order).order_by('-changed_at')
+    
+    context = {
+        'order': order,
+        'status_history': status_history,
+        'page_number': page_number,
+        'active_tab': 'settings',
+    }
+    return render(request, 'courier/courier_order_detail_page.html', context)

@@ -1,0 +1,458 @@
+{% extends 'courier/courier_base.html' %}
+{% load static %}
+{% block title %}История заказов - Настройки{% endblock %}
+
+{% block courier_content %}
+<style>
+    .settings-header {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 32px;
+        padding-bottom: 16px;
+        border-bottom: 1px solid #E8E0D5;
+    }
+    
+    .back-icon {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 48px;
+        height: 48px;
+        background: #F5F3F0;
+        border-radius: 50%;
+        color: #1E7A57;
+        text-decoration: none;
+        transition: all 0.2s;
+        cursor: pointer;
+    }
+    
+    .back-icon:hover {
+        background: #1E7A57;
+    }
+    
+    .back-icon:hover i {
+        color: white;
+    }
+    
+    .back-icon:active {
+        background: #1E7A57;
+        transform: scale(0.95);
+    }
+    
+    .back-icon:active i {
+        color: white !important;
+    }
+    
+    .back-icon i {
+        font-size: 1.6rem;
+        transition: color 0.2s;
+        color: #1E7A57;
+    }
+
+    .settings-title {
+        font-size: 2rem;
+        font-weight: 700;
+        color: #1E1E1E;
+        margin: 0;
+    }
+    
+    /* Список заказов */
+    .orders-list {
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+    }
+    
+    .order-item {
+        background: white;
+        border-radius: 20px;
+        border: 1px solid #E8E0D5;
+        overflow: hidden;
+        transition: all 0.2s;
+    }
+    
+    .order-item:hover {
+        border-color: #C8E0D6;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+    }
+    
+    .order-main {
+        padding: 20px;
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        cursor: pointer;
+        text-decoration: none;
+        color: inherit;
+    }
+    
+    .order-icon {
+        width: 56px;
+        height: 56px;
+        background: linear-gradient(135deg, #E8F5E9 0%, #C8E6D9 100%);
+        border-radius: 18px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+    }
+    
+    .order-icon i {
+        font-size: 1.8rem;
+        color: #1E7A57;
+    }
+    
+    .order-info {
+        flex: 1;
+    }
+    
+    .order-info-top {
+        display: flex;
+        align-items: baseline;
+        gap: 12px;
+        margin-bottom: 8px;
+        flex-wrap: wrap;
+    }
+    
+    .order-number {
+        font-size: 1.2rem;
+        font-weight: 700;
+        color: #1E7A57;
+    }
+    
+    .order-date-small {
+        font-size: 0.85rem;
+        color: #ADB5BD;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+    
+    .order-date-small i {
+        font-size: 0.85rem;
+    }
+    
+    .order-address-short {
+        font-size: 0.95rem;
+        color: #6B6B6B;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+    
+    .order-address-short i {
+        font-size: 0.9rem;
+        color: #ADB5BD;
+    }
+    
+    .order-time-badge {
+        background: #F5F3F0;
+        padding: 8px 14px;
+        border-radius: 30px;
+        font-size: 0.85rem;
+        font-weight: 600;
+        color: #1E7A57;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        white-space: nowrap;
+    }
+    
+    .order-time-badge i {
+        font-size: 0.9rem;
+    }
+    
+    .order-chevron {
+        color: #ADB5BD;
+        font-size: 1.2rem;
+    }
+    
+    /* Пагинация */
+    .pagination {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: 8px;
+        margin-top: 28px;
+        padding: 20px 0;
+    }
+    
+    .page-link {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 48px;
+        height: 48px;
+        padding: 0 12px;
+        background: white;
+        border: 1px solid #E8E0D5;
+        border-radius: 14px;
+        color: #1E7A57;
+        text-decoration: none;
+        font-size: 1rem;
+        font-weight: 500;
+        transition: all 0.2s;
+    }
+    
+    .page-link:hover {
+        background: #F5F3F0;
+        border-color: #1E7A57;
+        transform: translateY(-1px);
+    }
+    
+    .page-link.active {
+        background: #1E7A57;
+        border-color: #1E7A57;
+        color: white;
+    }
+    
+    .page-link.disabled {
+        opacity: 0.4;
+        pointer-events: none;
+    }
+    
+    .page-dots {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 48px;
+        height: 48px;
+        color: #ADB5BD;
+        font-size: 1.2rem;
+    }
+    
+    /* Блок информации */
+    .info-bar {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 24px;
+        margin-top: 20px;
+        padding: 14px 20px;
+        background: #F8F9FA;
+        border-radius: 50px;
+    }
+    
+    .info-item {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 0.85rem;
+        color: #6B6B6B;
+    }
+    
+    .info-item i {
+        font-size: 1rem;
+        color: #1E7A57;
+    }
+    
+    .info-item strong {
+        color: #1E7A57;
+        font-weight: 700;
+        font-size: 0.95rem;
+    }
+    
+    .empty-state {
+        text-align: center;
+        padding: 80px 24px;
+        background: white;
+        border-radius: 24px;
+        border: 1px solid #E8E0D5;
+    }
+    
+    .empty-icon {
+        font-size: 5rem;
+        color: #C8E0D6;
+        margin-bottom: 24px;
+    }
+    
+    .empty-state p {
+        color: #ADB5BD;
+        font-size: 1.1rem;
+        margin: 0;
+    }
+    
+    /* Мобильная адаптация */
+    @media (max-width: 500px) {
+        .settings-header {
+            margin-bottom: 24px;
+        }
+        .back-icon {
+            width: 42px;
+            height: 42px;
+        }
+        .back-icon i {
+            font-size: 1.4rem;
+        }
+        .settings-title {
+            font-size: 1.6rem;
+        }
+        .order-main {
+            padding: 14px;
+            gap: 12px;
+        }
+        .order-icon {
+            width: 44px;
+            height: 44px;
+        }
+        .order-icon i {
+            font-size: 1.4rem;
+        }
+        .order-number {
+            font-size: 1rem;
+        }
+        .order-date-small {
+            font-size: 0.7rem;
+        }
+        .order-address-short {
+            font-size: 0.8rem;
+        }
+        .order-time-badge {
+            padding: 5px 10px;
+            font-size: 0.7rem;
+        }
+        .order-chevron {
+            font-size: 1rem;
+        }
+        .page-link {
+            min-width: 40px;
+            height: 40px;
+            font-size: 0.9rem;
+        }
+        .page-dots {
+            min-width: 40px;
+            height: 40px;
+        }
+        .info-bar {
+            gap: 16px;
+            padding: 10px 16px;
+            flex-wrap: wrap;
+        }
+        .info-item {
+            font-size: 0.75rem;
+        }
+    }
+</style>
+
+<div class="settings-header">
+    <a href="{% url 'delivery:courier_profile' %}" class="back-icon">
+        <i class="bi bi-arrow-left"></i>
+    </a>
+    <h1 class="settings-title">История заказов</h1>
+</div>
+
+{% if page_obj %}
+<div class="orders-list">
+    {% for order in page_obj %}
+    <a href="{% url 'delivery:courier_order_detail_page' order.id %}?page={{ page_obj.number }}" class="order-item">
+        <div class="order-main">
+            <div class="order-icon">
+                <i class="bi bi-box-seam"></i>
+            </div>
+            <div class="order-info">
+                <div class="order-info-top">
+                    <span class="order-number">Заказ #{{ order.id }}</span>
+                    <span class="order-date-small">
+                        <i class="bi bi-calendar3"></i>
+                        {{ order.delivered_at|date:"d.m.Y" }}
+                    </span>
+                </div>
+                <div class="order-address-short">
+                    <i class="bi bi-geo-alt"></i>
+                    <span>{{ order.delivery_address|truncatechars:50 }}</span>
+                </div>
+            </div>
+            <div class="order-time-badge">
+                <i class="bi bi-clock"></i>
+                <span>{{ order.delivery_time_minutes }} мин</span>
+            </div>
+            <div class="order-chevron">
+                <i class="bi bi-chevron-right"></i>
+            </div>
+        </div>
+    </a>
+    {% endfor %}
+</div>
+
+<!-- Пагинация -->
+<div class="pagination">
+    {% if page_obj.has_previous %}
+        <a href="?page=1" class="page-link">&laquo;</a>
+        <a href="?page={{ page_obj.previous_page_number }}" class="page-link">&lsaquo;</a>
+    {% else %}
+        <span class="page-link disabled">&laquo;</span>
+        <span class="page-link disabled">&lsaquo;</span>
+    {% endif %}
+    
+    {% for num in page_obj.paginator.page_range %}
+        {% if num == page_obj.number %}
+            <span class="page-link active">{{ num }}</span>
+        {% elif num > page_obj.number|add:'-2' and num < page_obj.number|add:'2' %}
+            <a href="?page={{ num }}" class="page-link">{{ num }}</a>
+        {% elif num == 1 or num == page_obj.paginator.num_pages %}
+            <a href="?page={{ num }}" class="page-link">{{ num }}</a>
+        {% elif num == page_obj.number|add:'-2' or num == page_obj.number|add:'2' %}
+            <span class="page-dots">...</span>
+        {% endif %}
+    {% endfor %}
+    
+    {% if page_obj.has_next %}
+        <a href="?page={{ page_obj.next_page_number }}" class="page-link">&rsaquo;</a>
+        <a href="?page={{ page_obj.paginator.num_pages }}" class="page-link">&raquo;</a>
+    {% else %}
+        <span class="page-link disabled">&rsaquo;</span>
+        <span class="page-link disabled">&raquo;</span>
+    {% endif %}
+</div>
+
+<!-- Блок информации -->
+<div class="info-bar">
+    <div class="info-item">
+        <i class="bi bi-eye"></i>
+        <span>Показано <strong>{{ page_obj.start_index }}-{{ page_obj.end_index }}</strong> из <strong>{{ page_obj.paginator.count }}</strong></span>
+    </div>
+    <div class="info-item">
+        <i class="bi bi-files"></i>
+        <span>Страница <strong>{{ page_obj.number }}</strong> из <strong>{{ page_obj.paginator.num_pages }}</strong></span>
+    </div>
+</div>
+
+{% else %}
+<div class="empty-state">
+    <div class="empty-icon">
+        <i class="bi bi-inbox"></i>
+    </div>
+    <p>Нет завершенных заказов</p>
+</div>
+{% endif %}
+
+<script>
+    // Сохраняем номер страницы 
+    document.querySelectorAll('.order-item').forEach(function(link) {
+        link.addEventListener('click', function(e) {
+            var pageNumber = '{{ page_obj.number }}';
+            sessionStorage.setItem('historyPage', pageNumber);
+        });
+    });
+    
+    // Восстанавливаем номер страницы при возврате
+    var backButton = document.getElementById('backButton');
+    var savedPage = sessionStorage.getItem('historyPage');
+    if (savedPage && backButton) {
+        backButton.href = '?page=' + savedPage;
+    }
+    
+    document.querySelectorAll('.back-icon').forEach(function(button) {
+        button.addEventListener('mousedown', function() {
+            this.style.transform = 'scale(0.95)';
+        });
+        button.addEventListener('mouseup', function() {
+            this.style.transform = 'scale(1)';
+        });
+        button.addEventListener('mouseleave', function() {
+            this.style.transform = 'scale(1)';
+        });
+    });
+</script>
+{% endblock %}

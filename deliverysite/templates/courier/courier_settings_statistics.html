@@ -1,0 +1,422 @@
+{% extends 'courier/courier_base.html' %}
+{% load static %}
+{% block title %}Статистика - Настройки{% endblock %}
+
+{% block courier_content %}
+<style>
+    .settings-header {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 24px;
+        padding-bottom: 12px;
+        border-bottom: 1px solid #E8E0D5;
+    }
+    
+    .back-icon {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 44px;
+        height: 44px;
+        background: #F5F3F0;
+        border-radius: 50%;
+        color: #1E7A57;
+        text-decoration: none;
+        transition: all 0.2s;
+        cursor: pointer;
+    }
+    
+    .back-icon:hover {
+        background: #1E7A57;
+    }
+    
+    .back-icon:hover i {
+        color: white;
+    }
+    
+    .back-icon:active {
+        background: #1E7A57;
+        transform: scale(0.95);
+    }
+    
+    .back-icon:active i {
+        color: white !important;
+    }
+    
+    .back-icon i {
+        font-size: 1.4rem;
+        transition: color 0.2s;
+        color: #1E7A57;
+    }
+    
+    .settings-title {
+        font-size: 1.6rem;
+        font-weight: 700;
+        color: #1E1E1E;
+        margin: 0;
+    }
+    
+    /* Период - светлый дизайн */
+    .period-card {
+        background: white;
+        border-radius: 24px;
+        padding: 20px 24px;
+        margin-bottom: 28px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 14px;
+        border: 1px solid #E8E0D5;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.03);
+    }
+    
+    .period-label {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        font-size: 1.05rem;
+        font-weight: 600;
+        color: #1E1E1E;
+    }
+    
+    .period-label i {
+        font-size: 1.4rem;
+        color: #1E7A57;
+    }
+    
+    .period-date {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 0.95rem;
+        font-weight: 500;
+        color: #6B6B6B;
+        background: #F8F9FA;
+        padding: 8px 16px;
+        border-radius: 40px;
+    }
+    
+    .period-date i {
+        font-size: 1rem;
+        color: #1E7A57;
+    }
+    
+    /* Вертикальный список */
+    .stats-list {
+        display: flex;
+        flex-direction: column;
+        gap: 14px;
+    }
+    
+    .stat-item {
+        background: white;
+        border-radius: 24px;
+        padding: 22px 20px;
+        border: 1px solid #E8E0D5;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        transition: all 0.2s;
+    }
+    
+    .stat-item:hover {
+        border-color: #C8E0D6;
+        background: #FDFDFD;
+    }
+    
+    .stat-left {
+        display: flex;
+        align-items: center;
+        gap: 18px;
+    }
+    
+    .stat-icon {
+        width: 64px;
+        height: 64px;
+        background: linear-gradient(135deg, #E8F5E9 0%, #C8E6D9 100%);
+        border-radius: 20px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    
+    .stat-icon i {
+        font-size: 2rem;
+        color: #1E7A57;
+    }
+    
+    .stat-info {
+        display: flex;
+        flex-direction: column;
+    }
+    
+    .stat-label {
+        font-size: 0.85rem;
+        font-weight: 700;
+        color: #6B6B6B;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin-bottom: 6px;
+    }
+    
+    .stat-value {
+        font-size: 2.2rem;
+        font-weight: 800;
+        color: #1E1E1E;
+        line-height: 1.2;
+    }
+    
+    .stat-unit {
+        font-size: 0.9rem;
+        color: #ADB5BD;
+        font-weight: 400;
+    }
+    
+    .rating-stars {
+        display: flex;
+        gap: 6px;
+    }
+    
+    .rating-stars i {
+        font-size: 1.3rem;
+        color: #FFB74D;
+    }
+    
+    .rating-stars i.empty {
+        color: #E8E0D5;
+    }
+    
+    .text-warning {
+        color: #E53935 !important;
+    }
+    
+    /* Мобильная адаптация */
+    @media (max-width: 500px) {
+        .settings-header {
+            margin-bottom: 20px;
+        }
+        
+        .back-icon {
+            width: 40px;
+            height: 40px;
+        }
+        
+        .back-icon i {
+            font-size: 1.3rem;
+        }
+        
+        .settings-title {
+            font-size: 1.5rem;
+        }
+        
+        /* Период */
+        .period-card {
+            padding: 16px 18px;
+            margin-bottom: 24px;
+            flex-direction: column;
+            align-items: flex-start;
+        }
+        
+        .period-label {
+            font-size: 0.95rem;
+        }
+        
+        .period-label i {
+            font-size: 1.2rem;
+        }
+        
+        .period-date {
+            font-size: 0.8rem;
+            padding: 6px 14px;
+            width: 100%;
+            justify-content: center;
+        }
+        
+        /* Карточки */
+        .stat-item {
+            padding: 18px 16px;
+        }
+        
+        .stat-left {
+            gap: 14px;
+        }
+        
+        .stat-icon {
+            width: 54px;
+            height: 54px;
+        }
+        
+        .stat-icon i {
+            font-size: 1.6rem;
+        }
+        
+        .stat-label {
+            font-size: 0.75rem;
+            margin-bottom: 4px;
+        }
+        
+        .stat-value {
+            font-size: 1.8rem;
+        }
+        
+        .stat-unit {
+            font-size: 0.8rem;
+        }
+        
+        .rating-stars {
+            gap: 4px;
+        }
+        
+        .rating-stars i {
+            font-size: 1rem;
+        }
+    }
+
+    @media (max-width: 380px) {
+        .period-card {
+            padding: 14px 16px;
+        }
+        
+        .period-label {
+            font-size: 0.85rem;
+        }
+        
+        .period-date {
+            font-size: 0.7rem;
+            padding: 5px 12px;
+        }
+        
+        .stat-item {
+            padding: 14px 12px;
+        }
+        
+        .stat-icon {
+            width: 48px;
+            height: 48px;
+        }
+        
+        .stat-icon i {
+            font-size: 1.4rem;
+        }
+        
+        .stat-value {
+            font-size: 1.5rem;
+        }
+        
+        .stat-label {
+            font-size: 0.7rem;
+        }
+        
+        .rating-stars i {
+            font-size: 0.85rem;
+        }
+    }
+</style>
+
+<div class="settings-header">
+    <a href="{% url 'delivery:courier_profile' %}" class="back-icon">
+        <i class="bi bi-arrow-left"></i>
+    </a>
+    <h1 class="settings-title">Статистика</h1>
+</div>
+
+<!-- Период -->
+<div class="period-card">
+    <div class="period-label">
+        <i class="bi bi-calendar-range"></i>
+        <span>За последние 30 дней</span>
+    </div>
+    <div class="period-date">
+        <i class="bi bi-clock"></i> {{ thirty_days_ago|date:"d.m.Y" }} - {% now "d.m.Y" %}
+    </div>
+</div>
+
+<!-- Статистика в виде списка -->
+<div class="stats-list">
+    <!-- Выполненные заказы -->
+    <div class="stat-item">
+        <div class="stat-left">
+            <div class="stat-icon">
+                <i class="bi bi-check2-circle"></i>
+            </div>
+            <div class="stat-info">
+                <div class="stat-label">ВЫПОЛНЕННЫХ ЗАКАЗОВ</div>
+                <div class="stat-value">{{ stats.completed_orders }}</div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Среднее время доставки -->
+    <div class="stat-item">
+        <div class="stat-left">
+            <div class="stat-icon">
+                <i class="bi bi-stopwatch"></i>
+            </div>
+            <div class="stat-info">
+                <div class="stat-label">СРЕДНЕЕ ВРЕМЯ ДОСТАВКИ</div>
+                <div class="stat-value">
+                    {{ stats.avg_delivery_time|floatformat:1 }}
+                    <span class="stat-unit">мин</span>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Просроченные заказы -->
+    <div class="stat-item">
+        <div class="stat-left">
+            <div class="stat-icon">
+                <i class="bi bi-exclamation-triangle"></i>
+            </div>
+            <div class="stat-info">
+                <div class="stat-label">ПРОСРОЧЕННЫХ ЗАКАЗОВ</div>
+                <div class="stat-value {% if stats.late_orders > 0 %}text-warning{% endif %}">
+                    {{ stats.late_orders }}
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Рейтинг -->
+    <div class="stat-item">
+        <div class="stat-left">
+            <div class="stat-icon">
+                <i class="bi bi-star-fill"></i>
+            </div>
+            <div class="stat-info">
+                <div class="stat-label">РЕЙТИНГ</div>
+                <div class="stat-value">{{ stats.avg_rating|floatformat:1 }}</div>
+            </div>
+        </div>
+        <div class="rating-stars">
+            {% with rating=stats.avg_rating|floatformat:0|default:0 %}
+                {% for i in "12345"|make_list %}
+                    {% if forloop.counter <= rating|add:0 %}
+                        <i class="bi bi-star-fill"></i>
+                    {% else %}
+                        <i class="bi bi-star empty"></i>
+                    {% endif %}
+                {% endfor %}
+            {% endwith %}
+        </div>
+    </div>
+</div>
+
+<script>
+    document.querySelectorAll('.back-icon').forEach(function(button) {
+        button.addEventListener('mousedown', function() {
+            this.style.transform = 'scale(0.95)';
+        });
+        
+        button.addEventListener('mouseup', function() {
+            this.style.transform = 'scale(1)';
+        });
+        
+        button.addEventListener('mouseleave', function() {
+            this.style.transform = 'scale(1)';
+        });
+    });
+</script>
+{% endblock %}

@@ -24,4 +24,10 @@ urlpatterns = [
     path('courier/order/<int:order_id>/', views.courier_order_detail, name='courier_order_detail'),
     path('courier/update-order-status/', views.courier_update_order_status, name='courier_update_order_status'),
     path('courier/order/<int:order_id>/readonly/', views.courier_order_readonly, name='courier_order_readonly'),
+    path('courier/settings/', views.courier_settings_menu, name='courier_settings_menu'),
+    path('courier/settings/profile/', views.courier_settings_profile, name='courier_settings_profile'),
+    path('courier/settings/statistics/', views.courier_settings_statistics, name='courier_settings_statistics'),
+    path('courier/settings/history/', views.courier_settings_history, name='courier_settings_history'),
+    path('courier/settings/security/', views.courier_settings_security, name='courier_settings_security'),
+    path('courier/order/<int:order_id>/detail/', views.courier_order_detail_page, name='courier_order_detail_page'),
 ]

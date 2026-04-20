@@ -1,48 +1,272 @@
 {% extends 'courier/courier_base.html' %}
 {% load static %}
-{% block title %}Мой профиль{% endblock %}
+{% block title %}Настройки{% endblock %}
 
 {% block courier_content %}
-<div class="profile-card">
-    <div class="profile-header">
-        <div class="profile-avatar">
-            <i class="bi bi-person-badge"></i>
-        </div>
-        <div class="profile-info">
-            <h3>{{ user.get_full_name|default:user.username }}</h3>
-            <p>{{ user.email }}</p>
-        </div>
-    </div>
+<style>
+    .settings-header {
+        margin-bottom: 28px;
+    }
+    .settings-title {
+        font-size: 1.8rem;
+        font-weight: 700;
+        color: #1E1E1E;
+        margin: 0 0 12px 0;
+    }
+    .settings-subtitle {
+        font-size: 0.95rem;
+        color: #6B6B6B;
+    }
+    .settings-menu {
+        display: flex;
+        flex-direction: column;
+        gap: 14px;
+    }
+    .settings-menu-item {
+        background: white;
+        border-radius: 24px;
+        padding: 22px 20px;
+        border: 1px solid #E8E0D5;
+        text-decoration: none;
+        transition: all 0.2s;
+        display: flex;
+        align-items: center;
+        gap: 18px;
+    }
+    .settings-menu-item:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 20px rgba(0,0,0,0.08);
+        border-color: #1E7A57;
+    }
+    .settings-menu-item:active {
+        transform: scale(0.98);
+    }
+    .menu-icon {
+        width: 64px;
+        height: 64px;
+        background: linear-gradient(135deg, #C8E0D6 0%, #E8E0D5 100%);
+        border-radius: 20px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    .menu-icon i {
+        font-size: 2rem;
+        color: #1E7A57;
+    }
+    .menu-content {
+        flex: 1;
+    }
+    .menu-title {
+        font-size: 1.15rem;
+        font-weight: 700;
+        color: #1E1E1E;
+        margin-bottom: 6px;
+    }
+    .menu-description {
+        font-size: 0.85rem;
+        color: #6B6B6B;
+    }
+    .menu-arrow {
+        color: #ADB5BD;
+        font-size: 1.3rem;
+    }
+    
+    /* Кнопка связаться с менеджером */
+    .btn-contact-manager {
+        background: #FFB74D;
+        color: #7B5E00;
+        border: none;
+        border-radius: 60px;
+        padding: 18px 28px;
+        font-size: 1rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+        width: 100%;
+        margin-top: 24px;
+    }
+    .btn-contact-manager:hover {
+        background: #FFA726;
+        transform: translateY(-2px);
+    }
+    .btn-contact-manager:active {
+        transform: scale(0.98);
+    }
+    .btn-contact-manager i {
+        font-size: 1.2rem;
+    }
+    
+    /* Кнопка выхода */
+    .btn-logout {
+        background: white;
+        color: #E53935;
+        border: 1px solid #FFCDD2;
+        border-radius: 60px;
+        padding: 18px 28px;
+        font-size: 1rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+        width: 100%;
+        margin-top: 12px;
+    }
+    .btn-logout:hover {
+        background: #FFEBEE;
+        border-color: #E53935;
+        transform: translateY(-2px);
+    }
+    .btn-logout:active {
+        transform: scale(0.98);
+    }
+    .btn-logout i {
+        font-size: 1.2rem;
+    }
+    
+    /* Мобильная адаптация */
+    @media (max-width: 500px) {
+        .settings-title {
+            font-size: 1.6rem;
+        }
+        .settings-subtitle {
+            font-size: 0.85rem;
+        }
+        .settings-menu-item {
+            padding: 18px 16px;
+            gap: 14px;
+        }
+        .menu-icon {
+            width: 54px;
+            height: 54px;
+        }
+        .menu-icon i {
+            font-size: 1.6rem;
+        }
+        .menu-title {
+            font-size: 1rem;
+            margin-bottom: 4px;
+        }
+        .menu-description {
+            font-size: 0.75rem;
+        }
+        .btn-contact-manager, .btn-logout {
+            padding: 15px 24px;
+            font-size: 0.9rem;
+        }
+        .btn-contact-manager i, .btn-logout i {
+            font-size: 1.1rem;
+        }
+    }
+    
+    /* Для очень маленьких экранов (320px) */
+    @media (max-width: 380px) {
+        .settings-menu-item {
+            padding: 14px 12px;
+        }
+        .menu-icon {
+            width: 48px;
+            height: 48px;
+        }
+        .menu-icon i {
+            font-size: 1.4rem;
+        }
+        .menu-title {
+            font-size: 0.9rem;
+        }
+        .menu-description {
+            font-size: 0.7rem;
+        }
+        .btn-contact-manager, .btn-logout {
+            padding: 12px 20px;
+            font-size: 0.85rem;
+        }
+    }
+</style>
+
+<div class="settings-header">
+    <h1 class="settings-title">Настройки</h1>
+    <p class="settings-subtitle">Управление профилем и настройками аккаунта</p>
 </div>
 
-<div class="profile-card">
-    <div style="margin-bottom: 12px;">
-        <span style="font-size: 0.7rem; color: #6B6B6B;">Статистика</span>
-        <div style="display: flex; gap: 20px; margin-top: 8px;">
-            <div>
-                <div style="font-size: 1.5rem; font-weight: 700;">{{ total_deliveries }}</div>
-                <div style="font-size: 0.7rem; color: #6B6B6B;">Доставок</div>
-            </div>
-            <div>
-                <div style="font-size: 1.5rem; font-weight: 700;">{{ rating|floatformat:1 }}</div>
-                <div style="font-size: 0.7rem; color: #6B6B6B;">Рейтинг</div>
-            </div>
-            <div>
-                <div style="font-size: 1.5rem; font-weight: 700;">{{ courier.total_work_hours|floatformat:0 }}</div>
-                <div style="font-size: 0.7rem; color: #6B6B6B;">Часов</div>
-            </div>
+<div class="settings-menu">
+    <a href="{% url 'delivery:courier_settings_profile' %}" class="settings-menu-item">
+        <div class="menu-icon">
+            <i class="bi bi-person"></i>
         </div>
-    </div>
+        <div class="menu-content">
+            <div class="menu-title">Профиль</div>
+            <div class="menu-description">Личные данные, ФИО, телефон</div>
+        </div>
+        <div class="menu-arrow">
+            <i class="bi bi-chevron-right"></i>
+        </div>
+    </a>
+    
+    <a href="{% url 'delivery:courier_settings_statistics' %}" class="settings-menu-item">
+        <div class="menu-icon">
+            <i class="bi bi-graph-up"></i>
+        </div>
+        <div class="menu-content">
+            <div class="menu-title">Статистика</div>
+            <div class="menu-description">Заказы, время доставки, рейтинг</div>
+        </div>
+        <div class="menu-arrow">
+            <i class="bi bi-chevron-right"></i>
+        </div>
+    </a>
+    
+    <a href="{% url 'delivery:courier_settings_history' %}" class="settings-menu-item">
+        <div class="menu-icon">
+            <i class="bi bi-clock-history"></i>
+        </div>
+        <div class="menu-content">
+            <div class="menu-title">История заказов</div>
+            <div class="menu-description">Все завершенные заказы</div>
+        </div>
+        <div class="menu-arrow">
+            <i class="bi bi-chevron-right"></i>
+        </div>
+    </a>
+    
+    <a href="{% url 'delivery:courier_settings_security' %}" class="settings-menu-item">
+        <div class="menu-icon">
+            <i class="bi bi-shield-lock"></i>
+        </div>
+        <div class="menu-content">
+            <div class="menu-title">Безопасность</div>
+            <div class="menu-description">Смена пароля</div>
+        </div>
+        <div class="menu-arrow">
+            <i class="bi bi-chevron-right"></i>
+        </div>
+    </a>
+
+    <button class="btn-contact-manager" onclick="callManager()">
+        <i class="bi bi-telephone-fill"></i> Связаться с менеджером
+    </button>
+    
+    <button class="btn-logout" onclick="logout()">
+        <i class="bi bi-box-arrow-right"></i> Выйти из аккаунта
+    </button>
 </div>
 
-<div class="profile-card">
-    <div style="margin-bottom: 12px;">
-        <span style="font-size: 0.7rem; color: #6B6B6B;">Личные данные</span>
-        <div style="margin-top: 8px;">
-            <p><strong>Телефон:</strong> {{ user.phone|default:"Не указан" }}</p>
-            <p><strong>Дата приема:</strong> {{ courier.hire_date|date:"d.m.Y" }}</p>
-            <p><strong>Должность:</strong> {{ courier.position }}</p>
-        </div>
-    </div>
-</div>
+<script>
+    function callManager() {
+        window.location.href = "tel:+79991234567";
+    }
+    
+    function logout() {
+        {
+            window.location.href = "{% url 'accounts:logout' %}";
+        }
+    }
+</script>
 {% endblock %}
