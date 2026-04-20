@@ -31,7 +31,7 @@
         width: 50px;
         height: 50px;
         background: linear-gradient(135deg, #C8E0D6 0%, #E8E0D5 100%);
-        border-radius: 50%;
+        border-radius: 16px;
         display: flex;
         align-items: center;
         justify-content: center;
@@ -191,38 +191,66 @@
         padding: 12px 0 20px;
         z-index: 100;
     }
+    
     .nav-item {
         display: flex;
         flex-direction: column;
         align-items: center;
+        justify-content: center;
         gap: 6px;
         text-decoration: none;
-        color: #6B6B6B;
+        color: #ADB5BD;
         font-size: 0.7rem;
         transition: all 0.2s;
         font-weight: 600;
+        position: relative;
+        padding: 8px 16px;
+        border-radius: 16px;
+        background: transparent;
     }
+    
     .nav-item i {
-        font-size: 1.4rem;
+        font-size: 1.6rem;
+        transition: all 0.2s;
     }
-    .nav-item.active {
-        color: #1E7A57;
-    }
+    
     .nav-item span {
         font-size: 0.65rem;
         font-weight: 600;
+    }
+    
+    /* Активное состояние */
+    .nav-item.active {
+        color: #1E7A57;
+        background: rgba(30, 122, 87, 0.1);
+    }
+    
+    .nav-item.active i {
+        color: #1E7A57;
+        transform: translateY(-2px);
+    }
+    
+    /* Эффект при нажатии */
+    .nav-item:active {
+        transform: scale(0.96);
+        background: rgba(30, 122, 87, 0.15);
     }
     
     /* Счетчик уведомлений */
     .badge-count {
         background: #dc3545;
         color: white;
-        border-radius: 50%;
-        padding: 2px 6px;
+        border-radius: 30px;
+        padding: 2px 8px;
         font-size: 0.6rem;
         position: absolute;
-        margin-top: -8px;
-        margin-left: 12px;
+        top: -4px;
+        right: 4px;
+        min-width: 18px;
+        height: 18px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
     }
     
     /* Активные заказы */
@@ -255,11 +283,34 @@
     }
     .empty-state i {
         font-size: 3rem;
-        color: #C8E0D5;
+        color: #C8E0D6;
     }
     .empty-state p {
         color: #6B6B6B;
         margin-top: 12px;
+    }
+    
+    /* Мобильная адаптация */
+    @media (max-width: 500px) {
+        .bottom-nav {
+            padding: 10px 0 18px;
+        }
+        .nav-item {
+            padding: 6px 12px;
+        }
+        .nav-item i {
+            font-size: 1.4rem;
+        }
+        .nav-item span {
+            font-size: 0.6rem;
+        }
+        .badge-count {
+            font-size: 0.55rem;
+            min-width: 16px;
+            height: 16px;
+            top: -2px;
+            right: 2px;
+        }
     }
 </style>
 
@@ -271,7 +322,7 @@
 <!-- Нижняя навигация -->
 <div class="bottom-nav">
     <a href="{% url 'delivery:courier_dashboard' %}" class="nav-item {% if active_tab == 'dashboard' %}active{% endif %}">
-        <i class="bi bi-house"></i>
+        <i class="bi bi-house-door-fill"></i>
         <span>Главная</span>
     </a>
     <a href="{% url 'delivery:courier_active_orders' %}" class="nav-item {% if active_tab == 'active_orders' %}active{% endif %}">
@@ -280,7 +331,7 @@
         <span class="badge-count" id="activeOrdersCount" style="display: none;">0</span>
     </a>
     <a href="{% url 'delivery:courier_profile' %}" class="nav-item {% if active_tab == 'profile' %}active{% endif %}">
-        <i class="bi bi-person"></i>
+        <i class="bi bi-person-fill"></i>
         <span>Профиль</span>
     </a>
 </div>
@@ -294,11 +345,12 @@
                 const badge = document.getElementById('activeOrdersCount');
                 if (data.count > 0) {
                     badge.textContent = data.count;
-                    badge.style.display = 'inline-block';
+                    badge.style.display = 'flex';
                 } else {
                     badge.style.display = 'none';
                 }
-            });
+            })
+            .catch(error => console.error('Error loading orders count:', error));
     }
     loadActiveOrdersCount();
     setInterval(loadActiveOrdersCount, 30000);
