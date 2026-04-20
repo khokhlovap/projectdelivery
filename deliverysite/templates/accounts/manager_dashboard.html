@@ -3,19 +3,27 @@
 {% block title %}Панель управления{% endblock %}
 
 {% block manager_content %}
+<style>
+/* Приветствие */
+    .welcome-section {
+        margin-bottom: 28px;
+    }
+    .welcome-greeting {
+        font-size: 1.5rem;
+        font-weight: 600;
+        color: #1E1E1E;
+        margin-bottom: 4px;
+    }
+    .welcome-text {
+        font-size: 0.85rem;
+        color: #6B6B6B;
+    }
+</style>
+
 <!-- Приветствие -->
-<div class="card shadow-sm mb-4">
-    <div class="card-body p-4">
-        <div class="d-flex align-items-center">
-            <div>
-                <h3 class="mb-1">Доброе утро, {{ user.first_name }}!</h3>
-                <p class="text-muted mb-0">Пусть все доставки сегодня будут быстрыми, а курьеры — пунктуальными</p>
-            </div>
-            <div class="ms-auto">
-                <i class="bi bi-emoji-smile" style="font-size: 3rem; color: #1E7A57;"></i>
-            </div>
-        </div>
-    </div>
+<div class="welcome-section">
+    <h2 class="welcome-greeting" id="greetingMessage"></h2>
+    <p class="welcome-text">Добро пожаловать в личный кабинет. Пусть все доставки сегодня будут быстрыми, а курьеры — пунктуальными</p>
 </div>
 
 <!-- Статистические карточки -->
@@ -127,5 +135,25 @@
             }
         }
     });
+
+    // Приветствие в зависимости от времени дня
+    function updateGreeting() {
+        const now = new Date();
+        const hours = now.getHours();
+        const userName = "{{ user.first_name|default:user.username }}";
+        let greeting;
+        
+        if (hours >= 5 && hours < 12) {
+            greeting = "Доброе утро";
+        } else if (hours >= 12 && hours < 17) {
+            greeting = "Добрый день";
+        } else {
+            greeting = "Добрый вечер";
+        }
+        
+        document.getElementById('greetingMessage').innerHTML = `${greeting}, ${userName}!`;
+    }
+    
+    updateGreeting();
 </script>
 {% endblock %}
