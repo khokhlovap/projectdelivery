@@ -18,7 +18,9 @@ from django.db.models import Sum
 from django.core.mail import send_mail
 from django.conf import settings
 from django.shortcuts import get_object_or_404
-
+import re
+import requests
+import json
 
 # ЛК Клиент
 def register_view(request):
@@ -312,10 +314,118 @@ def client_settings(request):
 
 @login_required
 def ai_assistant(request):
-    "AI помощник"
-    context = {
-    'active_tab': 'ai_assistant', 
-    }
+    if request.method == "POST":
+        try:
+            data = json.loads(request.body)
+            message = data.get("message", "").lower()
+            print(f"Получен запрос: {message}")
+
+            # Ищем номер заказа
+            match = re.search(r'\d+', message)
+
+            if "заказ" in message and match:
+                order_id = int(match.group())
+                print(f"🔍 Ищем заказ #{order_id}")
+
+                try:
+                    order = Order.objects.get(
+                        id=order_id,
+                        client=request.user.client_profile
+                    )
+                    print(f"Заказ найден, статус: {order.status}")
+
+                    # Перевод статуса на русский
+                    status_ru = {
+                        'created': 'создан',
+                        'pending': 'ожидает подтверждения курьером',
+                        'assigned': 'назначен курьер',
+                        'in_progress': 'в пути',
+                        'delivered': 'доставлен',
+                        'cancelled': 'отменён'
+                    }.get(order.status, order.status)
+
+                    prompt = f"""
+Ты AI ассистент службы доставки АВН Бизнес Курьер.
+
+Пользователь спрашивает о заказе №{order.id}.
+
+Информация о заказе:
+- Номер заказа: {order.id}
+- Статус: {status_ru}
+- Адрес отправки: {order.pickup_address}
+- Адрес доставки: {order.delivery_address}
+- Тип заказа: {order.get_order_type_display()}
+- Вес: {order.weight if order.weight else 'не указан'} кг
+
+Ответь пользователю вежливо, кратко и информативно. Сообщи статус заказа и основную информацию.
+"""
+                except Order.DoesNotExist:
+                    print(f"Заказ №{order_id} не найден")
+                    return JsonResponse({
+                        "answer": f"Заказ №{order_id} не найден. Проверьте номер заказа или обратитесь в поддержку."
+                    })
+            else:
+                # Обычные вопросы
+                prompt = f"""
+Ты AI ассистент службы доставки АВН Бизнес Курьер.
+
+Твоя задача - помогать клиентам с вопросами о:
+- Статусе заказов
+- Тарифах доставки
+- Стоимости услуг
+- Сроках доставки
+- Правилах оформления заказа
+
+Отвечай вежливо, кратко (2-3 предложения), по делу.
+Если не знаешь ответа, предложи обратиться в поддержку по телефону +7 (980) 888-88-88 или email abn-business@mail.ru
+
+Вопрос клиента: {message}
+"""
+
+            print(f"Отправляем запрос в Ollama")
+            
+            # Запрос к Ollama
+            response = requests.post(
+                "http://localhost:11434/api/generate",
+                json={
+                    "model": "qwen2.5:3b",
+                    "prompt": prompt,
+                    "stream": False,
+                    "options": {
+                        "temperature": 0.7,
+                        "max_tokens": 500
+                    }
+                },
+                timeout=30
+            )
+            
+            print(f"📡 Статус ответа Ollama: {response.status_code}")
+            
+            if response.status_code == 200:
+                answer = response.json().get("response", "Извините, не удалось получить ответ.")
+                print(f"Ответ AI получен, длина: {len(answer)} символов")
+                return JsonResponse({"answer": answer})
+            else:
+                return JsonResponse({
+                    "answer": f"Извините, AI сервер временно недоступен. Пожалуйста, попробуйте позже."
+                })
+                
+        except requests.exceptions.ConnectionError:
+            print("Не удалось подключиться к Ollama")
+            return JsonResponse({
+                "answer": "AI сервер не запущен. Пожалуйста, сообщите об этом администратору."
+            })
+        except requests.exceptions.Timeout:
+            print("Таймаут подключения к Ollama")
+            return JsonResponse({
+                "answer": "AI сервер не отвечает. Пожалуйста, попробуйте позже."
+            })
+        except Exception as e:
+            print(f"Общая ошибка: {str(e)}")
+            import traceback
+            traceback.print_exc()
+            return JsonResponse({"answer": f"Произошла ошибка. Пожалуйста, попробуйте позже."}, status=500)
+
     return render(request, 'accounts/ai_assistant.html')
 
 def privacy_policy(request):

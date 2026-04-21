@@ -2,25 +2,367 @@
 {% block title %}AI помощник{% endblock %}
 
 {% block lk_content %}
+<style>
+    /* Стили для чата */
+    .chat-container {
+        height: 400px;
+        overflow-y: auto;
+        background: linear-gradient(135deg, #f8f9fa 0%, #f5f3f0 100%);
+        border-radius: 20px;
+        padding: 20px;
+    }
+    
+    /* Стили для сообщений */
+    .message {
+        margin-bottom: 16px;
+        display: flex;
+        animation: fadeIn 0.3s ease;
+    }
+    
+    .message.user {
+        justify-content: flex-end;
+    }
+    
+    .message.ai {
+        justify-content: flex-start;
+    }
+    
+    .message-bubble {
+        max-width: 75%;
+        padding: 12px 18px;
+        border-radius: 20px;
+        font-size: 0.9rem;
+        line-height: 1.4;
+        word-wrap: break-word;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+    }
+    
+    /* Сообщение пользователя */
+    .message.user .message-bubble {
+        background: linear-gradient(135deg, #1E7A57 0%, #2E9B6E 100%);
+        color: white;
+        border-bottom-right-radius: 4px;
+    }
+    
+    /* Сообщение AI */
+    .message.ai .message-bubble {
+        background: white;
+        color: #1E1E1E;
+        border: 1px solid #E8E0D5;
+        border-bottom-left-radius: 4px;
+    }
+    
+    /* Аватар для AI */
+    .message.ai {
+        position: relative;
+        padding-left: 40px;
+    }
+    
+    .ai-avatar {
+        position: absolute;
+        left: 0;
+        bottom: 0;
+        width: 32px;
+        height: 32px;
+        background: linear-gradient(135deg, #C8E0D6 0%, #E8E0D5 100%);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1rem;
+    }
+    
+    .ai-avatar i {
+        color: #1E7A57;
+    }
+    
+    /* Аватар для пользователя */
+    .message.user {
+        position: relative;
+        padding-right: 40px;
+    }
+    
+    .user-avatar {
+        position: absolute;
+        right: 0;
+        bottom: 0;
+        width: 32px;
+        height: 32px;
+        background: linear-gradient(135deg, #E8E0D5 0%, #C8E0D6 100%);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1rem;
+    }
+    
+    .user-avatar i {
+        color: #1E7A57;
+    }
+    
+    /* Анимация появления */
+    @keyframes fadeIn {
+        from {
+            opacity: 0;
+            transform: translateY(10px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+    
+    /* Индикатор печати */
+    .typing-indicator {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        padding: 10px 15px;
+        background: white;
+        border-radius: 20px;
+        border: 1px solid #E8E0D5;
+        display: inline-flex;
+    }
+    
+    .typing-indicator span {
+        width: 8px;
+        height: 8px;
+        background: #1E7A57;
+        border-radius: 50%;
+        animation: typing 1.4s infinite ease-in-out;
+    }
+    
+    .typing-indicator span:nth-child(1) { animation-delay: 0s; }
+    .typing-indicator span:nth-child(2) { animation-delay: 0.2s; }
+    .typing-indicator span:nth-child(3) { animation-delay: 0.4s; }
+    
+    @keyframes typing {
+        0%, 60%, 100% {
+            transform: translateY(0);
+            opacity: 0.4;
+        }
+        30% {
+            transform: translateY(-10px);
+            opacity: 1;
+        }
+    }
+    
+    /* Поле ввода */
+    .input-group {
+        background: white;
+        border-radius: 50px;
+        border: 1px solid #E8E0D5;
+        overflow: hidden;
+        transition: all 0.2s;
+    }
+    
+    .input-group:focus-within {
+        border-color: #1E7A57;
+        box-shadow: 0 0 0 3px rgba(30, 122, 87, 0.1);
+    }
+    
+    .input-group input {
+        border: none;
+        padding: 12px 20px;
+        font-size: 0.9rem;
+        background: white;
+    }
+    
+    .input-group input:focus {
+        outline: none;
+        box-shadow: none;
+    }
+    
+    .input-group button {
+        background: #1E7A57;
+        border: none;
+        padding: 12px 24px;
+        color: white;
+        font-weight: 500;
+        transition: all 0.2s;
+    }
+    
+    .input-group button:hover {
+        background: #155E43;
+        transform: scale(1.02);
+    }
+    
+    /* Скроллбар */
+    .chat-container::-webkit-scrollbar {
+        width: 6px;
+    }
+    
+    .chat-container::-webkit-scrollbar-track {
+        background: #F0EDE8;
+        border-radius: 10px;
+    }
+    
+    .chat-container::-webkit-scrollbar-thumb {
+        background: #C8E0D6;
+        border-radius: 10px;
+    }
+    
+    .chat-container::-webkit-scrollbar-thumb:hover {
+        background: #1E7A57;
+    }
+</style>
+
 <div class="card shadow-sm">
     <div class="card-header bg-white">
-        <h5 class="mb-0"><i class="bi bi-robot"></i> AI помощник</h5>
+        <h5 class="mb-0"><i class="bi bi-robot me-2" style="color: #1E7A57;"></i> AI помощник</h5>
     </div>
     <div class="card-body">
-        <p class="text-muted">Задайте вопрос о доставке, тарифах или статусе заказа</p>
+        <p class="text-muted small mb-3">
+            <i class="bi bi-info-circle"></i> Задайте вопрос о доставке, тарифах или статусе заказа
+        </p>
         
-        <div class="chat-container border rounded p-3 mb-3" style="height: 400px; overflow-y: auto; background-color: #f8f9fa;">
-            <div class="text-center text-muted">
-                <i class="bi bi-chat-dots"></i> Здесь будет история диалога
+        <div class="chat-container" id="chatContainer">
+            <div class="text-center text-muted py-5" id="chatPlaceholder">
+                <i class="bi bi-chat-dots" style="font-size: 3rem; color: #C8E0D6;"></i>
+                <p class="mt-2 mb-0">Здесь будет история диалога</p>
+                <small>Напишите что-нибудь, чтобы начать общение</small>
             </div>
         </div>
         
-        <div class="input-group">
+        <div class="input-group mt-3">
             <input type="text" class="form-control" placeholder="Введите ваш вопрос..." id="questionInput">
-            <button class="btn btn-primary" type="button" id="sendBtn">
+            <button class="btn" type="button" id="sendBtn">
                 <i class="bi bi-send"></i> Отправить
             </button>
         </div>
     </div>
 </div>
+
+<script>
+// Функция для получения CSRF токена
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+
+const input = document.getElementById("questionInput");
+const btn = document.getElementById("sendBtn");
+const chatContainer = document.getElementById("chatContainer");
+let isTyping = false;
+
+function addMessage(text, sender) {
+    // Очищаем заглушку
+    const placeholder = document.getElementById('chatPlaceholder');
+    if (placeholder) {
+        placeholder.remove();
+    }
+    
+    const messageDiv = document.createElement('div');
+    messageDiv.className = `message ${sender}`;
+    
+    if (sender === 'ai') {
+        messageDiv.innerHTML = `
+            <div class="ai-avatar">
+                <i class="bi bi-robot"></i>
+            </div>
+            <div class="message-bubble">
+                ${escapeHtml(text).replace(/\n/g, '<br>')}
+            </div>
+        `;
+    } else {
+        messageDiv.innerHTML = `
+            <div class="message-bubble">
+                ${escapeHtml(text).replace(/\n/g, '<br>')}
+            </div>
+            <div class="user-avatar">
+                <i class="bi bi-person"></i>
+            </div>
+        `;
+    }
+    
+    chatContainer.appendChild(messageDiv);
+    chatContainer.scrollTop = chatContainer.scrollHeight;
+}
+
+function showTypingIndicator() {
+    if (isTyping) return;
+    isTyping = true;
+    
+    const typingDiv = document.createElement('div');
+    typingDiv.id = 'typingIndicator';
+    typingDiv.className = 'message ai';
+    typingDiv.innerHTML = `
+        <div class="ai-avatar">
+            <i class="bi bi-robot"></i>
+        </div>
+        <div class="typing-indicator">
+            <span></span>
+            <span></span>
+            <span></span>
+        </div>
+    `;
+    chatContainer.appendChild(typingDiv);
+    chatContainer.scrollTop = chatContainer.scrollHeight;
+}
+
+function hideTypingIndicator() {
+    const indicator = document.getElementById('typingIndicator');
+    if (indicator) {
+        indicator.remove();
+    }
+    isTyping = false;
+}
+
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+function sendMessage() {
+    const message = input.value.trim();
+    if (!message) return;
+    
+    addMessage(message, "user");
+    input.value = "";
+    showTypingIndicator();
+    
+    fetch("/ai-assistant/", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+            "X-CSRFToken": getCookie('csrftoken')
+        },
+        body: JSON.stringify({ message: message })
+    })
+    .then(response => response.json())
+    .then(data => {
+        hideTypingIndicator();
+        if (data.answer) {
+            addMessage(data.answer, "ai");
+        } else if (data.error) {
+            addMessage("Ошибка: " + data.error, "ai");
+        } else {
+            addMessage("Неизвестная ошибка", "ai");
+        }
+    })
+    .catch(error => {
+        hideTypingIndicator();
+        console.error("Ошибка:", error);
+        addMessage("Ошибка подключения к серверу", "ai");
+    });
+}
+
+btn.addEventListener("click", sendMessage);
+input.addEventListener("keypress", function(e) {
+    if (e.key === "Enter") {
+        sendMessage();
+    }
+});
+</script>
 {% endblock %}
