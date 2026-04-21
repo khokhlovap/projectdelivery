@@ -31,6 +31,7 @@ ALLOWED_HOSTS = []
 # Application definition
 
 INSTALLED_APPS = [
+    'daphne',
     'delivery',
     'accounts',  
     'django.contrib.admin',
@@ -53,6 +54,15 @@ MIDDLEWARE = [
 
 ROOT_URLCONF = 'deliverysite.urls'
 
+# ASGI конфигурация
+ASGI_APPLICATION = 'deliverysite.asgi.application'
+
+# InMemory Channel Layer (для разработки)
+CHANNEL_LAYERS = {
+    'default': {
+        'BACKEND': 'channels.layers.InMemoryChannelLayer',
+    },
+}
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',

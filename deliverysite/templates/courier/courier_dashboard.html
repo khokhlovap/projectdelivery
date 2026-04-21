@@ -68,102 +68,106 @@
         </div>
         <span>Новые заказы</span>
         {% if new_orders %}
-            <span class="orders-badge">{{ new_orders|length }}</span>
+            <span class="orders-badge" id="ordersBadge">{{ new_orders|length }}</span>
+        {% else %}
+            <span class="orders-badge" id="ordersBadge" style="display: none;">0</span>
         {% endif %}
     </div>
     
-    {% if new_orders %}
-        {% for order in new_orders %}
-        <div class="order-card" id="order-{{ order.id }}">
-            <div class="order-header">
-                <div class="order-id-wrapper">
-                    <i class="bi bi-receipt"></i>
-                    <span class="order-id">Заказ №{{ order.id }}</span>
-                </div>
-                <span class="order-time">{{ order.created_at|date:"d.m в H:i" }}</span>
-            </div>
-            
-            <div class="order-details">
-                <div class="order-address">
-                    <div class="address-icon pickup">
-                        <i class="bi bi-box-seam"></i>
+    <div id="new-orders-container">
+        {% if new_orders %}
+            {% for order in new_orders %}
+            <div class="order-card" id="order-{{ order.id }}" data-order-id="{{ order.id }}">
+                <div class="order-header">
+                    <div class="order-id-wrapper">
+                        <i class="bi bi-receipt"></i>
+                        <span class="order-id">Заказ №{{ order.id }}</span>
                     </div>
-                    <div class="address-text">
-                        <span class="address-label">Отправка</span>
-                        <span class="address-value">{{ order.pickup_address|truncatechars:50 }}</span>
+                    <span class="order-time">{{ order.created_at|date:"d.m в H:i" }}</span>
+                </div>
+                
+                <div class="order-details">
+                    <div class="order-address">
+                        <div class="address-icon pickup">
+                            <i class="bi bi-box-seam"></i>
+                        </div>
+                        <div class="address-text">
+                            <span class="address-label">Отправка</span>
+                            <span class="address-value">{{ order.pickup_address|truncatechars:50 }}</span>
+                        </div>
+                    </div>
+                    <div class="order-arrow">
+                        <i class="bi bi-arrow-down-short"></i>
+                    </div>
+                    <div class="order-address">
+                        <div class="address-icon delivery">
+                            <i class="bi bi-geo-alt-fill"></i>
+                        </div>
+                        <div class="address-text">
+                            <span class="address-label">Доставка</span>
+                            <span class="address-value">{{ order.delivery_address|truncatechars:50 }}</span>
+                        </div>
                     </div>
                 </div>
-                <div class="order-arrow">
-                    <i class="bi bi-arrow-down-short"></i>
-                </div>
-                <div class="order-address">
-                    <div class="address-icon delivery">
-                        <i class="bi bi-geo-alt-fill"></i>
+                
+                <div class="order-meta">
+                    <div class="meta-item">
+                        <i class="bi bi-tag"></i>
+                        <span>{{ order.get_order_type_display }}</span>
                     </div>
-                    <div class="address-text">
-                        <span class="address-label">Доставка</span>
-                        <span class="address-value">{{ order.delivery_address|truncatechars:50 }}</span>
+                    <div class="meta-divider"></div>
+                    <div class="meta-item">
+                        <i class="bi bi-weight"></i>
+                        <span>{{ order.weight|default:"вес не указан" }} кг</span>
+                    </div>
+                    <div class="meta-divider"></div>
+                    <div class="meta-item">
+                        <i class="bi bi-calendar-event"></i>
+                        <span>{{ order.requested_delivery_date|date:"d.m.Y" }}</span>
                     </div>
                 </div>
-            </div>
-            
-            <div class="order-meta">
-                <div class="meta-item">
-                    <i class="bi bi-tag"></i>
-                    <span>{{ order.get_order_type_display }}</span>
+                
+                <!-- Комментарий клиента -->
+                {% if order.client_comment %}
+                <div class="order-comment">
+                    <div class="comment-icon">
+                        <i class="bi bi-chat-dots"></i>
+                    </div>
+                    <div class="comment-text">
+                        <span class="comment-label">Комментарий клиента:</span>
+                        <span class="comment-value">{{ order.client_comment|truncatechars:80 }}</span>
+                    </div>
                 </div>
-                <div class="meta-divider"></div>
-                <div class="meta-item">
-                    <i class="bi bi-weight"></i>
-                    <span>{{ order.weight|default:"вес не указан" }} кг</span>
+                {% endif %}
+                
+                <div class="order-buttons">
+                    <button class="btn-accept" onclick="acceptOrder({{ order.id }})">
+                        <i class="bi bi-check-lg"></i>
+                        <span>Принять заказ</span>
+                    </button>
+                    <button class="btn-reject" onclick="rejectOrder({{ order.id }})">
+                        <i class="bi bi-x-lg"></i>
+                        <span>Отклонить</span>
+                    </button>
                 </div>
-                <div class="meta-divider"></div>
-                <div class="meta-item">
-                    <i class="bi bi-calendar-event"></i>
-                    <span>{{ order.requested_delivery_date|date:"d.m.Y" }}</span>
+                
+                <!-- Дополнительная кнопка с деталями -->
+                <a href="{% url 'delivery:courier_order_readonly' order.id %}" class="btn-detail" style="text-decoration: none; display: flex;">
+                    <i class="bi bi-info-circle"></i>
+                    <span>Подробнее о заказе</span>
+                </a>
+            </div>
+            {% endfor %}    
+        {% else %}
+            <div class="empty-state" id="emptyState">
+                <div class="empty-icon">
+                    <i class="bi bi-inbox"></i>
                 </div>
+                <h3>Нет новых заказов</h3>
+                <p>Когда появятся новые заказы, они отобразятся здесь</p>
             </div>
-            
-            <!-- Комментарий клиента -->
-            {% if order.client_comment %}
-            <div class="order-comment">
-                <div class="comment-icon">
-                    <i class="bi bi-chat-dots"></i>
-                </div>
-                <div class="comment-text">
-                    <span class="comment-label">Комментарий клиента:</span>
-                    <span class="comment-value">{{ order.client_comment|truncatechars:80 }}</span>
-                </div>
-            </div>
-            {% endif %}
-            
-            <div class="order-buttons">
-                <button class="btn-accept" onclick="acceptOrder({{ order.id }})">
-                    <i class="bi bi-check-lg"></i>
-                    <span>Принять заказ</span>
-                </button>
-                <button class="btn-reject" onclick="rejectOrder({{ order.id }})">
-                    <i class="bi bi-x-lg"></i>
-                    <span>Отклонить</span>
-                </button>
-            </div>
-            
-            <!-- Дополнительная кнопка с деталями -->
-            <a href="{% url 'delivery:courier_order_readonly' order.id %}" class="btn-detail" style="text-decoration: none; display: flex;">
-                <i class="bi bi-info-circle"></i>
-                <span>Подробнее о заказе</span>
-            </a>
-        </div>
-        {% endfor %}    
-    {% else %}
-        <div class="empty-state">
-            <div class="empty-icon">
-                <i class="bi bi-inbox"></i>
-            </div>
-            <h3>Нет новых заказов</h3>
-            <p>Когда появятся новые заказы, они отобразятся здесь</p>
-        </div>
-    {% endif %}
+        {% endif %}
+    </div>
 </div>
 
 <style>
@@ -614,6 +618,26 @@
         color: #1E7A57;
     }
 
+    /* Уведомление */
+    .toast-notification {
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        z-index: 10000;
+        animation: slideIn 0.3s ease;
+    }
+    
+    @keyframes slideIn {
+        from {
+            transform: translateX(100%);
+            opacity: 0;
+        }
+        to {
+            transform: translateX(0);
+            opacity: 1;
+        }
+    }
+
     /* Пустое состояние внутри рамки */
     .empty-state {
         text-align: center;
@@ -646,8 +670,10 @@
     }
 </style>
 
-
 <script>
+    console.log('🚀 Courier Dashboard загружен');
+    console.log('User ID:', {{ user.id }});
+    
     function getCookie(name) {
         let cookieValue = null;
         if (document.cookie && document.cookie !== '') {
@@ -665,6 +691,230 @@
     
     const csrftoken = getCookie('csrftoken');
     
+    // WebSocket переменные
+    let socket = null;
+    let reconnectAttempts = 0;
+    const maxReconnectAttempts = 10;
+    
+    function connectWebSocket() {
+        const userId = {{ user.id }};
+        const wsScheme = window.location.protocol === 'https:' ? 'wss://' : 'ws://';
+        const wsUrl = `${wsScheme}${window.location.host}/ws/orders/${userId}/`;
+        
+        console.log('Подключение к WebSocket:', wsUrl);
+        
+        try {
+            socket = new WebSocket(wsUrl);
+            
+            socket.onopen = function(e) {
+                console.log('WebSocket подключен');
+                reconnectAttempts = 0;
+                
+                // Отправляем ping каждые 30 секунд
+                if (window.pingInterval) clearInterval(window.pingInterval);
+                window.pingInterval = setInterval(() => {
+                    if (socket && socket.readyState === WebSocket.OPEN) {
+                        socket.send(JSON.stringify({ type: 'ping' }));
+                    }
+                }, 30000);
+            };
+            
+            socket.onmessage = function(e) {
+                try {
+                    const data = JSON.parse(e.data);
+                    console.log('WebSocket получено:', data);
+                    
+                    switch(data.type) {
+                        case 'new_order':
+                            console.log(`Новый заказ #${data.order_id}`);
+                            showToastNotification(`Новый заказ #${data.order_id}`, 'success');
+                            addNewOrder(data);
+                            updateOrdersCount();
+                            break;
+                            
+                        case 'order_status_update':
+                            console.log(`Статус заказа #${data.order_id} изменен на ${data.status_display}`);
+                            break;
+                            
+                        case 'notification':
+                            console.log(`Уведомление: ${data.title}`);
+                            showToastNotification(data.message, data.notification_type);
+                            break;
+                            
+                        case 'pong':
+                            console.log('WebSocket connection alive');
+                            break;
+                            
+                        case 'connection_established':
+                            console.log('Соединение установлено:', data.message);
+                            break;
+                            
+                        default:
+                            console.log('Неизвестный тип сообщения:', data.type);
+                    }
+                } catch (error) {
+                    console.error('Ошибка парсинга сообщения:', error);
+                }
+            };
+            
+            socket.onclose = function(e) {
+                console.log('WebSocket отключен');
+                if (window.pingInterval) clearInterval(window.pingInterval);
+                
+                // Попытка переподключения
+                if (reconnectAttempts < maxReconnectAttempts) {
+                    reconnectAttempts++;
+                    console.log(`Попытка переподключения ${reconnectAttempts}/${maxReconnectAttempts} через 3 секунды...`);
+                    setTimeout(connectWebSocket, 3000);
+                } else {
+                    console.error('Не удалось переподключиться после нескольких попыток');
+                    showToastNotification('Потеряно соединение с сервером. Обновите страницу.', 'danger');
+                }
+            };
+            
+            socket.onerror = function(e) {
+                console.error('WebSocket ошибка:', e);
+            };
+        } catch (error) {
+            console.error('Ошибка создания WebSocket:', error);
+        }
+    }
+    
+    function showToastNotification(message, type = 'info') {
+        const notification = document.createElement('div');
+        notification.className = `toast-notification alert alert-${type} alert-dismissible fade show`;
+        notification.style.cssText = 'position: fixed; top: 20px; right: 20px; z-index: 10000; min-width: 300px;';
+        notification.innerHTML = `
+            ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        `;
+        document.body.appendChild(notification);
+        
+        setTimeout(() => {
+            notification.remove();
+        }, 5000);
+    }
+    
+    function addNewOrder(orderData) {
+        const container = document.getElementById('new-orders-container');
+        const emptyState = document.getElementById('emptyState');
+        
+        // Удаляем пустое состояние если оно есть
+        if (emptyState) {
+            emptyState.remove();
+        }
+        
+        const orderHtml = `
+            <div class="order-card" id="order-${orderData.order_id}" data-order-id="${orderData.order_id}">
+                <div class="order-header">
+                    <div class="order-id-wrapper">
+                        <i class="bi bi-receipt"></i>
+                        <span class="order-id">Заказ №${orderData.order_id}</span>
+                    </div>
+                    <span class="order-time">${orderData.created_at || 'Только что'}</span>
+                </div>
+                
+                <div class="order-details">
+                    <div class="order-address">
+                        <div class="address-icon pickup">
+                            <i class="bi bi-box-seam"></i>
+                        </div>
+                        <div class="address-text">
+                            <span class="address-label">Отправка</span>
+                            <span class="address-value">${escapeHtml(orderData.pickup_address || 'Не указан')}</span>
+                        </div>
+                    </div>
+                    <div class="order-arrow">
+                        <i class="bi bi-arrow-down-short"></i>
+                    </div>
+                    <div class="order-address">
+                        <div class="address-icon delivery">
+                            <i class="bi bi-geo-alt-fill"></i>
+                        </div>
+                        <div class="address-text">
+                            <span class="address-label">Доставка</span>
+                            <span class="address-value">${escapeHtml(orderData.delivery_address || 'Не указан')}</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="order-meta">
+                    <div class="meta-item">
+                        <i class="bi bi-tag"></i>
+                        <span>${escapeHtml(orderData.order_type || 'Документация')}</span>
+                    </div>
+                    <div class="meta-divider"></div>
+                    <div class="meta-item">
+                        <i class="bi bi-weight"></i>
+                        <span>${orderData.weight || 'вес не указан'} кг</span>
+                    </div>
+                </div>
+                
+                <div class="order-buttons">
+                    <button class="btn-accept" onclick="acceptOrder(${orderData.order_id})">
+                        <i class="bi bi-check-lg"></i>
+                        <span>Принять заказ</span>
+                    </button>
+                    <button class="btn-reject" onclick="rejectOrder(${orderData.order_id})">
+                        <i class="bi bi-x-lg"></i>
+                        <span>Отклонить</span>
+                    </button>
+                </div>
+                
+                <a href="/delivery/courier/order/${orderData.order_id}/readonly/" class="btn-detail" style="text-decoration: none; display: flex;">
+                    <i class="bi bi-info-circle"></i>
+                    <span>Подробнее о заказе</span>
+                </a>
+            </div>
+        `;
+        
+        container.insertAdjacentHTML('afterbegin', orderHtml);
+        
+        // Анимация для нового заказа
+        const newOrder = document.getElementById(`order-${orderData.order_id}`);
+        if (newOrder) {
+            newOrder.style.animation = 'slideIn 0.3s ease';
+            newOrder.style.backgroundColor = '#F0FFF4';
+            setTimeout(() => {
+                newOrder.style.backgroundColor = '';
+            }, 1000);
+        }
+    }
+    
+    function escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+    
+    function updateOrdersCount() {
+        const orderCards = document.querySelectorAll('.order-card');
+        const count = orderCards.length;
+        const badge = document.getElementById('ordersBadge');
+        
+        if (badge) {
+            if (count > 0) {
+                badge.textContent = count;
+                badge.style.display = 'inline-block';
+            } else {
+                badge.style.display = 'none';
+            }
+        }
+   
+        const container = document.getElementById('new-orders-container');
+        if (count === 0 && container && !document.getElementById('emptyState')) {
+            container.innerHTML = `
+                <div class="empty-state" id="emptyState">
+                    <div class="empty-icon">
+                        <i class="bi bi-inbox"></i>
+                    </div>
+                    <h3>Нет новых заказов</h3>
+                    <p>Когда появятся новые заказы, они отобразятся здесь</p>
+                </div>
+            `;
+        }
+    }
+    
     function updateShift(status) {
         fetch('/delivery/courier/update-shift/', {
             method: 'POST',
@@ -679,11 +929,11 @@
             if (data.success) {
                 location.reload();
             } else {
-                alert('Ошибка: ' + data.error);
+                showToastNotification('Ошибка: ' + data.error, 'danger');
             }
         })
         .catch(error => {
-            alert('Ошибка сервера');
+            showToastNotification('Ошибка сервера', 'danger');
         });
     }
     
@@ -703,7 +953,7 @@
                 if (data.success) {
                     location.reload();
                 } else {
-                    alert('Ошибка: ' + data.error);
+                    showToastNotification('Ошибка: ' + data.error, 'danger');
                 }
             });
         } else if (currentStatus === 'on') {
@@ -719,32 +969,40 @@
                 if (data.success) {
                     location.reload();
                 } else {
-                    alert('Ошибка: ' + data.error);
+                    showToastNotification('Ошибка: ' + data.error, 'danger');
                 }
             });
         } else {
-            alert('Сначала начните рабочую смену');
+            showToastNotification('Сначала начните рабочую смену', 'warning');
         }
     }
     
     function acceptOrder(orderId) {
         fetch(`/delivery/courier/accept/${orderId}/`, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'X-CSRFToken': csrftoken
-        }
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            document.getElementById(`order-${orderId}`).remove();
-            loadActiveOrdersCount();
-        } else {
-            alert('Ошибка: ' + data.error);
-        }
-    });
-}
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrftoken
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                const orderElement = document.getElementById(`order-${orderId}`);
+                if (orderElement) {
+                    orderElement.remove();
+                    updateOrdersCount();
+                }
+                showToastNotification(`Заказ #${orderId} принят!`, 'success');
+                loadActiveOrdersCount();
+            } else {
+                showToastNotification('Ошибка: ' + data.error, 'danger');
+            }
+        })
+        .catch(error => {
+            showToastNotification('Ошибка сервера', 'danger');
+        });
+    }
     
     function rejectOrder(orderId) {
         if (confirm('Вы уверены, что хотите отклонить этот заказ?')) {
@@ -758,17 +1016,17 @@
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
-                    document.getElementById(`order-${orderId}`).remove();
-                    alert('Заказ отклонен');
+                    const orderElement = document.getElementById(`order-${orderId}`);
+                    if (orderElement) {
+                        orderElement.remove();
+                        updateOrdersCount();
+                    }
+                    showToastNotification('Заказ отклонен', 'warning');
                 } else {
-                    alert('Ошибка: ' + data.error);
+                    showToastNotification('Ошибка: ' + data.error, 'danger');
                 }
             });
         }
-    }
-    
-    function openOrderDetails(orderId) {
-        window.location.href = `/delivery/courier/order/${orderId}/`;
     }
     
     function loadActiveOrdersCount() {
@@ -782,7 +1040,146 @@
                 } else if (badge) {
                     badge.style.display = 'none';
                 }
-            });
+            })
+            .catch(error => console.error('Ошибка загрузки счетчика:', error));
     }
+    
+// Резервное обновление через API 
+let lastCheckTime = new Date().getTime();
+let lastOrderIds = new Set();
+
+function checkNewOrdersViaAPI() {
+    fetch('/delivery/courier/check-new-orders/')
+        .then(response => response.json())
+        .then(data => {
+            if (data.new_orders && data.new_orders.length > 0) {
+                console.log('API: Найдено новых заказов:', data.new_orders.length);
+                // Добавляем каждый новый заказ без перезагрузки
+                data.new_orders.forEach(order => {
+                    // Проверяем, нет ли уже такого заказа на странице
+                    if (!document.getElementById(`order-${order.id}`) && !lastOrderIds.has(order.id)) {
+                        lastOrderIds.add(order.id);
+                        addNewOrderFromAPI(order);
+                    }
+                });
+            }
+        })
+        .catch(error => console.error('API ошибка:', error));
+}
+
+function addNewOrderFromAPI(order) {
+    const container = document.getElementById('new-orders-container');
+    const emptyState = document.getElementById('emptyState');
+    
+    if (emptyState) {
+        emptyState.remove();
+    }
+    
+    const orderHtml = `
+        <div class="order-card" id="order-${order.id}" data-order-id="${order.id}">
+            <div class="order-header">
+                <div class="order-id-wrapper">
+                    <i class="bi bi-receipt"></i>
+                    <span class="order-id">Заказ №${order.id}</span>
+                </div>
+                <span class="order-time">${order.created_at || 'Только что'}</span>
+            </div>
+            
+            <div class="order-details">
+                <div class="order-address">
+                    <div class="address-icon pickup">
+                        <i class="bi bi-box-seam"></i>
+                    </div>
+                    <div class="address-text">
+                        <span class="address-label">Отправка</span>
+                        <span class="address-value">${escapeHtml(order.pickup_address || 'Не указан')}</span>
+                    </div>
+                </div>
+                <div class="order-arrow">
+                    <i class="bi bi-arrow-down-short"></i>
+                </div>
+                <div class="order-address">
+                    <div class="address-icon delivery">
+                        <i class="bi bi-geo-alt-fill"></i>
+                    </div>
+                    <div class="address-text">
+                        <span class="address-label">Доставка</span>
+                        <span class="address-value">${escapeHtml(order.delivery_address || 'Не указан')}</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="order-meta">
+                <div class="meta-item">
+                    <i class="bi bi-tag"></i>
+                    <span>${escapeHtml(order.order_type_display || 'Документация')}</span>
+                </div>
+                <div class="meta-divider"></div>
+                <div class="meta-item">
+                    <i class="bi bi-weight"></i>
+                    <span>${order.weight || 'вес не указан'} кг</span>
+                </div>
+            </div>
+            
+            <div class="order-buttons">
+                <button class="btn-accept" onclick="acceptOrder(${order.id})">
+                    <i class="bi bi-check-lg"></i>
+                    <span>Принять заказ</span>
+                </button>
+                <button class="btn-reject" onclick="rejectOrder(${order.id})">
+                    <i class="bi bi-x-lg"></i>
+                    <span>Отклонить</span>
+                </button>
+            </div>
+            
+            <a href="/delivery/courier/order/${order.id}/readonly/" class="btn-detail" style="text-decoration: none; display: flex;">
+                <i class="bi bi-info-circle"></i>
+                <span>Подробнее о заказе</span>
+            </a>
+        </div>
+    `;
+    
+    container.insertAdjacentHTML('afterbegin', orderHtml);
+    
+    // Анимация
+    const newOrder = document.getElementById(`order-${order.id}`);
+    if (newOrder) {
+        newOrder.style.animation = 'slideIn 0.3s ease';
+        newOrder.style.backgroundColor = '#F0FFF4';
+        setTimeout(() => {
+            newOrder.style.backgroundColor = '';
+        }, 1000);
+    }
+    
+    showToastNotification(`Новый заказ #${order.id}!`, 'success');
+    updateOrdersCount();
+}
+// ЗАПРОС РАЗРЕШЕНИЯ НА УВЕДОМЛЕНИЯ
+if (Notification.permission === 'default') {
+    Notification.requestPermission();
+}
+
+// ИНИЦИАЛИЗАЦИЯ ПРИ ЗАГРУЗКЕ СТРАНИЦЫ
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('DOM загружен, инициализация');
+    connectWebSocket();
+    
+    // Резервная проверка каждые 5 секунд (БЕЗ ПЕРЕЗАГРУЗКИ)
+    setInterval(checkNewOrdersViaAPI, 5000);
+    
+    // Обновление счетчика активных заказов
+    loadActiveOrdersCount();
+    setInterval(loadActiveOrdersCount, 30000);
+});
+
+// ОЧИСТКА ПРИ УХОДЕ СО СТРАНИЦЫ
+window.addEventListener('beforeunload', function() {
+    if (window.pingInterval) {
+        clearInterval(window.pingInterval);
+    }
+    if (socket && socket.readyState === WebSocket.OPEN) {
+        socket.close();
+    }
+});
 </script>
 {% endblock %}

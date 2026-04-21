@@ -174,12 +174,168 @@
             .catch(error => console.error('Ошибка загрузки задач:', error));
     }
     
+    // Функция для обновления конкретного заказа в таблице/карточке
+    function updateOrderStatus(orderId, newStatus, statusDisplay) {
+        // Ищем карточку заказа по data-order-id
+        const orderCard = document.querySelector(`.order-card[data-order-id="${orderId}"]`);
+        if (orderCard) {
+            const statusSpan = orderCard.querySelector('.order-status, .badge-status');
+            if (statusSpan) {
+                statusSpan.textContent = statusDisplay;
+                
+                // Обновляем класс для цвета
+                let statusClass = '';
+                if (newStatus === 'assigned') statusClass = 'bg-info';
+                else if (newStatus === 'in_progress') statusClass = 'bg-primary';
+                else if (newStatus === 'delivered') statusClass = 'bg-success';
+                else if (newStatus === 'pending') statusClass = 'bg-warning';
+                else statusClass = 'bg-secondary';
+                
+                statusSpan.className = `badge-status ${statusClass}`;
+            }
+        }
+        
+        // Также обновляем в таблице, если есть
+        const tableRow = document.querySelector(`tr[data-order-id="${orderId}"]`);
+        if (tableRow) {
+            const statusCell = tableRow.querySelector('.status-cell');
+            if (statusCell) {
+                statusCell.innerHTML = `<span class="badge-status ${statusClass}">${statusDisplay}</span>`;
+            }
+        }
+    }
+    
+    // Функция для добавления нового уведомления
+    function addNotification(message, type = 'warning') {
+        const container = document.getElementById('notificationsList');
+        const countBadge = document.getElementById('notificationsCount');
+        
+        const currentCount = parseInt(countBadge.textContent) || 0;
+        countBadge.textContent = currentCount + 1;
+        
+        const newNotif = document.createElement('div');
+        newNotif.className = `alert alert-sm alert-${type} mb-2 p-2`;
+        newNotif.style.fontSize = '0.8rem';
+        newNotif.innerHTML = `
+            <small>${message}</small>
+            <br>
+            <small class="text-muted">Только что</small>
+        `;
+        
+        container.prepend(newNotif);
+        
+        // Удаляем старые уведомления, если их слишком много
+        while (container.children.length > 10) {
+            container.removeChild(container.lastChild);
+        }
+    }
+    
+    // Функция для обновления счетчика задач
+    function updateTasksCount(newCount) {
+        const tasksSpan = document.getElementById('tasksCount');
+        if (tasksSpan) {
+            tasksSpan.textContent = newCount;
+            if (newCount > 0) {
+                tasksSpan.classList.remove('bg-secondary');
+                tasksSpan.classList.add('bg-danger');
+            } else {
+                tasksSpan.classList.remove('bg-danger');
+                tasksSpan.classList.add('bg-secondary');
+            }
+        }
+    }
+    
+    // WebSocket соединение
+    let socket = null;
+    
+    function connectWebSocket() {
+        const userId = {{ user.id }};
+        const wsScheme = window.location.protocol === 'https:' ? 'wss://' : 'ws://';
+        const wsUrl = `${wsScheme}${window.location.host}/ws/orders/${userId}/`;
+        
+        socket = new WebSocket(wsUrl);
+        
+        socket.onopen = function(e) {
+            console.log('✅ WebSocket connected');
+            
+            // Отправляем ping каждые 30 секунд
+            setInterval(() => {
+                if (socket.readyState === WebSocket.OPEN) {
+                    socket.send(JSON.stringify({ type: 'ping' }));
+                }
+            }, 30000);
+        };
+        
+        socket.onmessage = function(e) {
+            const data = JSON.parse(e.data);
+            console.log('📨 WebSocket получено:', data);
+            
+            switch(data.type) {
+                case 'order_status_update':
+                    console.log(`Заказ #${data.order_id}: статус изменен на ${data.status_display}`);
+                    
+                    // Обновляем статус заказа на странице
+                    updateOrderStatus(data.order_id, data.status, data.status_display);
+                    
+                    // Добавляем уведомление
+                    addNotification(`Заказ #${data.order_id}: ${data.status_display}`, 'info');
+                    
+                    // Обновляем счетчик задач (если нужно)
+                    loadTasksCount();
+                    break;
+                    
+                case 'new_order':
+                    console.log(`Новый заказ #${data.order_id}`);
+                    addNotification(`Новый заказ #${data.order_id} требует внимания`, 'warning');
+                    loadTasksCount();
+                    break;
+                    
+                case 'notification':
+                    console.log(`Уведомление: ${data.title}`);
+                    addNotification(data.message, data.notification_type);
+                    break;
+                    
+                case 'pong':
+                    console.log('WebSocket connection alive');
+                    break;
+                    
+                default:
+                    console.log('Неизвестный тип сообщения:', data.type);
+            }
+        };
+        
+        socket.onclose = function(e) {
+            console.log('❌ WebSocket disconnected');
+            setTimeout(connectWebSocket, 3000);
+        };
+        
+        socket.onerror = function(e) {
+            console.error('WebSocket error:', e);
+        };
+    }
+    
+    // Сохраняем идентификаторы интервалов
+    let intervals = [];
+    
     // Загружаем данные при загрузке страницы
     loadNotifications();
     loadTasksCount();
     
-    // Обновляем каждые 30 секунд
-    setInterval(loadNotifications, 30000);
-    setInterval(loadTasksCount, 30000);
+    // Обновляем каждые 30 секунд (как резервный вариант)
+    intervals.push(setInterval(loadNotifications, 30000));
+    intervals.push(setInterval(loadTasksCount, 30000));
+    
+    // Подключаем WebSocket
+    document.addEventListener('DOMContentLoaded', function() {
+        connectWebSocket();
+    });
+    
+    // Очищаем интервалы при уходе со страницы
+    window.addEventListener('beforeunload', function() {
+        intervals.forEach(interval => clearInterval(interval));
+        if (socket && socket.readyState === WebSocket.OPEN) {
+            socket.close();
+        }
+    });
 </script>
 {% endblock %}

@@ -3,13 +3,14 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse  
 from .forms import OrderForm
-from .models import Order, Courier, OrderStatusHistory, CourierNotification, CourierShift, CourierShiftBreak
+from .models import Order, Courier, OrderStatusHistory, CourierNotification, CourierShift, CourierShiftBreak, User
 from django.utils import timezone
 from datetime import timedelta
 import json
 from django.contrib.auth import update_session_auth_hash
 from django.db.models import F 
 from django.core.paginator import Paginator
+from delivery.websocket_utils import send_order_status_update, send_notification_to_user, notify_order_assigned
 @login_required
 def create_order(request):
     try:
@@ -79,7 +80,7 @@ def assign_courier(request, order_id):
         if courier_id:
             courier = get_object_or_404(Courier, id=courier_id)
             order.courier = courier
-            order.status = 'assigned'
+            order.status = 'pending'
             order.save()
             
             OrderStatusHistory.objects.create(
@@ -87,6 +88,9 @@ def assign_courier(request, order_id):
                 status='assigned',
                 comment=f'Назначен курьер {courier.user.get_full_name()}'
             )
+
+            from delivery.websocket_utils import notify_order_assigned
+            notify_order_assigned(order, courier.user.id)
             
             messages.success(request, 'Курьер назначен')
             return redirect('delivery:order_list')
@@ -139,32 +143,7 @@ def courier_reject_order(request, order_id):
         return JsonResponse({'success': True, 'message': 'Заказ отклонен'})
     except Exception as e:
         return JsonResponse({'success': False, 'error': str(e)}, status=400)
-
-
-@login_required
-def courier_accept_order(request, order_id):
-    "Курьер принимает заказ"
-    if request.user.role != 'courier':
-        return JsonResponse({'error': 'Доступ запрещен'}, status=403)
     
-    try:
-        order = get_object_or_404(Order, id=order_id, status='pending', 
-                                  courier=request.user.courier_profile)
-        
-        order.status = 'assigned'
-        order.save()
-
-        # Создаем запись в истории
-        OrderStatusHistory.objects.create(
-            order=order,
-            status='assigned',
-            comment=f'Курьер {request.user.get_full_name()} принял заказ'
-        )
-        
-        return JsonResponse({'success': True, 'message': 'Заказ принят'})
-    except Exception as e:
-        return JsonResponse({'success': False, 'error': str(e)}, status=400)
-
 @login_required
 def complete_order(request, order_id):
     "Отметить заказ как доставленный"
@@ -470,50 +449,79 @@ def courier_update_order_status(request):
     if request.user.role != 'courier':
         return JsonResponse({'error': 'Доступ запрещен'}, status=403)
     
-    if request.method != 'POST':
-        return JsonResponse({'error': 'Метод не разрешен'}, status=405)
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            order_id = data.get('order_id')
+            new_status = data.get('status')
+            
+            courier = request.user.courier_profile
+            order = get_object_or_404(Order, id=order_id, courier=courier)
+            
+            valid_transitions = {
+                'assigned': ['in_progress'],
+                'in_progress': ['delivered'],
+            }
+            
+            if new_status not in valid_transitions.get(order.status, []):
+                return JsonResponse({'error': 'Некорректный переход статуса'}, status=400)
+            
+            old_status = order.status
+            order.status = new_status
+            order.save()
+            
+            if new_status == 'delivered':
+                order.delivered_at = timezone.now()
+                order.save()
+            
+            status_display = dict(Order.STATUS_CHOICES).get(new_status, new_status)
+            OrderStatusHistory.objects.create(
+                order=order,
+                status=new_status,
+                comment=f'Курьер {request.user.get_full_name()} изменил статус на "{status_display}"'
+            )
+            
+            # ОТПРАВКА WEBSOCKET УВЕДОМЛЕНИЙ
+            from delivery.websocket_utils import send_order_status_update
+            
+            # Уведомляем менеджеров
+            managers = User.objects.filter(role='manager')
+            for manager in managers:
+                send_order_status_update(
+                    order_id=order.id,
+                    user_id=manager.id,
+                    status=new_status,
+                    status_display=status_display,
+                    courier_name=courier.user.get_full_name()
+                )
+            
+            # Уведомляем клиента
+            send_order_status_update(
+                order_id=order.id,
+                user_id=order.client.user.id,
+                status=new_status,
+                status_display=status_display,
+                courier_name=courier.user.get_full_name()
+            )
+            
+            # Уведомляем курьера
+            send_order_status_update(
+                order_id=order.id,
+                user_id=request.user.id,
+                status=new_status,
+                status_display=status_display,
+                courier_name=courier.user.get_full_name()
+            )
+            
+            print(f"WebSocket уведомления отправлены для заказа #{order_id}")
+            
+            return JsonResponse({'success': True, 'message': 'Статус обновлен'})
+            
+        except Exception as e:
+            print(f"Ошибка: {str(e)}")
+            return JsonResponse({'error': str(e)}, status=500)
     
-    try:
-        data = json.loads(request.body)
-        order_id = data.get('order_id')
-        new_status = data.get('status')
-        
-        courier = request.user.courier_profile
-        order = get_object_or_404(Order, id=order_id, courier=courier)
-        
-        # Проверка допустимости перехода
-        valid_transitions = {
-            'assigned': ['in_progress'],
-            'in_progress': ['delivered'],
-            'delivered': []  # из доставленного нельзя изменить статус
-        }
-        
-        if new_status not in valid_transitions.get(order.status, []):
-            return JsonResponse({'error': f'Невозможно изменить статус с "{order.status}" на "{new_status}"'}, status=400)
-        
-        old_status = order.status
-        order.status = new_status
-        
-        # Если статус меняется на delivered - устанавливаем время доставки
-        if new_status == 'delivered' and not order.delivered_at:
-            order.delivered_at = timezone.now()
-        
-        order.save()
-        
-        # Создаем запись в истории
-        status_display = dict(Order.STATUS_CHOICES).get(new_status, new_status)
-        OrderStatusHistory.objects.create(
-            order=order,
-            status=new_status,
-            comment=f'Курьер {request.user.get_full_name()} изменил статус на "{status_display}"'
-        )
-        
-        return JsonResponse({'success': True, 'message': 'Статус обновлен'})
-        
-    except json.JSONDecodeError:
-        return JsonResponse({'error': 'Неверный JSON'}, status=400)
-    except Exception as e:
-        return JsonResponse({'error': str(e)}, status=400)
+    return JsonResponse({'error': 'Метод не разрешен'}, status=405)
     
 @login_required
 def courier_order_readonly(request, order_id):
@@ -713,3 +721,30 @@ def courier_order_detail_page(request, order_id):
         'active_tab': 'settings',
     }
     return render(request, 'courier/courier_order_detail_page.html', context)
+
+def courier_check_new_orders(request):
+    "API проверки новых заказов для курьера"
+    if request.user.role != 'courier':
+        return JsonResponse({'error': 'Access denied'}, status=403)
+    
+    courier = request.user.courier_profile
+    
+    # Получаем все pending заказы для этого курьера
+    new_orders = Order.objects.filter(
+        status='pending',
+        courier=courier
+    ).values('id', 'pickup_address', 'delivery_address', 'weight', 'created_at')
+    
+    # Добавляем отображаемое название типа заказа
+    order_list = []
+    for order in new_orders:
+        order_list.append({
+            'id': order['id'],
+            'pickup_address': order['pickup_address'],
+            'delivery_address': order['delivery_address'],
+            'weight': str(order['weight']) if order['weight'] else 'не указан',
+            'created_at': order['created_at'].strftime('%d.%m %H:%M') if order['created_at'] else '',
+            'order_type_display': dict(Order.ORDER_TYPE_CHOICES).get(order.get('order_type'), 'Документация')
+        })
+    
+    return JsonResponse({'new_orders': order_list, 'has_new': len(order_list) > 0})
