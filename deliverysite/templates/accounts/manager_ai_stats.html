@@ -1,0 +1,510 @@
+{% extends 'accounts/manager_lk_base.html' %}
+{% load static %}
+{% block title %}AI статистика{% endblock %}
+
+{% block manager_content %}
+<style>
+    /* Шапка раздела */
+    .section-header {
+        margin-bottom: 28px;
+    }
+    .section-title {
+        font-size: 1.5rem;
+        font-weight: 600;
+        color: #1E1E1E;
+    }
+    .section-subtitle {
+        font-size: 0.85rem;
+        color: #6B6B6B;
+    }
+    .header-divider {
+        height: 3px;
+        background: linear-gradient(90deg, #1E7A57 0%, #C8E0D6 50%, transparent 100%);
+        border-radius: 3px;
+        margin-top: 12px;
+    }
+    
+    /* Статистические карточки */
+    .stats-row {
+        margin-bottom: 28px;
+    }
+    .stat-card {
+        background: white;
+        border-radius: 16px;
+        padding: 20px;
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        transition: all 0.3s;
+        border: 1px solid #E8E0D5;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.03);
+    }
+    .stat-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 8px 20px rgba(0,0,0,0.08);
+        border-color: #C8E0D6;
+    }
+    .stat-icon {
+        width: 55px;
+        height: 55px;
+        border-radius: 14px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    .stat-icon i {
+        font-size: 26px;
+    }
+    .bg-success-light {
+        background: linear-gradient(135deg, #E8F5E9 0%, #C8E6C9 100%);
+        color: #2E7D32;
+    }
+    .bg-info-light {
+        background: linear-gradient(135deg, #E0F7FA 0%, #B2EBF2 100%);
+        color: #006064;
+    }
+    .bg-warning-light {
+        background: linear-gradient(135deg, #FFF3E0 0%, #FFE0B2 100%);
+        color: #E65100;
+    }
+    .stat-number {
+        font-size: 1.8rem;
+        font-weight: 700;
+        color: #1E1E1E;
+        margin-bottom: 4px;
+        line-height: 1;
+    }
+    .stat-text {
+        font-size: 0.7rem;
+        color: #6B6B6B;
+        margin-bottom: 0;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    
+    /* Карточки с популярными вопросами */
+    .popular-questions-card {
+        background: white;
+        border-radius: 16px;
+        border: 1px solid #E8E0D5;
+        overflow: hidden;
+    }
+    .popular-questions-header {
+        padding: 16px 20px;
+        border-bottom: 1px solid #E8E0D5;
+        background: #F8F9FA;
+    }
+    .popular-questions-header h5 {
+        font-size: 1rem;
+        font-weight: 600;
+        margin: 0;
+        color: #1E1E1E;
+    }
+    .question-list {
+        padding: 0;
+        margin: 0;
+        list-style: none;
+    }
+    .question-item {
+        padding: 14px 20px;
+        border-bottom: 1px solid #F0EDE8;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        transition: all 0.2s;
+    }
+    .question-item:hover {
+        background: #F8F9FA;
+    }
+    .question-item:last-child {
+        border-bottom: none;
+    }
+    .question-text {
+        font-size: 0.85rem;
+        color: #1E1E1E;
+        flex: 1;
+    }
+    .question-count {
+        background: #1E7A57;
+        color: white;
+        padding: 2px 10px;
+        border-radius: 30px;
+        font-size: 0.7rem;
+        font-weight: 600;
+        margin-left: 12px;
+    }
+    .empty-questions {
+        text-align: center;
+        padding: 48px 24px;
+        color: #ADB5BD;
+    }
+    .empty-questions i {
+        font-size: 3rem;
+        margin-bottom: 12px;
+    }
+    
+    /* Таблица последних запросов */
+    .table-custom {
+        width: 100%;
+        margin-bottom: 0;
+    }
+    .table-custom thead th {
+        background-color: #F5F3F0;
+        border-bottom: none;
+        padding: 14px 16px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        color: #6B6B6B;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    .table-custom tbody td {
+        padding: 14px 16px;
+        font-size: 0.85rem;
+        color: #1E1E1E;
+        border-bottom: 1px solid #F0EDE8;
+        vertical-align: middle;
+    }
+    .table-custom tbody tr:hover {
+        background-color: #F8F9FA;
+    }
+    .user-avatar-mini {
+        width: 32px;
+        height: 32px;
+        background: linear-gradient(135deg, #C8E0D6 0%, #E8E0D5 100%);
+        border-radius: 50%;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        margin-right: 8px;
+    }
+    .user-avatar-mini i {
+        font-size: 0.9rem;
+        color: #1E7A57;
+    }
+    
+    /* Пустое состояние */
+    .empty-state {
+        text-align: center;
+        padding: 60px 20px;
+        background: white;
+        border-radius: 16px;
+        border: 1px solid #E8E0D5;
+    }
+    .empty-state i {
+        font-size: 4rem;
+        color: #C8E0D6;
+    }
+    .empty-state h5 {
+        margin-top: 16px;
+        color: #1E1E1E;
+    }
+    .empty-state p {
+        color: #6B6B6B;
+    }
+    
+    /* Карточка графика */
+    .chart-card {
+        background: white;
+        border-radius: 16px;
+        border: 1px solid #E8E0D5;
+        overflow: hidden;
+    }
+    .chart-card-header {
+        padding: 16px 20px;
+        border-bottom: 1px solid #E8E0D5;
+        background: #F8F9FA;
+    }
+    .chart-card-header h5 {
+        font-size: 1rem;
+        font-weight: 600;
+        margin: 0;
+        color: #1E1E1E;
+    }
+    .chart-card-body {
+        padding: 20px;
+    }
+</style>
+
+<!-- Шапка раздела -->
+<div class="section-header">
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
+        <div>
+            <h2 class="section-title mb-1">
+                <i class="bi bi-robot me-2" style="color: #1E7A57;"></i>
+                Статистика AI помощника
+            </h2>
+            <p class="section-subtitle mb-0">Анализ запросов клиентов к интеллектуальному ассистенту</p>
+        </div>
+    </div>
+    <div class="header-divider"></div>
+</div>
+
+<!-- Статистические карточки -->
+<div class="row stats-row g-4">
+    <div class="col-md-4">
+        <div class="stat-card">
+            <div class="stat-icon bg-success-light">
+                <i class="bi bi-chat-dots"></i>
+            </div>
+            <div class="stat-info">
+                <h3 class="stat-number" id="totalQueries">0</h3>
+                <p class="stat-text">Всего запросов</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="stat-card">
+            <div class="stat-icon bg-info-light">
+                <i class="bi bi-calendar-day"></i>
+            </div>
+            <div class="stat-info">
+                <h3 class="stat-number" id="queriesToday">0</h3>
+                <p class="stat-text">Запросов сегодня</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="stat-card">
+            <div class="stat-icon bg-warning-light">
+                <i class="bi bi-calendar-week"></i>
+            </div>
+            <div class="stat-info">
+                <h3 class="stat-number" id="queriesWeek">0</h3>
+                <p class="stat-text">Запросов за неделю</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- График и популярные вопросы -->
+<div class="row g-4 mb-4">
+    <div class="col-md-7">
+        <div class="chart-card">
+            <div class="chart-card-header">
+                <h5><i class="bi bi-graph-up me-2" style="color: #1E7A57;"></i> Динамика запросов (последние 7 дней)</h5>
+            </div>
+            <div class="chart-card-body">
+                <canvas id="queriesChart" height="200"></canvas>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-5">
+        <div class="popular-questions-card">
+            <div class="popular-questions-header">
+                <h5><i class="bi bi-bar-chart-steps me-2" style="color: #1E7A57;"></i> Популярные вопросы</h5>
+            </div>
+            <div id="popularQuestionsList">
+                <div class="text-center py-4">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Загрузка...</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Последние запросы -->
+<div class="chart-card">
+    <div class="chart-card-header">
+        <h5><i class="bi bi-clock-history me-2" style="color: #1E7A57;"></i> Последние запросы</h5>
+    </div>
+    <div class="table-responsive">
+        <table class="table-custom">
+            <thead>
+                <tr>
+                    <th>Пользователь</th>
+                    <th>Вопрос</th>
+                    <th>Дата и время</th>
+                </tr>
+            </thead>
+            <tbody id="lastQueriesTable">
+                <tr>
+                    <td colspan="3" class="text-center py-4">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Загрузка...</span>
+                        </div>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    // Функция для загрузки статистики
+    function loadStats() {
+        fetch('/api/ai-chat-stats/')
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById('totalQueries').textContent = data.total_queries || 0;
+                document.getElementById('queriesToday').textContent = data.queries_today || 0;
+                document.getElementById('queriesWeek').textContent = data.queries_week || 0;
+                
+                // Обновляем популярные вопросы
+                const popularContainer = document.getElementById('popularQuestionsList');
+                if (data.popular_questions && data.popular_questions.length > 0) {
+                    popularContainer.innerHTML = `
+                        <ul class="question-list">
+                            ${data.popular_questions.map(q => `
+                                <li class="question-item">
+                                    <span class="question-text">${escapeHtml(q.question)}</span>
+                                    <span class="question-count">${q.count}</span>
+                                </li>
+                            `).join('')}
+                        </ul>
+                    `;
+                } else {
+                    popularContainer.innerHTML = `
+                        <div class="empty-questions">
+                            <i class="bi bi-inbox"></i>
+                            <p>Нет данных</p>
+                        </div>
+                    `;
+                }
+                
+                // Обновляем график
+                if (data.daily_stats && data.daily_stats.length > 0) {
+                    updateChart(data.daily_stats);
+                }
+            })
+            .catch(error => {
+                console.error('Ошибка загрузки статистики:', error);
+                document.getElementById('popularQuestionsList').innerHTML = `
+                    <div class="empty-questions">
+                        <i class="bi bi-exclamation-triangle"></i>
+                        <p>Ошибка загрузки данных</p>
+                    </div>
+                `;
+            });
+    }
+    
+    // Функция для загрузки последних запросов
+    function loadLastQueries() {
+        fetch('/api/ai-chat-last-queries/')
+            .then(response => response.json())
+            .then(data => {
+                const tbody = document.getElementById('lastQueriesTable');
+                if (data.queries && data.queries.length > 0) {
+                    tbody.innerHTML = data.queries.map(q => `
+                        <tr>
+                            <td>
+                                <div class="user-avatar-mini">
+                                    <i class="bi bi-person"></i>
+                                </div>
+                                ${escapeHtml(q.user_name)}
+                            </td>
+                            <td>${escapeHtml(q.question)}</td>
+                            <td>${q.created_at}</td>
+                        </tr>
+                    `).join('');
+                } else {
+                    tbody.innerHTML = `
+                        <tr>
+                            <td colspan="3" class="text-center py-4 text-muted">
+                                <i class="bi bi-inbox" style="font-size: 2rem;"></i>
+                                <p class="mt-2 mb-0">Нет запросов</p>
+                            </td>
+                        </tr>
+                    `;
+                }
+            })
+            .catch(error => {
+                console.error('Ошибка загрузки запросов:', error);
+                document.getElementById('lastQueriesTable').innerHTML = `
+                    <tr>
+                        <td colspan="3" class="text-center py-4 text-danger">
+                            Ошибка загрузки данных
+                        </td>
+                    </tr>
+                `;
+            });
+    }
+    
+    // График динамики запросов
+    let chartInstance = null;
+    
+    function updateChart(dailyData) {
+        const ctx = document.getElementById('queriesChart').getContext('2d');
+        
+        if (chartInstance) {
+            chartInstance.destroy();
+        }
+        
+        chartInstance = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: dailyData.map(d => d.date),
+                datasets: [{
+                    label: 'Количество запросов',
+                    data: dailyData.map(d => d.count),
+                    borderColor: '#1E7A57',
+                    backgroundColor: 'rgba(30, 122, 87, 0.1)',
+                    tension: 0.4,
+                    fill: true,
+                    pointBackgroundColor: '#1E7A57',
+                    pointBorderColor: '#ffffff',
+                    pointBorderWidth: 2,
+                    pointRadius: 4,
+                    pointHoverRadius: 6
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                plugins: {
+                    legend: {
+                        position: 'top',
+                        labels: {
+                            boxWidth: 12,
+                            usePointStyle: true,
+                            pointStyle: 'circle'
+                        }
+                    },
+                    tooltip: {
+                        backgroundColor: '#1E1E1E',
+                        titleColor: '#ffffff',
+                        bodyColor: '#ADB5BD',
+                        cornerRadius: 8
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        grid: {
+                            color: '#F0EDE8'
+                        },
+                        ticks: {
+                            stepSize: 1
+                        }
+                    },
+                    x: {
+                        grid: {
+                            display: false
+                        }
+                    }
+                }
+            }
+        });
+    }
+    
+    function escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+    
+    // Загрузка данных
+    loadStats();
+    loadLastQueries();
+    
+    // Автообновление каждые 30 секунд
+    setInterval(() => {
+        loadStats();
+        loadLastQueries();
+    }, 30000);
+</script>
+{% endblock %}

@@ -59,6 +59,12 @@
                         </a>
                     </li>
                     <li class="nav-item">
+                        <a class="nav-link {% if request.resolver_match.url_name == 'manager_ai_stats' %}active{% endif %}" 
+                        href="{% url 'accounts:manager_ai_stats' %}">
+                            <i class="bi bi-robot me-2"></i> AI статистика
+                        </a>
+                    </li>
+                    <li class="nav-item">
                         <a class="nav-link {% if request.resolver_match.url_name == 'manager_settings' %}active{% endif %}" 
                            href="{% url 'accounts:manager_settings' %}">
                             <i class="bi bi-gear me-2"></i> Настройки

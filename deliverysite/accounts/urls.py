@@ -33,4 +33,7 @@ urlpatterns = [
     path('api/assign-courier/', views.assign_courier_ajax, name='assign_courier_ajax'),
     path('api/delete-order/', views.delete_order_ajax, name='delete_order_ajax'),
     path('api/order-details/', views.get_order_details, name='get_order_details'),
+    path('api/ai-chat-stats/', views.ai_chat_stats, name='ai_chat_stats'),
+    path('manager/ai-stats/', views.manager_ai_stats, name='manager_ai_stats'),
+    path('api/ai-chat-last-queries/', views.ai_chat_last_queries, name='ai_chat_last_queries'),
 ]

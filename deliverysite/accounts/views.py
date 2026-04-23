@@ -7,7 +7,7 @@ from django.http import JsonResponse
 from django.utils import timezone  
 from .forms import RegistrationForm
 from django.contrib.auth.forms import AuthenticationForm
-from delivery.models import Order, Client, Courier, OrderRating, OrderStatusHistory, User, CourierNotification 
+from delivery.models import Order, Client, Courier, OrderRating, OrderStatusHistory, User, CourierNotification, AIChatLog 
 from django.db.models import Count, Avg, Q
 from datetime import datetime, timedelta
 from django.core.paginator import Paginator
@@ -319,13 +319,23 @@ def ai_assistant(request):
             data = json.loads(request.body)
             message = data.get("message", "").lower()
             print(f"Получен запрос: {message}")
+            
+             # Сохраняем вопрос в бд
+            try:
+                AIChatLog.objects.create(
+                    user=request.user,
+                    question=message
+                )
+                print(f"Вопрос сохранен в БД")
+            except Exception as e:
+                print(f"Ошибка сохранения вопроса: {e}")
 
             # Ищем номер заказа
             match = re.search(r'\d+', message)
 
             if "заказ" in message and match:
                 order_id = int(match.group())
-                print(f"🔍 Ищем заказ #{order_id}")
+                print(f"Ищем заказ #{order_id}")
 
                 try:
                     order = Order.objects.get(
@@ -399,7 +409,7 @@ def ai_assistant(request):
                 timeout=30
             )
             
-            print(f"📡 Статус ответа Ollama: {response.status_code}")
+            print(f"Статус ответа Ollama: {response.status_code}")
             
             if response.status_code == 200:
                 answer = response.json().get("response", "Извините, не удалось получить ответ.")
@@ -764,52 +774,6 @@ def manager_courier_edit(request, user_id):
     return render(request, 'accounts/manager_courier_form.html', context)
 
 @login_required
-def manager_courier_edit(request, user_id):
-    "Редактирование курьера"
-    if request.user.role != 'manager':
-        messages.error(request, 'У вас нет доступа к этой странице')
-        return redirect('accounts:home')
-    
-    try:
-        user = User.objects.get(id=user_id, role='courier')
-        courier = user.courier_profile
-    except (User.DoesNotExist, Courier.DoesNotExist):
-        messages.error(request, 'Курьер не найден')
-        return redirect('accounts:manager_couriers')
-    
-    if request.method == 'POST':
-        # Обновляем пользователя
-        user.first_name = request.POST.get('first_name')
-        user.last_name = request.POST.get('last_name')
-        user.patronymic = request.POST.get('patronymic', '')
-        user.phone = request.POST.get('phone')
-        user.save()
-        
-        # Обновляем курьера
-        courier.hire_date = request.POST.get('hire_date')
-        courier.position = request.POST.get('position')
-        courier.shift_status = request.POST.get('shift_status')
-        courier.citizenship = request.POST.get('citizenship')
-        courier.passport_series = request.POST.get('passport_series')
-        courier.passport_number = request.POST.get('passport_number')
-        courier.passport_department_code = request.POST.get('passport_department_code')
-        courier.passport_issued_by = request.POST.get('passport_issued_by')
-        courier.passport_issue_date = request.POST.get('passport_issue_date')
-        courier.registration_address = request.POST.get('registration_address')
-        courier.actual_address = request.POST.get('actual_address')
-        courier.save()
-        
-        messages.success(request, 'Данные курьера обновлены')
-        return redirect('accounts:manager_couriers')
-    
-    context = {
-        'title': 'Редактировать курьера',
-        'courier_user': user,  
-        'courier': courier,
-    }
-    return render(request, 'accounts/manager_courier_form.html', context)
-
-@login_required
 def manager_courier_detail(request, user_id):
     "Получение деталей курьера - модальное окно"
     if request.user.role != 'manager':
@@ -1134,6 +1098,18 @@ def manager_settings(request):
     return render(request, 'accounts/manager_settings.html', context)
 
 @login_required
+def manager_ai_stats(request):
+    "Страница статистики AI чата для менеджера"
+    if request.user.role != 'manager':
+        messages.error(request, 'У вас нет доступа к этой странице')
+        return redirect('accounts:home')
+    
+    context = {
+        'active_tab': 'ai_stats',
+    }
+    return render(request, 'accounts/manager_ai_stats.html', context)
+
+@login_required
 def manager_tasks_count(request):
     "API для получения количества задач менеджера"
     if request.user.role != 'manager':
@@ -1298,3 +1274,87 @@ def get_order_details(request):
         return JsonResponse({'error': 'Заказ не найден'}, status=404)
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=500)
+    
+@login_required
+def ai_chat_stats(request):
+    "Статистика запросов к AI чату (менеджер)"
+    if request.user.role != 'manager':
+        return JsonResponse({'error': 'Access denied'}, status=403)
+    
+    from django.db.models import Count
+    from datetime import timedelta
+    
+    # Популярные вопросы за последние 30 дней
+    popular_questions = AIChatLog.objects.filter(
+        created_at__gte=timezone.now() - timedelta(days=30)
+    ).values('question').annotate(
+        count=Count('id')
+    ).order_by('-count')[:20]
+    
+    # Количество запросов по дням
+    daily_stats = []
+    for i in range(30):
+        day = timezone.now().date() - timedelta(days=i)
+        count = AIChatLog.objects.filter(created_at__date=day).count()
+        daily_stats.append({'date': day.strftime('%d.%m'), 'count': count})
+    
+    return JsonResponse({
+        'total_queries': AIChatLog.objects.count(),
+        'popular_questions': list(popular_questions),
+        'daily_stats': daily_stats
+    })
+
+@login_required
+def ai_chat_stats(request):
+    "Статистика запросов к AI чату (ЛК менеджер)"
+    if request.user.role != 'manager':
+        return JsonResponse({'error': 'Access denied'}, status=403)
+    
+    total_queries = AIChatLog.objects.count()
+    queries_today = AIChatLog.objects.filter(created_at__date=timezone.now().date()).count()
+    queries_week = AIChatLog.objects.filter(created_at__gte=timezone.now() - timedelta(days=7)).count()
+    
+    # Популярные вопросы за последние 30 дней
+    popular_questions = AIChatLog.objects.filter(
+        created_at__gte=timezone.now() - timedelta(days=30)
+    ).values('question').annotate(
+        count=Count('id')
+    ).order_by('-count')[:10]
+    
+    # Статистика по дням для графика
+    daily_stats = []
+    for i in range(6, -1, -1):
+        day = timezone.now().date() - timedelta(days=i)
+        count = AIChatLog.objects.filter(created_at__date=day).count()
+        daily_stats.append({
+            'date': day.strftime('%d.%m'),
+            'count': count
+        })
+    
+    return JsonResponse({
+        'total_queries': total_queries,
+        'queries_today': queries_today,
+        'queries_week': queries_week,
+        'popular_questions': list(popular_questions),
+        'daily_stats': daily_stats
+    })
+
+@login_required
+def ai_chat_last_queries(request):
+    "API для получения последних запросов к AI чату"
+    if request.user.role != 'manager':
+        return JsonResponse({'error': 'Access denied'}, status=403)
+    
+    from delivery.models import AIChatLog
+    
+    last_queries = AIChatLog.objects.select_related('user').order_by('-created_at')[:20]
+    
+    queries_data = []
+    for log in last_queries:
+        queries_data.append({
+            'user_name': log.user.get_full_name() or log.user.email,
+            'question': log.question[:100],
+            'created_at': log.created_at.strftime('%d.%m.%Y %H:%M')
+        })
+    
+    return JsonResponse({'queries': queries_data})
