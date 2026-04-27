@@ -22,11 +22,8 @@ import openpyxl
 import os
 from django.conf import settings
 from django.http import HttpResponse
-
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
-from reportlab.pdfgen import canvas
-from reportlab.lib.pagesizes import A4
 from openpyxl.styles import Font, Alignment, PatternFill
 from openpyxl.utils import get_column_letter
 from reportlab.lib.pagesizes import A4, landscape
@@ -37,9 +34,6 @@ from reportlab.platypus import (
 )
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 
-# Другие
-from io import BytesIO
-from django.http import HttpResponse
 # ЛК Клиент
 def register_view(request):
     if request.user.is_authenticated:
@@ -1672,3 +1666,7 @@ def ai_chat_last_queries(request):
         })
     
     return JsonResponse({'queries': queries_data})
+
+def main_page(request):
+    "Главная страница сайта"
+    return render(request, 'main_page.html')

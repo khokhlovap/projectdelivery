@@ -1,0 +1,584 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>АВН Бизнес Курьер | Современная доставка документов по Москве</title>
+    <!-- Bootstrap 5 + Icons + Fonts -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <!-- Google Fonts Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700;14..32,800&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(145deg, #FEFCF9 0%, #F9F8F6 100%);
+            color: #151515;
+            scroll-behavior: smooth;
+        }
+
+        /* Палитра */
+        :root {
+            --green: #0F6B4A;
+            --green-dark: #0A5239;
+            --green-light: #D8F0E6;
+            --green-soft: #E9F6F0;
+            --white: #FFFFFF;
+            --shadow-sm: 0 8px 20px rgba(0, 0, 0, 0.03), 0 2px 4px rgba(0, 0, 0, 0.05);
+            --shadow-md: 0 18px 30px -12px rgba(15, 107, 74, 0.12);
+            --shadow-hover: 0 25px 35px -14px rgba(15, 107, 74, 0.2);
+        }
+
+        h1, h2, h3 {
+            letter-spacing: -0.02em;
+        }
+
+        .brand-green {
+            color: var(--green);
+        }
+        
+        .btn-brand-primary {
+            background: linear-gradient(105deg, var(--green) 0%, #1A8A62 100%);
+            border: none;
+            padding: 14px 28px;
+            border-radius: 60px;
+            font-weight: 700;
+            font-size: 1rem;
+            transition: all 0.3s cubic-bezier(0.2, 0.9, 0.4, 1.1);
+            color: white;
+            box-shadow: 0 4px 12px rgba(15, 107, 74, 0.25);
+            width: 100%;
+        }
+        .btn-brand-primary:hover {
+            transform: translateY(-3px);
+            background: linear-gradient(105deg, var(--green-dark) 0%, #0F6B4A 100%);
+            box-shadow: 0 12px 24px -8px rgba(15, 107, 74, 0.4);
+            color: white;
+        }
+        .btn-outline-brand {
+            background: transparent;
+            border: 1.5px solid var(--green);
+            color: var(--green);
+            border-radius: 60px;
+            padding: 10px 28px;
+            font-weight: 600;
+            transition: 0.2s;
+        }
+        .btn-outline-brand:hover {
+            background: var(--green);
+            color: white;
+            border-color: var(--green);
+            transform: translateY(-2px);
+        }
+
+        /* Навбар */
+        .navbar {
+            background: rgba(255, 255, 255, 0.94);
+            backdrop-filter: blur(12px);
+            box-shadow: 0 1px 0 rgba(0,0,0,0.03), 0 2px 12px rgba(0,0,0,0.02);
+            padding: 12px 0;
+        }
+        .logo-text {
+            font-weight: 800;
+            font-size: 1.65rem;
+            letter-spacing: -0.4px;
+            background: linear-gradient(130deg, var(--green) 0%, #2C9C74 80%);
+            background-clip: text;
+            -webkit-background-clip: text;
+            color: transparent;
+        }
+
+        /* Hero */
+        .hero-section {
+            padding: 70px 0 60px 0;
+            position: relative;
+        }
+        .hero-badge {
+            background: rgba(15,107,74,0.12);
+            backdrop-filter: blur(2px);
+            display: inline-block;
+            padding: 6px 20px;
+            border-radius: 100px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: var(--green);
+            margin-bottom: 24px;
+        }
+        .hero-title {
+            font-weight: 800;
+            font-size: 3.6rem;
+            line-height: 1.18;
+            margin-bottom: 24px;
+            color: #14251F;
+        }
+        .hero-title span {
+            background: linear-gradient(120deg, var(--green) 0%, #25906C 80%);
+            background-clip: text;
+            -webkit-background-clip: text;
+            color: transparent;
+            border-bottom: 3px solid var(--green-light);
+        }
+
+        /* Иллюстрация главная */
+        .hero-illustration {
+            background: linear-gradient(135deg, var(--green-soft) 0%, #FFFFFF 100%);
+            border-radius: 48px;
+            padding: 32px 28px;
+            box-shadow: var(--shadow-md);
+            border: 1px solid rgba(15,107,74,0.15);
+            text-align: center;
+            transition: transform 0.3s ease;
+        }
+        .hero-illustration:hover {
+            transform: translateY(-6px);
+        }
+        .delivery-svg {
+            max-width: 100%;
+            height: auto;
+        }
+
+        /* Карточки услуг */
+        .section-cards {
+            padding: 70px 0 60px 0;
+        }
+        .service-card {
+            background: var(--white);
+            border-radius: 36px;
+            padding: 36px 24px;
+            text-align: center;
+            transition: all 0.35s ease;
+            border: 1px solid #EFE9E2;
+            height: 100%;
+            box-shadow: var(--shadow-sm);
+        }
+        .service-card:hover {
+            transform: translateY(-10px);
+            border-color: var(--green-light);
+            box-shadow: var(--shadow-hover);
+        }
+        .icon-circle {
+            width: 80px;
+            height: 80px;
+            background: linear-gradient(135deg, var(--green-soft) 0%, #E5F4ED 100%);
+            border-radius: 48px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 24px;
+            font-size: 2.2rem;
+            color: var(--green);
+            transition: 0.2s;
+        }
+        .service-card:hover .icon-circle {
+            background: var(--green);
+            color: white;
+            transform: scale(0.98);
+        }
+
+        /* Процесс */
+        .process-step {
+            background: var(--white);
+            border-radius: 32px;
+            padding: 28px 20px;
+            text-align: center;
+            border: 1px solid #EFE9E2;
+            transition: 0.25s;
+            box-shadow: var(--shadow-sm);
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+        .process-step:hover {
+            border-color: var(--green-light);
+            transform: translateY(-6px);
+            box-shadow: var(--shadow-md);
+        }
+        .step-number {
+            width: 52px;
+            height: 52px;
+            background: var(--green);
+            color: white;
+            font-weight: 800;
+            font-size: 1.5rem;
+            border-radius: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 20px;
+            box-shadow: 0 6px 14px rgba(15,107,74,0.2);
+        }
+        .process-step h6 {
+            font-size: 1.1rem;
+            margin-bottom: 12px;
+            font-weight: 700;
+        }
+        .process-step p {
+            margin-bottom: 0;
+            font-size: 0.85rem;
+            line-height: 1.4;
+        }
+
+        @media (max-width: 992px) {
+            .process-step {
+                min-height: 200px;
+            }
+        }
+        @media (max-width: 768px) {
+            .process-step {
+                min-height: auto;
+            }
+        }
+
+        .header-divider {
+            width: 70px;
+            height: 4px;
+            background: linear-gradient(90deg, var(--green), #C8E0D6);
+            border-radius: 4px;
+            margin: 18px auto 0;
+        }
+
+        /* FAQ */
+        .faq-item {
+            background: var(--white);
+            border-radius: 28px;
+            padding: 22px 28px;
+            margin-bottom: 16px;
+            border: 1px solid #EFE9E2;
+            cursor: pointer;
+            transition: all 0.2s;
+            box-shadow: var(--shadow-sm);
+        }
+        .faq-item:hover {
+            border-color: var(--green);
+            box-shadow: 0 12px 20px -12px rgba(0,0,0,0.08);
+        }
+        .faq-question {
+            font-weight: 700;
+            font-size: 1.15rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .faq-answer {
+            margin-top: 12px;
+            color: var(--text-muted);
+            border-top: 1px dashed var(--sand);
+            padding-top: 12px;
+        }
+
+        /* Выбирают нас */
+        .choose-card {
+            background: var(--white);
+            border-radius: 32px;
+            padding: 32px 24px;
+            text-align: center;
+            border: 1px solid #EFE9E2;
+            height: 100%;
+            transition: all 0.3s;
+            box-shadow: var(--shadow-sm);
+        }
+        .choose-card:hover {
+            transform: translateY(-6px);
+            border-color: var(--green-light);
+            box-shadow: var(--shadow-md);
+        }
+
+        /* Футер */
+        .footer-links {
+            background: #14251F;
+            color: #DBE8E2;
+            padding: 48px 0 24px;
+            margin-top: 40px;
+        }
+
+        @media (max-width: 768px) {
+            .hero-title { font-size: 2.3rem; }
+            .hero-section { padding: 48px 0; }
+            .section-cards { padding: 40px 0; }
+            .service-card { padding: 28px 20px; }
+        }
+        
+        /* Анимации */
+        .fade-up {
+            animation: fadeUp 0.6s cubic-bezier(0.2, 0.9, 0.4, 1) forwards;
+            opacity: 0;
+        }
+        @keyframes fadeUp {
+            from { opacity: 0; transform: translateY(24px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .delay-1 { animation-delay: 0.1s; }
+        .delay-2 { animation-delay: 0.2s; }
+        
+        .btn-spa {
+            background: var(--green);
+            border-radius: 40px;
+            padding: 8px 24px;
+            border: none;
+            color: white;
+            font-weight: 600;
+            transition: 0.2s;
+        }
+        .btn-spa:hover {
+            background: var(--green-dark);
+            transform: scale(1.02);
+        }
+    </style>
+</head>
+<body>
+
+<!-- Навигация -->
+<nav class="navbar navbar-expand-lg sticky-top">
+    <div class="container">
+        <a class="navbar-brand d-flex align-items-center gap-2" href="#">
+            <i class="bi bi-box-seam fs-3" style="color: var(--green);"></i>
+            <span class="logo-text">АВН Бизнес Курьер</span>
+        </a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarMain">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarMain">
+            <ul class="navbar-nav ms-auto mb-2 mb-lg-0 gap-3 align-items-center">
+                <li class="nav-item"><a class="nav-link fw-semibold" href="#services">Услуги</a></li>
+                <li class="nav-item"><a class="nav-link fw-semibold" href="#process">Процесс</a></li>
+                <li class="nav-item"><a class="nav-link fw-semibold" href="#about">О нас</a></li>
+                <li class="nav-item"><a class="nav-link fw-semibold" href="#faq">Вопросы</a></li>
+                <li class="nav-item">
+                    <button class="btn-spa ms-2" id="openDashboardModalBtn">
+                        <i class="bi bi-person-circle"></i> Личный кабинет
+                    </button>
+                </li>
+            </ul>
+        </div>
+    </div>
+</nav>
+
+<!-- Hero -->
+<section class="hero-section">
+    <div class="container">
+        <div class="row align-items-center g-5">
+            <div class="col-lg-6 fade-up">
+                <div class="hero-badge">Экспресс-доставка по Москве</div>
+                <h1 class="hero-title">Доставка документов <span>за 2 часа</span><br>по столице</h1>
+                <p class="fs-5 mb-4" style="color: #4B5F56;">Надёжная курьерская служба для бизнеса. Передача оригиналов, контрактов и важных грузов с онлайн-отслеживанием.</p>
+                <div class="d-flex flex-wrap gap-3">
+                    <button class="btn-brand-primary" id="scrollToCreate">Создать заказ</button>
+                </div>
+                <div class="mt-5 d-flex gap-4">
+                    <div class="d-flex align-items-center gap-2"><i class="bi bi-check-circle-fill fs-5" style="color: var(--green);"></i> <span class="fw-semibold">99%</span> <span class="text-muted">вовремя</span></div>
+                    <div class="d-flex align-items-center gap-2"><i class="bi bi-robot fs-5" style="color: var(--green);"></i> <span class="fw-semibold">AI помощник 24/7</span></div>
+                    <div class="d-flex align-items-center gap-2"><i class="bi bi-shield-lock fs-5" style="color: var(--green);"></i> <span class="fw-semibold">Конфиденциально</span></div>
+                </div>
+            </div>
+            <div class="col-lg-6 text-center fade-up delay-1">
+                <div class="hero-illustration">
+                    <svg class="delivery-svg" width="280" height="220" viewBox="0 0 400 300" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <rect x="20" y="180" width="320" height="70" rx="12" fill="#E9F6F0" stroke="#0F6B4A" stroke-width="2" stroke-dasharray="6 4"/>
+                        <rect x="40" y="190" width="100" height="40" rx="8" fill="#0F6B4A" opacity="0.9"/>
+                        <text x="90" y="216" font-family="Inter, sans-serif" font-size="14" fill="white" text-anchor="middle" font-weight="bold">Документы</text>
+                        <rect x="160" y="190" width="100" height="40" rx="8" fill="#1A8A62" opacity="0.85"/>
+                        <text x="210" y="216" font-family="Inter, sans-serif" font-size="14" fill="white" text-anchor="middle" font-weight="bold">Подарки</text>
+                        <rect x="280" y="190" width="40" height="40" rx="8" fill="#0A5239"/>
+                        <text x="300" y="216" font-family="Inter, sans-serif" font-size="14" fill="white" text-anchor="middle" font-weight="bold">📄</text>
+                        <circle cx="60" cy="250" r="16" fill="#D8F0E6" stroke="#0F6B4A" stroke-width="2"/>
+                        <circle cx="300" cy="250" r="16" fill="#D8F0E6" stroke="#0F6B4A" stroke-width="2"/>
+                        <path d="M100 140 L200 80 L300 140 L200 200 Z" fill="white" stroke="#0F6B4A" stroke-width="2" stroke-linejoin="round"/>
+                        <path d="M200 80 L200 200" stroke="#0F6B4A" stroke-width="2" stroke-dasharray="4 4"/>
+                        <circle cx="200" cy="140" r="20" fill="#E9F6F0" stroke="#0F6B4A" stroke-width="2"/>
+                        <text x="200" y="147" font-family="Inter" font-size="16" fill="#0F6B4A" text-anchor="middle" font-weight="bold">✓</text>
+                        <path d="M130 100 L180 120" stroke="#0F6B4A" stroke-width="2"/>
+                        <path d="M270 100 L220 120" stroke="#0F6B4A" stroke-width="2"/>
+                        <text x="200" y="270" font-family="Inter, sans-serif" font-size="13" fill="#5C6E66" text-anchor="middle">Полное отслеживание</text>
+                    </svg>
+                    <h3 class="mt-4 fw-bold" style="color: var(--green);">АВН Бизнес Курьер</h3>
+                    <p class="text-muted">Профессиональный сервис доставки для корпоративных клиентов в МСК</p>
+                    <div class="d-flex justify-content-center gap-3 mt-2">
+                        <span class="badge bg-light text-dark py-2 px-3 rounded-pill border"><i class="bi bi-clock"></i> 24/7</span>
+                        <span class="badge bg-light text-dark py-2 px-3 rounded-pill border"><i class="bi bi-geo-alt"></i> Москва и область</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Услуги -->
+<section id="services" class="section-cards">
+    <div class="container">
+        <div class="text-center mb-5 fade-up">
+            <h2 class="fw-bold display-6">Мы предлагаем</h2>
+            <div class="header-divider"></div>
+        </div>
+        <div class="row g-4">
+            <div class="col-md-6 col-lg-4 fade-up delay-1"><div class="service-card"><div class="icon-circle"><i class="bi bi-file-earmark-text"></i></div><h5 class="fw-bold">Доставка документов</h5><p class="text-secondary">Оригиналы, договоры, письма — бережная и конфиденциальная передача.</p></div></div>
+            <div class="col-md-6 col-lg-4 fade-up delay-1"><div class="service-card"><div class="icon-circle"><i class="bi bi-lightning-charge"></i></div><h5 class="fw-bold">Экспресс доставка</h5><p class="text-secondary">Срочные заказы от 60 минут, приоритетный курьер и онлайн-статус.</p></div></div>
+            <div class="col-md-6 col-lg-4 fade-up delay-2"><div class="service-card"><div class="icon-circle"><i class="bi bi-calendar-day"></i></div><h5 class="fw-bold">Доставка день в день</h5><p class="text-secondary">Заберите до 12:00 — доставим до 18:00 по любому адресу МСК.</p></div></div>
+            <div class="col-md-6 col-lg-4 fade-up delay-1"><div class="service-card"><div class="icon-circle"><i class="bi bi-clock"></i></div><h5 class="fw-bold">Доставка ко времени</h5><p class="text-secondary">Точное планирование: привезём ровно к назначенному часу.</p></div></div>
+            <div class="col-md-6 col-lg-4 fade-up delay-2"><div class="service-card"><div class="icon-circle"><i class="bi bi-gift"></i></div><h5 class="fw-bold">Доставка подарков</h5><p class="text-secondary">Сюрприз для партнёров и коллег с персональным подходом.</p></div></div>
+            <div class="col-md-6 col-lg-4 fade-up delay-2"><div class="service-card"><div class="icon-circle"><i class="bi bi-shield-check"></i></div><h5 class="fw-bold">Страхование груза</h5><p class="text-secondary">Полная защита ценных документов до 500 000 ₽.</p></div></div>
+        </div>
+    </div>
+</section>
+
+<!-- Процесс доставки -->
+<section id="process" class="py-5">
+    <div class="container">
+        <div class="text-center mb-5 fade-up">
+            <h2 class="fw-bold display-6">Как происходит доставка</h2>
+            <div class="header-divider"></div>
+        </div>
+        <div class="row g-4">
+            <div class="col-md-6 col-lg fade-up delay-1">
+                <div class="process-step">
+                    <div>
+                        <div class="step-number">1</div>
+                        <h6 class="fw-bold">Сделать заказ</h6>
+                        <p class="small text-secondary">Оформите онлайн, укажите адреса и время</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6 col-lg fade-up delay-1">
+                <div class="process-step">
+                    <div>
+                        <div class="step-number">2</div>
+                        <h6 class="fw-bold">Передача груза</h6>
+                        <p class="small text-secondary">Курьер приедет в удобное окно</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6 col-lg fade-up delay-2">
+                <div class="process-step">
+                    <div>
+                        <div class="step-number">3</div>
+                        <h6 class="fw-bold">Отслеживание</h6>
+                        <p class="small text-secondary">Статус в личном кабинете</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6 col-lg fade-up delay-2">
+                <div class="process-step">
+                    <div>
+                        <div class="step-number">4</div>
+                        <h6 class="fw-bold">Получение</h6>
+                        <p class="small text-secondary">Подпись акта о выполненных услугах</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6 col-lg fade-up delay-2">
+                <div class="process-step">
+                    <div>
+                        <div class="step-number">5</div>
+                        <h6 class="fw-bold">Оплата</h6>
+                        <p class="small text-secondary">Картой, счётом или наличными</p>
+                    </div>
+                </div>
+            </div>           
+        </div>
+    </div>
+</section>
+
+<!-- Выбирают нас -->
+<section id="about" class="section-cards">
+    <div class="container">
+        <div class="text-center mb-5 fade-up">
+            <h2 class="fw-bold display-6">Выбирают нас</h2>
+            <p class="text-secondary">Ведущие компании Москвы доверяют свою корреспонденцию</p>
+            <div class="header-divider"></div>
+        </div>
+        <div class="row g-4">
+            <div class="col-md-4 fade-up delay-1"><div class="choose-card"><i class="bi bi-building fs-1 brand-green"></i><h5 class="mt-3 fw-bold">ООО «ЮрГарант»</h5><p class="small text-secondary">Безупречная скорость доставки договоров. Рекомендуем!</p></div></div>
+            <div class="col-md-4 fade-up delay-2"><div class="choose-card"><i class="bi bi-briefcase fs-1 brand-green"></i><h5 class="mt-3 fw-bold">ГК «Деловые Линии»</h5><p class="small text-secondary">Партнёр с 2021 года. Надёжность на 100%.</p></div></div>
+            <div class="col-md-4 fade-up delay-2"><div class="choose-card"><i class="bi bi-star fs-1 brand-green"></i><h5 class="mt-3 fw-bold">АО «МосБизнесГрупп»</h5><p class="small text-secondary">Лучшая курьерская служба по цене/качеству.</p></div></div>
+        </div>
+    </div>
+</section>
+
+<!-- FAQ -->
+<section id="faq" class="py-5">
+    <div class="container">
+        <div class="text-center mb-5 fade-up">
+            <h2 class="fw-bold display-6">Нас спрашивают</h2>
+            <div class="header-divider"></div>
+        </div>
+        <div class="row justify-content-center">
+            <div class="col-lg-8">
+                <div class="faq-item" onclick="toggleFaq(this)"><div class="faq-question">Сколько стоит доставка? <i class="bi bi-chevron-down"></i></div><div class="faq-answer">Стоимость рассчитывается индивидуально исходя из расстояния, срочности и веса. По Москве — от 390 ₽. Экспресс от 790 ₽. Точную цену вы узнаете у менеджера.</div></div>
+                <div class="faq-item" onclick="toggleFaq(this)"><div class="faq-question">Как оплатить доставку? <i class="bi bi-chevron-down"></i></div><div class="faq-answer"><p class="mb-2">На данный момент мы работаем <strong class="brand-green">только с юридическими лицами (B2B)</strong>.</p><p class="mb-0">Оплата производится <strong>безналичным расчётом</strong> по выставленному счёту.</p></div></div>
+                <div class="faq-item" onclick="toggleFaq(this)"><div class="faq-question">Как заказать доставку? <i class="bi bi-chevron-down"></i></div><div class="faq-answer">Нажмите «Создать заказ» или «Личный кабинет» для оформления.</div></div>
+                <div class="faq-item" onclick="toggleFaq(this)"><div class="faq-question">Есть ли отслеживание заказа? <i class="bi bi-chevron-down"></i></div><div class="faq-answer">Да, полная информация по статусу доступна после входа в личный кабинет.</div></div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Футер -->
+<footer class="footer-links">
+    <div class="container">
+        <div class="row align-items-center">
+            <div class="col-md-6">
+                <h5 class="text-white fw-bold">АВН Бизнес Курьер</h5>
+                <p class="small opacity-75">Доставляем самое важное вовремя</p>
+            </div>
+            <div class="col-md-6 text-md-end">
+                <p class="mb-1"><i class="bi bi-telephone-fill me-2"></i>+7 (980) 888-88-88</p>
+                <p><i class="bi bi-envelope-fill me-2"></i>abn-business@mail.ru</p>
+            </div>
+            <div class="col-12 text-center mt-4">
+                <hr class="border-light opacity-25">
+                <p class="small opacity-50 mb-0">© 2026 АВН Бизнес курьерская служба. Все права защищены.</p>
+            </div>
+        </div>
+    </div>
+</footer>
+
+<script>
+    // Toggle FAQ
+    function toggleFaq(element) {
+        const answer = element.querySelector('.faq-answer');
+        const icon = element.querySelector('.faq-question i');
+        if (answer.style.display === 'block') {
+            answer.style.display = 'none';
+            icon.classList.remove('bi-chevron-up');
+            icon.classList.add('bi-chevron-down');
+        } else {
+            answer.style.display = 'block';
+            icon.classList.remove('bi-chevron-down');
+            icon.classList.add('bi-chevron-up');
+        }
+    }
+    
+    document.querySelectorAll('.faq-item').forEach(item => { 
+        const answer = item.querySelector('.faq-answer');
+        if(answer) answer.style.display = 'none'; 
+    });
+    
+    // Кнопка Личный кабинет переход на страницу логина
+    const dashboardBtn = document.getElementById('openDashboardModalBtn');
+    if (dashboardBtn) {
+        dashboardBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            window.location.href = 'http://127.0.0.1:8000/login/';
+        });
+    }
+    
+    // Кнопка Создать заказ переход на страницу логина
+    const createOrderBtn = document.getElementById('scrollToCreate');
+    if (createOrderBtn) {
+        createOrderBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            window.location.href = 'http://127.0.0.1:8000/login/';
+        });
+    }
+
+    
+</script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

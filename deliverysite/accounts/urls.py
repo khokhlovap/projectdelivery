@@ -36,4 +36,5 @@ urlpatterns = [
     path('api/ai-chat-stats/', views.ai_chat_stats, name='ai_chat_stats'),
     path('manager/ai-stats/', views.manager_ai_stats, name='manager_ai_stats'),
     path('api/ai-chat-last-queries/', views.ai_chat_last_queries, name='ai_chat_last_queries'),
+    path('main/', views.main_page, name='main_page'),
 ]
