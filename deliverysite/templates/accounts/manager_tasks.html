@@ -627,7 +627,9 @@
                     <select class="form-select" id="courierSelect">
                         <option value="">-- Выберите курьера --</option>
                         {% for courier in available_couriers %}
-                        <option value="{{ courier.user.id }}">{{ courier.user.get_full_name }} ({{ courier.get_shift_status_display }})</option>
+                        <option value="{{ courier.user.id }}">
+                            {{ courier.user.get_full_name }} — {{ courier.get_work_range_display }} ({{ courier.get_shift_status_display }})
+                        </option>
                         {% endfor %}
                     </select>
                 </div>

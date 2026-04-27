@@ -543,25 +543,19 @@ def manager_tasks(request):
         status__in=['delivered', 'cancelled']
     ).order_by('-created_at')
     
-    # Добавляем информацию о последнем статусе
     for order in orders:
         last_status = OrderStatusHistory.objects.filter(order=order).order_by('-changed_at').first()
         order.last_status_text = last_status.get_status_display() if last_status else order.get_status_display()
         order.last_status_time = last_status.changed_at if last_status else order.created_at
 
-    available_couriers = Courier.objects.filter(shift_status='on')
-    
-    # Отладка - вывод в консоль
-    print(f"DEBUG: Найдено доступных курьеров: {len(available_couriers)}")
-    for c in available_couriers:
-        print(f"  - {c.user.get_full_name()}")
+    # Получаем всех курьеров на смене с их рабочим временем
+    available_couriers = Courier.objects.filter(shift_status='on').select_related('user')
     
     context = {
         'orders': orders,
         'available_couriers': available_couriers,
     }
     return render(request, 'accounts/manager_tasks.html', context)
-
 
 @login_required
 def manager_orders(request):
