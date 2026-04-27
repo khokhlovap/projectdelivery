@@ -563,6 +563,10 @@
                 <div class="small text-muted">Вес: {{ order.weight|default:"—" }} кг</div>
             </div>
             <div class="info-item">
+                <div class="info-label"><i class="bi bi-clock"></i> ВРЕМЯ ДОСТАВКИ</div>
+                <div class="info-value">{{ order.get_requested_time_slot_display }}</div>
+            </div>
+            <div class="info-item">
                 <div class="info-label"><i class="bi bi-person-badge"></i> КУРЬЕР</div>
                 <div class="info-value">
                     {% if order.courier %}

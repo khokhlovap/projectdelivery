@@ -179,6 +179,37 @@ class Courier(models.Model):
     registration_address = models.TextField(verbose_name='Адрес регистрации')
     actual_address = models.TextField(verbose_name='Фактический адрес проживания')
     
+    WORK_TIME_CHOICES = (
+        ('morning', '09:00 - 12:00 (утро)'),
+        ('day', '12:00 - 15:00 (день)'),
+        ('afternoon', '15:00 - 18:00 (вечер)'),
+        ('full', '09:00 - 18:00 (полный день)'),
+        ('custom', 'Индивидуальный график'),
+    )
+    work_slot = models.CharField(
+        max_length=20, 
+        choices=WORK_TIME_CHOICES, 
+        default='full',
+        verbose_name='Предпочитаемое время работы'
+    )
+    # Индивидуальные часы (если выбран custom)
+    work_start_time = models.TimeField(
+        blank=True, 
+        null=True, 
+        verbose_name='Начало рабочего дня'
+    )
+    work_end_time = models.TimeField(
+        blank=True, 
+        null=True, 
+        verbose_name='Конец рабочего дня'
+    )
+    
+    def get_work_range_display(self):
+        "Возвращает текстовое представление рабочего диапазона"
+        if self.work_slot == 'custom' and self.work_start_time and self.work_end_time:
+            return f"{self.work_start_time.strftime('%H:%M')} - {self.work_end_time.strftime('%H:%M')}"
+        return dict(self.WORK_TIME_CHOICES).get(self.work_slot, 'Не указан')
+    
     def is_available(self):
         "Проверка доступности курьера для назначения заказа"
         if self.shift_status != 'on':
@@ -463,6 +494,24 @@ class Order(models.Model):
     total_amount = models.DecimalField(max_digits=10, decimal_places=2, default=0, verbose_name='Сумма')
     invoice_number = models.CharField(max_length=50, blank=True, verbose_name='Номер счета')
     
+    TIME_SLOT_CHOICES = (
+        ('morning', '09:00 - 12:00'),
+        ('day', '12:00 - 15:00'),
+        ('afternoon', '15:00 - 18:00'),
+        ('evening', '18:00 - 21:00'),
+        ('any', 'Весь день'),
+    )
+    requested_time_slot = models.CharField(
+        max_length=20, 
+        choices=TIME_SLOT_CHOICES, 
+        default='any',
+        verbose_name='Желаемое время доставки'
+    )
+    requested_delivery_time = models.TimeField(
+        blank=True, 
+        null=True, 
+        verbose_name='Желаемое время доставки (конкретное)'
+    )
     STATUS_CHOICES = (
         ('created', 'Создан'),
         ('pending', 'Ожидает назначения'),
@@ -604,7 +653,6 @@ class Payment(models.Model):
     
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='created', verbose_name='Статус оплаты')
     comment = models.TextField(blank=True, null=True, verbose_name='Комментарий')
-    receipt = models.FileField(upload_to='receipts/', blank=True, null=True, verbose_name='Чек')
     paid_at = models.DateTimeField(blank=True, null=True, verbose_name='Дата оплаты')
     created_at = models.DateTimeField(auto_now_add=True, verbose_name='Дата создания счета')
 
