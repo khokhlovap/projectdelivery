@@ -1,12 +1,286 @@
 {% extends 'accounts/manager_lk_base.html' %}
+{% load static %}
 {% block title %}Отчеты{% endblock %}
+
 {% block manager_content %}
-<div class="card shadow-sm">
-    <div class="card-header bg-white">
-        <h5 class="mb-0">Отчеты</h5>
+<style>
+    .reports-header {
+        margin-bottom: 28px;
+    }
+    .reports-title {
+        font-size: 1.5rem;
+        font-weight: 600;
+        color: #1E1E1E;
+    }
+    .reports-subtitle {
+        font-size: 0.85rem;
+        color: #6B6B6B;
+    }
+    .header-divider {
+        height: 3px;
+        background: linear-gradient(90deg, #1E7A57 0%, #C8E0D6 50%, transparent 100%);
+        border-radius: 3px;
+        margin-top: 12px;
+    }
+    
+    /* Статистические карточки */
+    .stats-row {
+        margin-bottom: 28px;
+    }
+    .stat-card {
+        background: white;
+        border-radius: 20px;
+        padding: 20px;
+        text-align: center;
+        border: 1px solid #E8E0D5;
+        transition: all 0.3s;
+    }
+    .stat-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 8px 20px rgba(0,0,0,0.08);
+    }
+    .stat-number {
+        font-size: 2rem;
+        font-weight: 700;
+        color: #1E7A57;
+    }
+    .stat-label {
+        font-size: 0.75rem;
+        color: #6B6B6B;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    
+    /* Форма отчета */
+    .report-form-card {
+        background: white;
+        border-radius: 20px;
+        padding: 24px;
+        border: 1px solid #E8E0D5;
+        margin-bottom: 28px;
+    }
+    .report-form-title {
+        font-size: 1.1rem;
+        font-weight: 600;
+        color: #1E1E1E;
+        margin-bottom: 20px;
+    }
+    .filter-group {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 16px;
+        align-items: flex-end;
+        margin-bottom: 20px;
+    }
+    .filter-item {
+        flex: 1;
+        min-width: 180px;
+    }
+    .filter-label {
+        font-size: 0.7rem;
+        text-transform: uppercase;
+        color: #6B6B6B;
+        margin-bottom: 6px;
+        display: block;
+    }
+    .filter-select, .filter-input {
+        width: 100%;
+        padding: 10px 14px;
+        border: 1px solid #E8E0D5;
+        border-radius: 12px;
+        font-size: 0.85rem;
+        background: white;
+    }
+    .filter-select:focus, .filter-input:focus {
+        border-color: #1E7A57;
+        outline: none;
+    }
+    .btn-report {
+        background: #1E7A57;
+        color: white;
+        border: none;
+        border-radius: 40px;
+        padding: 10px 24px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.2s;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+    }
+    .btn-report:hover {
+        background: #155f44;
+        transform: translateY(-1px);
+    }
+    .btn-excel {
+        background: #1E7A57;
+    }
+    .btn-pdf {
+        background: #D4A0A0;
+    }
+    .btn-pdf:hover {
+        background: #b18686;
+    }
+    .export-buttons {
+        display: flex;
+        gap: 12px;
+        margin-top: 20px;
+    }
+    
+    /* Таблица топ курьеров */
+    .couriers-table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+    .couriers-table th {
+        background: #F5F3F0;
+        padding: 12px;
+        font-size: 0.7rem;
+        text-transform: uppercase;
+        color: #6B6B6B;
+        font-weight: 600;
+    }
+    .couriers-table td {
+        padding: 10px 12px;
+        border-bottom: 1px solid #F0EDE8;
+        font-size: 0.85rem;
+    }
+    .rating-star {
+        color: #FFB74D;
+    }
+</style>
+
+<!-- Шапка раздела -->
+<div class="reports-header">
+    <h2 class="reports-title">
+        <i class="bi bi-graph-up me-2" style="color: #1E7A57;"></i>
+        Отчеты и аналитика
+    </h2>
+    <p class="reports-subtitle">Формирование и экспорт отчетов по заказам</p>
+    <div class="header-divider"></div>
+</div>
+
+<!-- Статистические карточки -->
+<div class="row stats-row g-4">
+    <div class="col-md-3">
+        <div class="stat-card">
+            <div class="stat-number">{{ total_orders }}</div>
+            <div class="stat-label">Всего заказов</div>
+        </div>
     </div>
-    <div class="card-body">
-        <p class="text-muted">Страница в разработке</p>
+    <div class="col-md-3">
+        <div class="stat-card">
+            <div class="stat-number">{{ delivered_orders }}</div>
+            <div class="stat-label">Доставлено</div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="stat-card">
+            <div class="stat-number">{{ active_orders }}</div>
+            <div class="stat-label">Активных</div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="stat-card">
+            <div class="stat-number">{{ cancelled_orders }}</div>
+            <div class="stat-label">Отменено</div>
+        </div>
     </div>
 </div>
+
+<!-- Статистика за месяц -->
+<div class="row g-4 mb-4">
+    <div class="col-md-6">
+        <div class="stat-card">
+            <div class="stat-number">{{ monthly_orders }}</div>
+            <div class="stat-label">Заказов за месяц ({{ start_of_month }} - {{ end_of_month }})</div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="stat-card">
+            <div class="stat-number">{{ monthly_delivered }}</div>
+            <div class="stat-label">Доставлено за месяц</div>
+        </div>
+    </div>
+</div>
+
+<!-- Форма для отчета -->
+<div class="report-form-card">
+    <div class="report-form-title">
+        <i class="bi bi-download me-2" style="color: #1E7A57;"></i>
+        Экспорт отчета
+    </div>
+    <form method="get" action="{% url 'accounts:manager_reports' %}">
+        <div class="filter-group">
+            <div class="filter-item">
+                <label class="filter-label">Дата от</label>
+                <input type="date" name="date_from" class="filter-input" value="{{ date_from }}">
+            </div>
+            <div class="filter-item">
+                <label class="filter-label">Дата до</label>
+                <input type="date" name="date_to" class="filter-input" value="{{ date_to }}">
+            </div>
+        </div>
+        
+        <div class="export-buttons">
+            <button type="submit" name="format" value="excel" class="btn-report btn-excel">
+                <i class="bi bi-file-earmark-excel"></i> Экспорт в Excel
+            </button>
+            <button type="submit" name="format" value="pdf" class="btn-report btn-pdf">
+                <i class="bi bi-file-earmark-pdf"></i> Экспорт в PDF
+            </button>
+            
+        </div>
+    </form>
+</div>
+
+<!-- График заказов -->
+<div class="card shadow-sm mb-4">
+    <div class="card-header bg-white">
+        <h5 class="mb-0"><i class="bi bi-graph-up me-2" style="color: #1E7A57;"></i> Динамика заказов (последние 30 дней)</h5>
+    </div>
+    <div class="card-body">
+        <canvas id="ordersChart" height="200"></canvas>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    // График заказов
+    const dailyStats = {{ daily_stats|safe }};
+    const ctx = document.getElementById('ordersChart').getContext('2d');
+    new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: dailyStats.map(d => d.date),
+            datasets: [{
+                label: 'Количество заказов',
+                data: dailyStats.map(d => d.count),
+                borderColor: '#1E7A57',
+                backgroundColor: 'rgba(30, 122, 87, 0.1)',
+                tension: 0.4,
+                fill: true,
+                pointBackgroundColor: '#1E7A57',
+                pointBorderColor: '#ffffff',
+                pointBorderWidth: 2,
+                pointRadius: 4
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: true,
+            plugins: {
+                legend: {
+                    position: 'top',
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: { stepSize: 1 }
+                }
+            }
+        }
+    });
+</script>
 {% endblock %}

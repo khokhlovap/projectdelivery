@@ -14,14 +14,32 @@ from django.core.paginator import Paginator
 from django.contrib.auth.hashers import make_password
 import random
 import string
-from django.db.models import Sum
 from django.core.mail import send_mail
-from django.conf import settings
 from django.shortcuts import get_object_or_404
 import re
 import requests
-import json
+import openpyxl
+import os
+from django.conf import settings
+from django.http import HttpResponse
 
+from reportlab.pdfbase import pdfmetrics
+from reportlab.pdfbase.ttfonts import TTFont
+from reportlab.pdfgen import canvas
+from reportlab.lib.pagesizes import A4
+from openpyxl.styles import Font, Alignment, PatternFill
+from openpyxl.utils import get_column_letter
+from reportlab.lib.pagesizes import A4, landscape
+from reportlab.lib import colors
+from reportlab.platypus import (
+    SimpleDocTemplate, Paragraph, Spacer,
+    Table, TableStyle
+)
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+
+# Другие
+from io import BytesIO
+from django.http import HttpResponse
 # ЛК Клиент
 def register_view(request):
     if request.user.is_authenticated:
@@ -1022,109 +1040,411 @@ def manager_client_detail(request, user_id):
 
 @login_required
 def manager_reports(request):
-    "Страница отчетов"
+    "Страница отчетов менеджера"
     if request.user.role != 'manager':
         messages.error(request, 'У вас нет доступа к этой странице')
         return redirect('accounts:home')
     
-    context = {}
+    # Получаем параметры фильтрации
+    report_type = request.GET.get('report_type', 'orders')
+    date_from = request.GET.get('date_from', '')
+    date_to = request.GET.get('date_to', '')
+    format_type = request.GET.get('format', '')
+
+    # Если запрошено скачивание
+    if format_type:
+        return generate_report(request, report_type, date_from, date_to, format_type)
+    
+    # Статистика для отображения на странице
+    today = timezone.now().date()
+    start_of_month = today.replace(day=1)
+    end_of_month = (start_of_month + timedelta(days=32)).replace(day=1) - timedelta(days=1)
+    
+    # Общая статистика
+    total_orders = Order.objects.count()
+    delivered_orders = Order.objects.filter(status='delivered').count()
+    active_orders = Order.objects.filter(status__in=['created', 'pending', 'assigned', 'in_progress']).count()
+    cancelled_orders = Order.objects.filter(status='cancelled').count()
+    
+    # Статистика за месяц
+    monthly_orders = Order.objects.filter(created_at__date__gte=start_of_month, created_at__date__lte=end_of_month).count()
+    monthly_delivered = Order.objects.filter(status='delivered', delivered_at__date__gte=start_of_month, delivered_at__date__lte=end_of_month).count()
+    
+    # Статистика по типам заказов
+    orders_by_type = Order.objects.values('order_type').annotate(count=Count('id'))
+    
+    # Статистика по курьерам (топ-5)
+    top_couriers = Courier.objects.annotate(
+        deliveries=Count('orders', filter=Q(orders__status='delivered'))
+    ).order_by('-deliveries')[:5]
+    
+    # Статистика по дням для графика
+    daily_stats = []
+    for i in range(30):
+        day = today - timedelta(days=29-i)
+        count = Order.objects.filter(created_at__date=day).count()
+        daily_stats.append({
+            'date': day.strftime('%d.%m'),
+            'count': count
+        })
+    
+    context = {
+        'active_tab': 'reports',
+        'report_type': report_type,
+        'date_from': date_from,
+        'date_to': date_to,
+        'total_orders': total_orders,
+        'delivered_orders': delivered_orders,
+        'active_orders': active_orders,
+        'cancelled_orders': cancelled_orders,
+        'monthly_orders': monthly_orders,
+        'monthly_delivered': monthly_delivered,
+        'orders_by_type': orders_by_type,
+        'top_couriers': top_couriers,
+        'daily_stats': daily_stats,
+        'start_of_month': start_of_month.strftime('%d.%m.%Y'),
+        'end_of_month': end_of_month.strftime('%d.%m.%Y'),
+    }
     return render(request, 'accounts/manager_reports.html', context)
 
+def generate_report(request, report_type, date_from, date_to, format_type):
+    "Генерация отчета в Excel или PDF"
+    
+    # Фильтрация по датам
+    orders = Order.objects.select_related('client', 'courier__user').all().order_by('-created_at')
+    
+    if date_from:
+        try:
+            date_from_obj = datetime.strptime(date_from, '%Y-%m-%d').date()
+            orders = orders.filter(created_at__date__gte=date_from_obj)
+        except:
+            pass
+    
+    if date_to:
+        try:
+            date_to_obj = datetime.strptime(date_to, '%Y-%m-%d').date()
+            orders = orders.filter(created_at__date__lte=date_to_obj)
+        except:
+            pass
+    
+    # Формируем данные для отчета
+    data = []
+    for order in orders:
+        data.append({
+            'id': order.id,
+            'created_at': order.created_at.strftime('%d.%m.%Y %H:%M'),
+            'client_name': order.client.company_name,
+            'order_type': order.get_order_type_display(),
+            'tariff': order.get_tariff_display(),
+            'pickup_address': order.pickup_address[:100],
+            'delivery_address': order.delivery_address[:100],
+            'weight': str(order.weight) if order.weight else '—',
+            'status': order.get_status_display(),
+            'courier_name': order.courier.user.get_full_name() if order.courier else 'Не назначен',
+            'delivered_at': order.delivered_at.strftime('%d.%m.%Y %H:%M') if order.delivered_at else '—',
+        })
+    
+    if format_type == 'excel':
+        return generate_excel_report(data, report_type, date_from, date_to)
+    elif format_type == 'pdf':
+        response = HttpResponse(content_type='application/pdf')
+        response['Content-Disposition'] = 'attachment; filename="report.pdf"'
+
+        font_path = os.path.join(settings.BASE_DIR, 'static', 'fonts', 'DejaVuSans.ttf')
+
+        pdfmetrics.registerFont(TTFont('DejaVuSans', font_path))
+
+        doc = SimpleDocTemplate(
+            response,
+            pagesize=landscape(A4),
+            leftMargin=20,
+            rightMargin=20,
+            topMargin=20,
+            bottomMargin=20
+        )
+
+        elements = []
+        styles = getSampleStyleSheet()
+
+        # Цвет компании
+        company_color = colors.HexColor("#1E7A57")
+
+        # Стили
+        title_style = ParagraphStyle(
+            'title',
+            parent=styles['Heading1'],
+            fontName='DejaVuSans',
+            fontSize=20,
+            leading=24,
+            textColor=company_color,
+            alignment=1,
+            spaceAfter=10
+        )
+
+        subtitle_style = ParagraphStyle(
+            'subtitle',
+            parent=styles['Normal'],
+            fontName='DejaVuSans',
+            fontSize=10,
+            alignment=1,
+            textColor=colors.grey,
+            spaceAfter=20
+        )
+
+        normal_style = ParagraphStyle(
+            'normal',
+            parent=styles['Normal'],
+            fontName='DejaVuSans',
+            fontSize=9,
+            leading=11
+        )
+
+        footer_style = ParagraphStyle(
+            'footer',
+            parent=styles['Normal'],
+            fontName='DejaVuSans',
+            fontSize=8,
+            alignment=1,
+            textColor=colors.grey
+        )
+
+        # Заголовок
+        elements.append(Paragraph("АВН Бизнес Курьер", title_style))
+        elements.append(Paragraph("Отчет по заказам и аналитике", subtitle_style))
+
+        # Статистика
+        total_orders = Order.objects.count()
+        delivered = Order.objects.filter(status='delivered').count()
+        active = Order.objects.exclude(status__in=['delivered', 'cancelled']).count()
+        cancelled = Order.objects.filter(status='cancelled').count()
+
+        stats_data = [
+            ['Показатель', 'Значение'],
+            ['Всего заказов', total_orders],
+            ['Доставлено', delivered],
+            ['Активных', active],
+            ['Отменено', cancelled],
+        ]
+
+        stats_table = Table(stats_data, colWidths=[250, 150])
+        stats_table.setStyle(TableStyle([
+            ('BACKGROUND', (0,0), (-1,0), company_color),
+            ('TEXTCOLOR', (0,0), (-1,0), colors.white),
+            ('FONTNAME', (0,0), (-1,-1), 'DejaVuSans'),
+            ('GRID', (0,0), (-1,-1), 1, colors.lightgrey),
+            ('ROWBACKGROUNDS', (0,1), (-1,-1), [colors.white, colors.HexColor('#F5F3F0')]),
+            ('ALIGN', (1,1), (1,-1), 'CENTER'),
+        ]))
+
+        elements.append(stats_table)
+        elements.append(Spacer(1, 20))
+
+        # Основная таблица
+        table_data = [[
+            '№',
+            'Дата',
+            'Клиент',
+            'Тип',
+            'Тариф',
+            'Адрес доставки',
+            'Вес',
+            'Статус',
+            'Курьер'
+        ]]
+
+        for item in data:
+            table_data.append([
+                item['id'],
+                item['created_at'],
+                item['client_name'],
+                item['order_type'],
+                item['tariff'],
+                item['delivery_address'][:35],
+                item['weight'],
+                item['status'],
+                item['courier_name']
+            ])
+
+        main_table = Table(
+            table_data,
+            colWidths=[35, 75, 110, 70, 70, 180, 45, 75, 110]
+        )
+
+        main_table.setStyle(TableStyle([
+            ('BACKGROUND', (0,0), (-1,0), company_color),
+            ('TEXTCOLOR', (0,0), (-1,0), colors.white),
+            ('FONTNAME', (0,0), (-1,-1), 'DejaVuSans'),
+            ('FONTSIZE', (0,0), (-1,-1), 8),
+            ('GRID', (0,0), (-1,-1), 0.5, colors.lightgrey),
+            ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
+            ('ROWBACKGROUNDS', (0,1), (-1,-1), [
+                colors.white,
+                colors.HexColor('#F8F9FA')
+            ]),
+        ]))
+
+        elements.append(main_table)
+        elements.append(Spacer(1, 25))
+
+        # Подвал
+        elements.append(Paragraph(
+            "АВН Бизнес Курьер | avn@delivery.ru | +7 (999) 123-45-67",
+            footer_style
+        ))
+
+        doc.build(elements)
+
+        return response
+
+def generate_excel_report(data, report_type, date_from, date_to):
+        "Генерация Excel отчета"
+        
+        wb = openpyxl.Workbook()
+        ws = wb.active
+        ws.title = f"Отчет_{report_type}"
+        
+        # Стили
+        header_font = Font(name='Arial', size=11, bold=True, color='FFFFFF')
+        header_fill = PatternFill(start_color='1E7A57', end_color='1E7A57', fill_type='solid')
+        header_alignment = Alignment(horizontal='center', vertical='center')
+        
+        # Заголовки столбцов
+        headers = [
+            '№ заказа', 'Дата создания', 'Клиент', 'Тип заказа', 'Тариф',
+            'Адрес отправки', 'Адрес доставки', 'Вес (кг)', 'Статус', 'Курьер', 'Дата доставки'
+        ]
+        
+        # Заполняем заголовки
+        for col, header in enumerate(headers, 1):
+            cell = ws.cell(row=1, column=col, value=header)
+            cell.font = header_font
+            cell.fill = header_fill
+            cell.alignment = header_alignment
+        
+        # Заполняем данные
+        for row, item in enumerate(data, 2):
+            ws.cell(row=row, column=1, value=item['id'])
+            ws.cell(row=row, column=2, value=item['created_at'])
+            ws.cell(row=row, column=3, value=item['client_name'])
+            ws.cell(row=row, column=4, value=item['order_type'])
+            ws.cell(row=row, column=5, value=item['tariff'])
+            ws.cell(row=row, column=6, value=item['pickup_address'])
+            ws.cell(row=row, column=7, value=item['delivery_address'])
+            ws.cell(row=row, column=8, value=item['weight'])
+            ws.cell(row=row, column=9, value=item['status'])
+            ws.cell(row=row, column=10, value=item['courier_name'])
+            ws.cell(row=row, column=11, value=item['delivered_at'])
+        
+        # Автоширина колонок
+        for col in range(1, len(headers) + 1):
+            column_letter = get_column_letter(col)
+            ws.column_dimensions[column_letter].width = 20
+        
+        # Формируем имя файла
+        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+        filename = f"Отчет_{report_type}_{timestamp}.xlsx"
+        
+        # Создаем HTTP ответ
+        response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+        response['Content-Disposition'] = f'attachment; filename="{filename}"'
+        
+        wb.save(response)
+        return response
 
 @login_required
 def manager_settings(request):
-    "Настройки менеджера - изменение профиля и пароля"
-    if request.user.role != 'manager':
-        messages.error(request, 'У вас нет доступа к этой странице')
-        return redirect('accounts:home')
-    
-    if request.method == 'POST':
-        action = request.POST.get('action')
+        "Настройки менеджера - изменение профиля и пароля"
+        if request.user.role != 'manager':
+            messages.error(request, 'У вас нет доступа к этой странице')
+            return redirect('accounts:home')
         
-        # Обновление профиля
-        if action == 'update_profile':
-            user = request.user
-            user.first_name = request.POST.get('first_name', '').strip()
-            user.last_name = request.POST.get('last_name', '').strip()
-            user.patronymic = request.POST.get('patronymic', '').strip()
-            user.phone = request.POST.get('phone', '').strip()
-            user.save()
+        if request.method == 'POST':
+            action = request.POST.get('action')
             
-            messages.success(request, 'Данные профиля успешно обновлены')
-            return redirect('accounts:manager_settings')
+            # Обновление профиля
+            if action == 'update_profile':
+                user = request.user
+                user.first_name = request.POST.get('first_name', '').strip()
+                user.last_name = request.POST.get('last_name', '').strip()
+                user.patronymic = request.POST.get('patronymic', '').strip()
+                user.phone = request.POST.get('phone', '').strip()
+                user.save()
+                
+                messages.success(request, 'Данные профиля успешно обновлены')
+                return redirect('accounts:manager_settings')
+            
+            # Смена пароля
+            elif action == 'change_password':
+                current_password = request.POST.get('current_password')
+                new_password = request.POST.get('new_password')
+                confirm_password = request.POST.get('confirm_password')
+                
+                # Проверяем текущий пароль
+                if not request.user.check_password(current_password):
+                    messages.error(request, 'Текущий пароль введен неверно')
+                    return redirect('accounts:manager_settings')
+                
+                # Проверяем, что новый пароль не пустой
+                if not new_password:
+                    messages.error(request, 'Введите новый пароль')
+                    return redirect('accounts:manager_settings')
+                
+                # Проверяем совпадение паролей
+                if new_password != confirm_password:
+                    messages.error(request, 'Новый пароль и подтверждение не совпадают')
+                    return redirect('accounts:manager_settings')
+                
+                # Проверяем длину пароля
+                if len(new_password) < 8:
+                    messages.error(request, 'Пароль должен содержать минимум 8 символов')
+                    return redirect('accounts:manager_settings')
+                
+                # Меняем пароль
+                request.user.set_password(new_password)
+                request.user.save()
+                
+                messages.success(request, 'Пароль успешно изменен. Пожалуйста, войдите снова.')
+                return redirect('accounts:login')
         
-        # Смена пароля
-        elif action == 'change_password':
-            current_password = request.POST.get('current_password')
-            new_password = request.POST.get('new_password')
-            confirm_password = request.POST.get('confirm_password')
-            
-            # Проверяем текущий пароль
-            if not request.user.check_password(current_password):
-                messages.error(request, 'Текущий пароль введен неверно')
-                return redirect('accounts:manager_settings')
-            
-            # Проверяем, что новый пароль не пустой
-            if not new_password:
-                messages.error(request, 'Введите новый пароль')
-                return redirect('accounts:manager_settings')
-            
-            # Проверяем совпадение паролей
-            if new_password != confirm_password:
-                messages.error(request, 'Новый пароль и подтверждение не совпадают')
-                return redirect('accounts:manager_settings')
-            
-            # Проверяем длину пароля
-            if len(new_password) < 8:
-                messages.error(request, 'Пароль должен содержать минимум 8 символов')
-                return redirect('accounts:manager_settings')
-            
-            # Меняем пароль
-            request.user.set_password(new_password)
-            request.user.save()
-            
-            messages.success(request, 'Пароль успешно изменен. Пожалуйста, войдите снова.')
-            return redirect('accounts:login')
-    
-    context = {
-        'user': request.user,
-    }
-    return render(request, 'accounts/manager_settings.html', context)
+        context = {
+            'user': request.user,
+        }
+        return render(request, 'accounts/manager_settings.html', context)
 
 @login_required
 def manager_ai_stats(request):
-    "Страница статистики AI чата для менеджера"
-    if request.user.role != 'manager':
-        messages.error(request, 'У вас нет доступа к этой странице')
-        return redirect('accounts:home')
-    
-    context = {
-        'active_tab': 'ai_stats',
-    }
-    return render(request, 'accounts/manager_ai_stats.html', context)
+        "Страница статистики AI чата для менеджера"
+        if request.user.role != 'manager':
+            messages.error(request, 'У вас нет доступа к этой странице')
+            return redirect('accounts:home')
+        
+        context = {
+            'active_tab': 'ai_stats',
+        }
+        return render(request, 'accounts/manager_ai_stats.html', context)
 
 @login_required
 def manager_tasks_count(request):
-    "API для получения количества задач менеджера"
-    if request.user.role != 'manager':
-        return JsonResponse({'error': 'Access denied'}, status=403)
-    
-    # Заказы без курьера (created или pending)
-    orders_without_courier = Order.objects.filter(
-        status__in=['created', 'pending']
-    ).count()
-    
-    # Просроченные заказы
-    from django.utils import timezone
-    delayed_orders = Order.objects.filter(
-        requested_delivery_date__lt=timezone.now().date(),
-        status__in=['created', 'pending', 'assigned', 'in_progress']
-    ).count()
-    
-    # Общее количество задач
-    total_tasks = orders_without_courier + delayed_orders
-    
-    return JsonResponse({'count': total_tasks})
+        "API для получения количества задач менеджера"
+        if request.user.role != 'manager':
+            return JsonResponse({'error': 'Access denied'}, status=403)
+        
+        # Заказы без курьера (created или pending)
+        orders_without_courier = Order.objects.filter(
+            status__in=['created', 'pending']
+        ).count()
+        
+        # Просроченные заказы
+        from django.utils import timezone
+        delayed_orders = Order.objects.filter(
+            requested_delivery_date__lt=timezone.now().date(),
+            status__in=['created', 'pending', 'assigned', 'in_progress']
+        ).count()
+        
+        # Общее количество задач
+        total_tasks = orders_without_courier + delayed_orders
+        
+        return JsonResponse({'count': total_tasks})
 
 @login_required
 def assign_courier_ajax(request):
