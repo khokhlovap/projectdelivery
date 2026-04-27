@@ -31,4 +31,5 @@ urlpatterns = [
     path('courier/settings/security/', views.courier_settings_security, name='courier_settings_security'),
     path('courier/order/<int:order_id>/detail/', views.courier_order_detail_page, name='courier_order_detail_page'),
     path('courier/check-new-orders/', views.courier_check_new_orders, name='courier_check_new_orders'),
+    path('courier/update-shift-with-slot/', views.courier_update_shift_with_slot, name='courier_update_shift_with_slot'),
 ]

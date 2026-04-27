@@ -749,3 +749,57 @@ def courier_check_new_orders(request):
         })
     
     return JsonResponse({'new_orders': order_list, 'has_new': len(order_list) > 0})
+
+@login_required
+def courier_update_shift_with_slot(request):
+    "Обновление статуса смены курьера с указанием рабочего времени"
+    if request.user.role != 'courier':
+        return JsonResponse({'error': 'Доступ запрещен'}, status=403)
+    
+    courier = request.user.courier_profile
+    
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            new_status = data.get('status')
+            work_slot = data.get('work_slot', 'full')
+            custom_start = data.get('custom_start')
+            custom_end = data.get('custom_end')
+            
+            print(f"DEBUG: new_status={new_status}, work_slot={work_slot}, custom_start={custom_start}, custom_end={custom_end}")
+            
+            if new_status == 'on' and courier.shift_status == 'off':
+                # Проверяем, есть ли уже активная смена
+                existing_shift = CourierShift.objects.filter(
+                    courier=courier,
+                    end_time__isnull=True
+                ).first()
+                
+                if existing_shift:
+                    return JsonResponse({'error': 'У вас уже есть активная смена'}, status=400)
+                
+                # Сохраняем выбранный слот
+                courier.work_slot = work_slot
+                if custom_start and custom_end:
+                    courier.work_start_time = custom_start
+                    courier.work_end_time = custom_end
+                courier.shift_status = 'on'
+                courier.save()
+                
+                # Создаем смену
+                CourierShift.objects.create(
+                    courier=courier,
+                    start_time=timezone.now(),
+                )
+                
+                return JsonResponse({'success': True, 'status': 'on'})
+            else:
+                return JsonResponse({'error': f'Некорректный статус: shift_status={courier.shift_status}, new_status={new_status}'}, status=400)
+            
+        except Exception as e:
+            print(f"Ошибка: {e}")
+            import traceback
+            traceback.print_exc()
+            return JsonResponse({'error': str(e)}, status=400)
+    
+    return JsonResponse({'error': 'Метод не разрешен'}, status=405)

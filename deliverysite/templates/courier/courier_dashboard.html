@@ -15,6 +15,104 @@
     </div>
 </div>
 
+<!-- Выбор рабочего времени -->
+<div class="work-time-card" id="workTimeCard" {% if shift_status == 'on' %}style="display: none;"{% endif %}>
+    <div class="work-time-title">
+        <div class="work-time-icon">
+            <i class="bi bi-calendar-clock"></i>
+        </div>
+        <span>Настройка рабочего времени на сегодня</span>
+    </div>
+    
+    <div class="work-time-buttons">
+        <button class="work-time-btn" data-slot="full" onclick="selectWorkSlot('full')">
+            <i class="bi bi-calendar-check-fill"></i>
+            <span>Полный день</span>
+            <small>09:00 - 18:00</small>
+        </button>
+        <button class="work-time-btn" data-slot="morning" onclick="selectWorkSlot('morning')">
+            <i class="bi bi-sunrise-fill"></i>
+            <span>Утро</span>
+            <small>09:00 - 12:00</small>
+        </button>
+        <button class="work-time-btn" data-slot="day" onclick="selectWorkSlot('day')">
+            <i class="bi bi-brightness-high-fill"></i>
+            <span>День</span>
+            <small>12:00 - 15:00</small>
+        </button>
+        <button class="work-time-btn" data-slot="afternoon" onclick="selectWorkSlot('afternoon')">
+            <i class="bi bi-sunset-fill"></i>
+            <span>Вечер</span>
+            <small>15:00 - 18:00</small>
+        </button>
+        <button class="work-time-btn" data-slot="custom" onclick="showCustomTimePicker()">
+            <i class="bi bi-pencil-square"></i>
+            <span>Свой график</span>
+            <small>Указать время</small>
+        </button>
+    </div>
+    
+    <!-- Блок для индивидуального выбора времени -->
+    <div id="customTimePicker" style="display: none; margin-top: 16px; padding: 16px; background: #F8F9FA; border-radius: 16px;">
+        <div style="display: flex; gap: 12px;">
+            <div style="flex: 1;">
+                <label style="font-size: 0.7rem; color: #6B6B6B;">Начало смены</label>
+                <input type="time" id="customStartTime" class="form-control" style="width: 100%; padding: 10px; border-radius: 12px; border: 1px solid #E8E0D5;">
+            </div>
+            <div style="flex: 1;">
+                <label style="font-size: 0.7rem; color: #6B6B6B;">Конец смены</label>
+                <input type="time" id="customEndTime" class="form-control" style="width: 100%; padding: 10px; border-radius: 12px; border: 1px solid #E8E0D5;">
+            </div>
+        </div>
+        <button onclick="confirmCustomTime()" class="btn-confirm-time" style="margin-top: 12px; width: 100%;">
+            Подтвердить индивидуальный график
+        </button>
+    </div>
+    
+    <div class="selected-time-info" id="selectedTimeInfo" style="display: none;">
+        <i class="bi bi-check-circle-fill"></i>
+        Выбран режим: <span id="selectedSlotName"></span>
+        <button onclick="confirmWorkTime()" class="btn-confirm-time">Подтвердить и начать смену</button>
+    </div>
+    
+    <div class="skip-time">
+        <button onclick="skipWorkTime()" class="btn-skip-time">
+            <i class="bi bi-forward"></i> Пропустить (начать смену с режимом "Полный день")
+        </button>
+    </div>
+    
+    <div class="info-block" style="background: #F8F9FA; border-radius: 16px; padding: 12px; margin-top: 16px;">
+        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
+            <i class="bi bi-question-circle" style="color: #1E7A57;"></i>
+            <span style="font-size: 0.75rem; font-weight: 600;">Как это работает?</span>
+        </div>
+        <ul style="font-size: 0.7rem; color: #6B6B6B; margin-bottom: 0; padding-left: 20px;">
+            <li><strong>Полный день</strong> — вы готовы принимать заказы в течение всего рабочего дня (09:00-18:00)</li>
+            <li><strong>Утро / День / Вечер</strong> — вы работаете только в выбранный временной промежуток</li>
+            <li><strong>Свой график</strong> — для нестандартного рабочего дня (например, 10:00-14:00)</li>
+            <li><strong>Пропустить</strong> — начать смену с режимом "Полный день" без дополнительных вопросов</li>
+        </ul>
+        <p class="mt-2 mb-0 small" style="color: #6B6B6B; font-size: 0.65rem;">
+            <i class="bi bi-info-circle"></i>
+            Менеджер видит ваше рабочее время и назначает заказы с учётом ваших предпочтений
+        </p>
+    </div>
+</div>
+
+<!-- Информация о текущем рабочем времени (когда смена активна) -->
+<div class="active-work-info" id="activeWorkInfo" {% if shift_status != 'on' %}style="display: none;"{% endif %}>
+    <div class="work-info-header">
+        <i class="bi bi-calendar-check"></i>
+        <span>Сегодня вы работаете:</span>
+        <strong id="currentWorkSlotDisplay">{{ current_work_slot_display|default:"Полный день (09:00-18:00)" }}</strong>
+    </div>
+    <div class="work-info-change">
+        <button onclick="changeWorkTime()" class="btn-change-work">
+            <i class="bi bi-pencil"></i> Изменить режим
+        </button>
+    </div>
+</div>
+
 <!-- Текущая смена -->
 <div class="shift-status-card">
     <div class="shift-title">
@@ -25,7 +123,7 @@
     </div>
     <div class="shift-buttons">
         <button class="shift-btn shift-on {% if shift_status == 'on' %}shift-active{% endif %}" 
-                onclick="updateShift('on')" {% if shift_status == 'on' %}disabled{% endif %}>
+                onclick="startShiftWithWorkTime()" {% if shift_status == 'on' %}disabled{% endif %}>
             <i class="bi bi-play-circle"></i>
             <span>Начать смену</span>
         </button>
@@ -35,7 +133,7 @@
             <span>{% if shift_status == 'break' %}Вернуться{% else %}Перерыв{% endif %}</span>
         </button>
         <button class="shift-btn shift-off {% if shift_status == 'off' %}shift-active{% endif %}" 
-                onclick="updateShift('off')" {% if shift_status == 'off' %}disabled{% endif %}>
+                onclick="endShift()" {% if shift_status == 'off' %}disabled{% endif %}>
             <i class="bi bi-power"></i>
             <span>Завершить</span>
         </button>
@@ -127,7 +225,6 @@
                     </div>
                 </div>
                 
-                <!-- Комментарий клиента -->
                 {% if order.client_comment %}
                 <div class="order-comment">
                     <div class="comment-icon">
@@ -151,7 +248,6 @@
                     </button>
                 </div>
                 
-                <!-- Дополнительная кнопка с деталями -->
                 <a href="{% url 'delivery:courier_order_readonly' order.id %}" class="btn-detail" style="text-decoration: none; display: flex;">
                     <i class="bi bi-info-circle"></i>
                     <span>Подробнее о заказе</span>
@@ -171,7 +267,6 @@
 </div>
 
 <style>
-    /* Приветствие */
     .welcome-card {
         background: white;
         border-radius: 24px;
@@ -218,7 +313,163 @@
         color: #1E7A57;
     }
 
-    /* Карточка статуса смены */
+    .work-time-card {
+        background: white;
+        border-radius: 24px;
+        padding: 20px;
+        margin-bottom: 20px;
+        border: 1px solid #E8E0D5;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.03);
+    }
+    .work-time-title {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 20px;
+    }
+    .work-time-icon {
+        width: 40px;
+        height: 40px;
+        background: linear-gradient(135deg, #C8E0D6 0%, #E8E0D5 100%);
+        border-radius: 14px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    .work-time-icon i {
+        font-size: 1.3rem;
+        color: #1E7A57;
+    }
+    .work-time-title span {
+        font-size: 1rem;
+        font-weight: 700;
+        color: #1E1E1E;
+    }
+    .work-time-buttons {
+        display: flex;
+        gap: 10px;
+        margin-bottom: 16px;
+        flex-wrap: wrap;
+    }
+    .work-time-btn {
+        flex: 1;
+        min-width: 85px;
+        background: #F5F3F0;
+        border: 2px solid transparent;
+        border-radius: 20px;
+        padding: 12px 8px;
+        text-align: center;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+    .work-time-btn i {
+        font-size: 1.5rem;
+        color: #6B6B6B;
+        display: block;
+        margin-bottom: 6px;
+    }
+    .work-time-btn span {
+        font-size: 0.75rem;
+        font-weight: 600;
+        color: #1E1E1E;
+        display: block;
+    }
+    .work-time-btn small {
+        font-size: 0.6rem;
+        color: #6B6B6B;
+    }
+    .work-time-btn.selected {
+        background: linear-gradient(135deg, #1E7A57 0%, #2E9B6E 100%);
+        border-color: #1E7A57;
+    }
+    .work-time-btn.selected i,
+    .work-time-btn.selected span,
+    .work-time-btn.selected small {
+        color: white;
+    }
+    .selected-time-info {
+        background: #E8F5E9;
+        border-radius: 16px;
+        padding: 12px 16px;
+        margin-top: 16px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 12px;
+    }
+    .selected-time-info i {
+        color: #1E7A57;
+        font-size: 1.2rem;
+    }
+    .btn-confirm-time {
+        background: #1E7A57;
+        color: white;
+        border: none;
+        border-radius: 30px;
+        padding: 8px 20px;
+        font-size: 0.75rem;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+    .btn-confirm-time:hover {
+        background: #155E43;
+    }
+    .skip-time {
+        text-align: center;
+        margin-top: 12px;
+    }
+    .btn-skip-time {
+        background: transparent;
+        border: none;
+        color: #ADB5BD;
+        font-size: 0.7rem;
+        cursor: pointer;
+    }
+    .btn-skip-time:hover {
+        color: #6B6B6B;
+        text-decoration: underline;
+    }
+    .active-work-info {
+        background: linear-gradient(135deg, #E8F5E9 0%, #C8E6C9 100%);
+        border-radius: 20px;
+        padding: 14px 16px;
+        margin-bottom: 20px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 10px;
+    }
+    .work-info-header {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        flex-wrap: wrap;
+    }
+    .work-info-header i {
+        color: #1E7A57;
+        font-size: 1.1rem;
+    }
+    .work-info-header strong {
+        color: #1E7A57;
+    }
+    .btn-change-work {
+        background: white;
+        border: 1px solid #1E7A57;
+        border-radius: 30px;
+        padding: 6px 16px;
+        font-size: 0.7rem;
+        color: #1E7A57;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+    .btn-change-work:hover {
+        background: #1E7A57;
+        color: white;
+    }
+
     .shift-status-card {
         background: white;
         border-radius: 24px;
@@ -227,17 +478,6 @@
         border: 1px solid #E8E0D5;
         box-shadow: 0 2px 8px rgba(0,0,0,0.03);
     }
-
-    /* Карточка новых заказов */
-    .new-orders-card {
-        background: white;
-        border-radius: 24px;
-        padding: 20px;
-        border: 1px solid #E8E0D5;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.03);
-    }
-
-    /* Заголовок с иконкой для управления сменой */
     .shift-title {
         display: flex;
         align-items: center;
@@ -262,43 +502,6 @@
         font-weight: 700;
         color: #1E1E1E;
     }
-
-    /* Заголовок с иконкой для новых заказов */
-    .new-orders-title {
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        margin-bottom: 20px;
-    }
-    .new-orders-icon {
-        width: 40px;
-        height: 40px;
-        background: linear-gradient(135deg, #C8E0D6 0%, #E8E0D5 100%);
-        border-radius: 14px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-    }
-    .new-orders-icon i {
-        font-size: 1.3rem;
-        color: #1E7A57;
-    }
-    .new-orders-title span {
-        font-size: 1rem;
-        font-weight: 700;
-        color: #1E1E1E;
-    }
-    .orders-badge {
-        background: linear-gradient(135deg, #1E7A57 0%, #2E9B6E 100%);
-        color: white;
-        font-size: 0.7rem;
-        font-weight: 700;
-        padding: 2px 10px;
-        border-radius: 20px;
-        margin-left: 8px;
-    }
-
-    /* Кнопки смены */
     .shift-buttons {
         display: flex;
         gap: 8px;
@@ -349,8 +552,6 @@
         opacity: 0.5;
         cursor: not-allowed;
     }
-
-    /* Статус смены */
     .shift-timer {
         text-align: center;
         padding-top: 12px;
@@ -379,13 +580,51 @@
     .status-dot.gray {
         background: #ADB5BD;
     }
-
     @keyframes pulse {
         0%, 100% { opacity: 1; transform: scale(1); }
         50% { opacity: 0.5; transform: scale(1.2); }
     }
 
-    /* Карточка заказа */
+    .new-orders-card {
+        background: white;
+        border-radius: 24px;
+        padding: 20px;
+        border: 1px solid #E8E0D5;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.03);
+    }
+    .new-orders-title {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 20px;
+    }
+    .new-orders-icon {
+        width: 40px;
+        height: 40px;
+        background: linear-gradient(135deg, #C8E0D6 0%, #E8E0D5 100%);
+        border-radius: 14px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    .new-orders-icon i {
+        font-size: 1.3rem;
+        color: #1E7A57;
+    }
+    .new-orders-title span {
+        font-size: 1rem;
+        font-weight: 700;
+        color: #1E1E1E;
+    }
+    .orders-badge {
+        background: linear-gradient(135deg, #1E7A57 0%, #2E9B6E 100%);
+        color: white;
+        font-size: 0.7rem;
+        font-weight: 700;
+        padding: 2px 10px;
+        border-radius: 20px;
+        margin-left: 8px;
+    }
     .order-card {
         background: white;
         border-radius: 20px;
@@ -608,6 +847,7 @@
         color: #6B6B6B;
         cursor: pointer;
         transition: all 0.2s;
+        text-decoration: none;
     }
     .btn-detail:hover {
         background: #F5F3F0;
@@ -617,8 +857,6 @@
         font-size: 0.85rem;
         color: #1E7A57;
     }
-
-    /* Уведомление */
     .toast-notification {
         position: fixed;
         top: 20px;
@@ -626,7 +864,6 @@
         z-index: 10000;
         animation: slideIn 0.3s ease;
     }
-    
     @keyframes slideIn {
         from {
             transform: translateX(100%);
@@ -637,8 +874,6 @@
             opacity: 1;
         }
     }
-
-    /* Пустое состояние внутри рамки */
     .empty-state {
         text-align: center;
         padding: 48px 24px;
@@ -671,9 +906,13 @@
 </style>
 
 <script>
-    console.log('🚀 Courier Dashboard загружен');
-    console.log('User ID:', {{ user.id }});
-    
+    let selectedWorkSlot = null;
+    let selectedCustomStart = null;
+    let selectedCustomEnd = null;
+    let socket = null;
+    let reconnectAttempts = 0;
+    const maxReconnectAttempts = 10;
+
     function getCookie(name) {
         let cookieValue = null;
         if (document.cookie && document.cookie !== '') {
@@ -688,241 +927,144 @@
         }
         return cookieValue;
     }
-    
+
     const csrftoken = getCookie('csrftoken');
-    
-    // WebSocket переменные
-    let socket = null;
-    let reconnectAttempts = 0;
-    const maxReconnectAttempts = 10;
-    
-    function connectWebSocket() {
-        const userId = {{ user.id }};
-        const wsScheme = window.location.protocol === 'https:' ? 'wss://' : 'ws://';
-        const wsUrl = `${wsScheme}${window.location.host}/ws/orders/${userId}/`;
+
+    function selectWorkSlot(slot) {
+        document.querySelectorAll('.work-time-btn').forEach(btn => {
+            btn.classList.remove('selected');
+        });
         
-        console.log('Подключение к WebSocket:', wsUrl);
-        
-        try {
-            socket = new WebSocket(wsUrl);
-            
-            socket.onopen = function(e) {
-                console.log('WebSocket подключен');
-                reconnectAttempts = 0;
-                
-                // Отправляем ping каждые 30 секунд
-                if (window.pingInterval) clearInterval(window.pingInterval);
-                window.pingInterval = setInterval(() => {
-                    if (socket && socket.readyState === WebSocket.OPEN) {
-                        socket.send(JSON.stringify({ type: 'ping' }));
-                    }
-                }, 30000);
-            };
-            
-            socket.onmessage = function(e) {
-                try {
-                    const data = JSON.parse(e.data);
-                    console.log('WebSocket получено:', data);
-                    
-                    switch(data.type) {
-                        case 'new_order':
-                            console.log(`Новый заказ #${data.order_id}`);
-                            showToastNotification(`Новый заказ #${data.order_id}`, 'success');
-                            addNewOrder(data);
-                            updateOrdersCount();
-                            break;
-                            
-                        case 'order_status_update':
-                            console.log(`Статус заказа #${data.order_id} изменен на ${data.status_display}`);
-                            break;
-                            
-                        case 'notification':
-                            console.log(`Уведомление: ${data.title}`);
-                            showToastNotification(data.message, data.notification_type);
-                            break;
-                            
-                        case 'pong':
-                            console.log('WebSocket connection alive');
-                            break;
-                            
-                        case 'connection_established':
-                            console.log('Соединение установлено:', data.message);
-                            break;
-                            
-                        default:
-                            console.log('Неизвестный тип сообщения:', data.type);
-                    }
-                } catch (error) {
-                    console.error('Ошибка парсинга сообщения:', error);
-                }
-            };
-            
-            socket.onclose = function(e) {
-                console.log('WebSocket отключен');
-                if (window.pingInterval) clearInterval(window.pingInterval);
-                
-                // Попытка переподключения
-                if (reconnectAttempts < maxReconnectAttempts) {
-                    reconnectAttempts++;
-                    console.log(`Попытка переподключения ${reconnectAttempts}/${maxReconnectAttempts} через 3 секунды...`);
-                    setTimeout(connectWebSocket, 3000);
-                } else {
-                    console.error('Не удалось переподключиться после нескольких попыток');
-                    showToastNotification('Потеряно соединение с сервером. Обновите страницу.', 'danger');
-                }
-            };
-            
-            socket.onerror = function(e) {
-                console.error('WebSocket ошибка:', e);
-            };
-        } catch (error) {
-            console.error('Ошибка создания WebSocket:', error);
-        }
-    }
-    
-    function showToastNotification(message, type = 'info') {
-        const notification = document.createElement('div');
-        notification.className = `toast-notification alert alert-${type} alert-dismissible fade show`;
-        notification.style.cssText = 'position: fixed; top: 20px; right: 20px; z-index: 10000; min-width: 300px;';
-        notification.innerHTML = `
-            ${message}
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-        `;
-        document.body.appendChild(notification);
-        
-        setTimeout(() => {
-            notification.remove();
-        }, 5000);
-    }
-    
-    function addNewOrder(orderData) {
-        const container = document.getElementById('new-orders-container');
-        const emptyState = document.getElementById('emptyState');
-        
-        // Удаляем пустое состояние если оно есть
-        if (emptyState) {
-            emptyState.remove();
+        const selectedBtn = document.querySelector(`.work-time-btn[data-slot="${slot}"]`);
+        if (selectedBtn) {
+            selectedBtn.classList.add('selected');
         }
         
-        const orderHtml = `
-            <div class="order-card" id="order-${orderData.order_id}" data-order-id="${orderData.order_id}">
-                <div class="order-header">
-                    <div class="order-id-wrapper">
-                        <i class="bi bi-receipt"></i>
-                        <span class="order-id">Заказ №${orderData.order_id}</span>
-                    </div>
-                    <span class="order-time">${orderData.created_at || 'Только что'}</span>
-                </div>
-                
-                <div class="order-details">
-                    <div class="order-address">
-                        <div class="address-icon pickup">
-                            <i class="bi bi-box-seam"></i>
-                        </div>
-                        <div class="address-text">
-                            <span class="address-label">Отправка</span>
-                            <span class="address-value">${escapeHtml(orderData.pickup_address || 'Не указан')}</span>
-                        </div>
-                    </div>
-                    <div class="order-arrow">
-                        <i class="bi bi-arrow-down-short"></i>
-                    </div>
-                    <div class="order-address">
-                        <div class="address-icon delivery">
-                            <i class="bi bi-geo-alt-fill"></i>
-                        </div>
-                        <div class="address-text">
-                            <span class="address-label">Доставка</span>
-                            <span class="address-value">${escapeHtml(orderData.delivery_address || 'Не указан')}</span>
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="order-meta">
-                    <div class="meta-item">
-                        <i class="bi bi-tag"></i>
-                        <span>${escapeHtml(orderData.order_type || 'Документация')}</span>
-                    </div>
-                    <div class="meta-divider"></div>
-                    <div class="meta-item">
-                        <i class="bi bi-weight"></i>
-                        <span>${orderData.weight || 'вес не указан'} кг</span>
-                    </div>
-                </div>
-                
-                <div class="order-buttons">
-                    <button class="btn-accept" onclick="acceptOrder(${orderData.order_id})">
-                        <i class="bi bi-check-lg"></i>
-                        <span>Принять заказ</span>
-                    </button>
-                    <button class="btn-reject" onclick="rejectOrder(${orderData.order_id})">
-                        <i class="bi bi-x-lg"></i>
-                        <span>Отклонить</span>
-                    </button>
-                </div>
-                
-                <a href="/delivery/courier/order/${orderData.order_id}/readonly/" class="btn-detail" style="text-decoration: none; display: flex;">
-                    <i class="bi bi-info-circle"></i>
-                    <span>Подробнее о заказе</span>
-                </a>
-            </div>
-        `;
+        selectedWorkSlot = slot;
         
-        container.insertAdjacentHTML('afterbegin', orderHtml);
+        const slotNames = {
+            'full': 'Полный день (09:00 - 18:00)',
+            'morning': 'Утро (09:00 - 12:00)',
+            'day': 'День (12:00 - 15:00)',
+            'afternoon': 'Вечер (15:00 - 18:00)',
+            'custom': 'Индивидуальный график'
+        };
         
-        // Анимация для нового заказа
-        const newOrder = document.getElementById(`order-${orderData.order_id}`);
-        if (newOrder) {
-            newOrder.style.animation = 'slideIn 0.3s ease';
-            newOrder.style.backgroundColor = '#F0FFF4';
-            setTimeout(() => {
-                newOrder.style.backgroundColor = '';
-            }, 1000);
+        document.getElementById('selectedSlotName').textContent = slotNames[slot];
+        document.getElementById('selectedTimeInfo').style.display = 'flex';
+    }
+
+    function showCustomTimePicker() {
+        document.querySelectorAll('.work-time-btn').forEach(btn => {
+            btn.classList.remove('selected');
+        });
+        
+        const customBtn = document.querySelector(`.work-time-btn[data-slot="custom"]`);
+        if (customBtn) {
+            customBtn.classList.add('selected');
         }
-    }
-    
-    function escapeHtml(text) {
-        const div = document.createElement('div');
-        div.textContent = text;
-        return div.innerHTML;
-    }
-    
-    function updateOrdersCount() {
-        const orderCards = document.querySelectorAll('.order-card');
-        const count = orderCards.length;
-        const badge = document.getElementById('ordersBadge');
         
-        if (badge) {
-            if (count > 0) {
-                badge.textContent = count;
-                badge.style.display = 'inline-block';
-            } else {
-                badge.style.display = 'none';
+        selectedWorkSlot = 'custom';
+        document.getElementById('customTimePicker').style.display = 'block';
+        document.getElementById('selectedTimeInfo').style.display = 'none';
+    }
+
+    function confirmCustomTime() {
+        const startTime = document.getElementById('customStartTime').value;
+        const endTime = document.getElementById('customEndTime').value;
+        
+        if (!startTime || !endTime) {
+            showToastNotification('Пожалуйста, укажите время начала и окончания смены', 'warning');
+            return;
+        }
+        
+        if (startTime >= endTime) {
+            showToastNotification('Время окончания должно быть позже времени начала', 'warning');
+            return;
+        }
+        
+        selectedCustomStart = startTime;
+        selectedCustomEnd = endTime;
+        
+        document.getElementById('selectedSlotName').textContent = `Индивидуальный график: ${startTime} - ${endTime}`;
+        document.getElementById('customTimePicker').style.display = 'none';
+        document.getElementById('selectedTimeInfo').style.display = 'flex';
+    }
+
+    function confirmWorkTime() {
+        // Проверяем, если смена уже активна - не начинаем новую
+        const currentShiftStatus = '{{ shift_status }}';
+        if (currentShiftStatus === 'on') {
+            showToastNotification('Смена уже активна', 'warning');
+            return;
+        }
+        
+        if (!selectedWorkSlot) {
+            showToastNotification('Пожалуйста, выберите режим работы', 'warning');
+            return;
+        }
+        
+        let workSlot = selectedWorkSlot;
+        let customStart = null;
+        let customEnd = null;
+        
+        if (selectedWorkSlot === 'custom') {
+            if (!selectedCustomStart || !selectedCustomEnd) {
+                showToastNotification('Пожалуйста, укажите время в индивидуальном графике', 'warning');
+                return;
             }
+            customStart = selectedCustomStart;
+            customEnd = selectedCustomEnd;
         }
-   
-        const container = document.getElementById('new-orders-container');
-        if (count === 0 && container && !document.getElementById('emptyState')) {
-            container.innerHTML = `
-                <div class="empty-state" id="emptyState">
-                    <div class="empty-icon">
-                        <i class="bi bi-inbox"></i>
-                    </div>
-                    <h3>Нет новых заказов</h3>
-                    <p>Когда появятся новые заказы, они отобразятся здесь</p>
-                </div>
-            `;
+        
+        localStorage.setItem('courier_work_slot', workSlot);
+        localStorage.setItem('courier_work_date', new Date().toDateString());
+        if (customStart && customEnd) {
+            localStorage.setItem('courier_work_start', customStart);
+            localStorage.setItem('courier_work_end', customEnd);
         }
+        
+        updateShiftWithWorkSlot('on', workSlot, customStart, customEnd);
     }
-    
-    function updateShift(status) {
-        fetch('/delivery/courier/update-shift/', {
+
+    function skipWorkTime() {
+        const currentShiftStatus = '{{ shift_status }}';
+        if (currentShiftStatus === 'on') {
+            showToastNotification('Смена уже активна', 'warning');
+            return;
+        }
+        updateShiftWithWorkSlot('on', 'full', null, null);
+    }
+
+    function startShiftWithWorkTime() {
+        document.getElementById('workTimeCard').style.display = 'block';
+    }
+
+    function updateShiftWithWorkSlot(status, workSlot, customStart, customEnd) {
+        // Проверяем, если смена уже активна - не отправляем запрос
+        const currentShiftStatus = '{{ shift_status }}';
+        if (status === 'on' && currentShiftStatus === 'on') {
+            showToastNotification('Смена уже активна', 'warning');
+            return;
+        }
+        
+        if (status === 'off' && currentShiftStatus === 'off') {
+            showToastNotification('Смена уже завершена', 'warning');
+            return;
+        }
+        
+        fetch('/delivery/courier/update-shift-with-slot/', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
                 'X-CSRFToken': csrftoken
             },
-            body: JSON.stringify({ status: status })
+            body: JSON.stringify({ 
+                status: status, 
+                work_slot: workSlot,
+                custom_start: customStart,
+                custom_end: customEnd
+            })
         })
         .then(response => response.json())
         .then(data => {
@@ -936,7 +1078,49 @@
             showToastNotification('Ошибка сервера', 'danger');
         });
     }
-    
+
+   function endShift() {
+        const currentShiftStatus = '{{ shift_status }}';
+        if (currentShiftStatus === 'off') {
+            showToastNotification('Смена уже завершена', 'warning');
+            return;
+        }
+        
+        fetch('/delivery/courier/update-shift/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrftoken
+            },
+            body: JSON.stringify({ status: 'off' })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                showToastNotification('Ошибка: ' + data.error, 'danger');
+            }
+        })
+        .catch(error => {
+            showToastNotification('Ошибка сервера', 'danger');
+        });
+    }
+
+    function changeWorkTime() {
+        document.getElementById('workTimeCard').style.display = 'block';
+        document.getElementById('activeWorkInfo').style.display = 'none';
+        
+        selectedWorkSlot = null;
+        selectedCustomStart = null;
+        selectedCustomEnd = null;
+        document.querySelectorAll('.work-time-btn').forEach(btn => {
+            btn.classList.remove('selected');
+        });
+        document.getElementById('selectedTimeInfo').style.display = 'none';
+        document.getElementById('customTimePicker').style.display = 'none';
+    }
+
     function toggleBreak() {
         const currentStatus = "{{ shift_status }}";
         
@@ -976,7 +1160,7 @@
             showToastNotification('Сначала начните рабочую смену', 'warning');
         }
     }
-    
+
     function acceptOrder(orderId) {
         fetch(`/delivery/courier/accept/${orderId}/`, {
             method: 'POST',
@@ -1003,7 +1187,7 @@
             showToastNotification('Ошибка сервера', 'danger');
         });
     }
-    
+
     function rejectOrder(orderId) {
         if (confirm('Вы уверены, что хотите отклонить этот заказ?')) {
             fetch(`/delivery/courier/reject/${orderId}/`, {
@@ -1028,7 +1212,49 @@
             });
         }
     }
-    
+
+    function showToastNotification(message, type = 'info') {
+        const notification = document.createElement('div');
+        notification.className = `toast-notification alert alert-${type} alert-dismissible fade show`;
+        notification.style.cssText = 'position: fixed; top: 20px; right: 20px; z-index: 10000; min-width: 300px;';
+        notification.innerHTML = `
+            ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        `;
+        document.body.appendChild(notification);
+        setTimeout(() => {
+            notification.remove();
+        }, 5000);
+    }
+
+    function updateOrdersCount() {
+        const orderCards = document.querySelectorAll('.order-card');
+        const count = orderCards.length;
+        const badge = document.getElementById('ordersBadge');
+        
+        if (badge) {
+            if (count > 0) {
+                badge.textContent = count;
+                badge.style.display = 'inline-block';
+            } else {
+                badge.style.display = 'none';
+            }
+        }
+        
+        const container = document.getElementById('new-orders-container');
+        if (count === 0 && container && !document.getElementById('emptyState')) {
+            container.innerHTML = `
+                <div class="empty-state" id="emptyState">
+                    <div class="empty-icon">
+                        <i class="bi bi-inbox"></i>
+                    </div>
+                    <h3>Нет новых заказов</h3>
+                    <p>Когда появятся новые заказы, они отобразятся здесь</p>
+                </div>
+            `;
+        }
+    }
+
     function loadActiveOrdersCount() {
         fetch('/delivery/courier/active-count/')
             .then(response => response.json())
@@ -1043,143 +1269,187 @@
             })
             .catch(error => console.error('Ошибка загрузки счетчика:', error));
     }
-    
-// Резервное обновление через API 
-let lastCheckTime = new Date().getTime();
-let lastOrderIds = new Set();
 
-function checkNewOrdersViaAPI() {
-    fetch('/delivery/courier/check-new-orders/')
-        .then(response => response.json())
-        .then(data => {
-            if (data.new_orders && data.new_orders.length > 0) {
-                console.log('API: Найдено новых заказов:', data.new_orders.length);
-                // Добавляем каждый новый заказ без перезагрузки
-                data.new_orders.forEach(order => {
-                    // Проверяем, нет ли уже такого заказа на странице
-                    if (!document.getElementById(`order-${order.id}`) && !lastOrderIds.has(order.id)) {
-                        lastOrderIds.add(order.id);
-                        addNewOrderFromAPI(order);
+    function escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+
+    function addNewOrder(orderData) {
+        const container = document.getElementById('new-orders-container');
+        const emptyState = document.getElementById('emptyState');
+        
+        if (emptyState) {
+            emptyState.remove();
+        }
+        
+        const orderHtml = `
+            <div class="order-card" id="order-${orderData.order_id}" data-order-id="${orderData.order_id}">
+                <div class="order-header">
+                    <div class="order-id-wrapper">
+                        <i class="bi bi-receipt"></i>
+                        <span class="order-id">Заказ №${orderData.order_id}</span>
+                    </div>
+                    <span class="order-time">${orderData.created_at || 'Только что'}</span>
+                </div>
+                <div class="order-details">
+                    <div class="order-address">
+                        <div class="address-icon pickup">
+                            <i class="bi bi-box-seam"></i>
+                        </div>
+                        <div class="address-text">
+                            <span class="address-label">Отправка</span>
+                            <span class="address-value">${escapeHtml(orderData.pickup_address || 'Не указан')}</span>
+                        </div>
+                    </div>
+                    <div class="order-arrow">
+                        <i class="bi bi-arrow-down-short"></i>
+                    </div>
+                    <div class="order-address">
+                        <div class="address-icon delivery">
+                            <i class="bi bi-geo-alt-fill"></i>
+                        </div>
+                        <div class="address-text">
+                            <span class="address-label">Доставка</span>
+                            <span class="address-value">${escapeHtml(orderData.delivery_address || 'Не указан')}</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="order-meta">
+                    <div class="meta-item">
+                        <i class="bi bi-tag"></i>
+                        <span>${escapeHtml(orderData.order_type || 'Документация')}</span>
+                    </div>
+                    <div class="meta-divider"></div>
+                    <div class="meta-item">
+                        <i class="bi bi-weight"></i>
+                        <span>${orderData.weight || 'вес не указан'} кг</span>
+                    </div>
+                </div>
+                <div class="order-buttons">
+                    <button class="btn-accept" onclick="acceptOrder(${orderData.order_id})">
+                        <i class="bi bi-check-lg"></i>
+                        <span>Принять заказ</span>
+                    </button>
+                    <button class="btn-reject" onclick="rejectOrder(${orderData.order_id})">
+                        <i class="bi bi-x-lg"></i>
+                        <span>Отклонить</span>
+                    </button>
+                </div>
+                <a href="/delivery/courier/order/${orderData.order_id}/readonly/" class="btn-detail" style="text-decoration: none; display: flex;">
+                    <i class="bi bi-info-circle"></i>
+                    <span>Подробнее о заказе</span>
+                </a>
+            </div>
+        `;
+        
+        container.insertAdjacentHTML('afterbegin', orderHtml);
+        
+        const newOrder = document.getElementById(`order-${orderData.order_id}`);
+        if (newOrder) {
+            newOrder.style.animation = 'slideIn 0.3s ease';
+            newOrder.style.backgroundColor = '#F0FFF4';
+            setTimeout(() => {
+                newOrder.style.backgroundColor = '';
+            }, 1000);
+        }
+    }
+
+    function checkNewOrdersViaAPI() {
+        fetch('/delivery/courier/check-new-orders/')
+            .then(response => response.json())
+            .then(data => {
+                if (data.new_orders && data.new_orders.length > 0) {
+                    data.new_orders.forEach(order => {
+                        if (!document.getElementById(`order-${order.id}`)) {
+                            addNewOrder(order);
+                            updateOrdersCount();
+                        }
+                    });
+                }
+            })
+            .catch(error => console.error('API ошибка:', error));
+    }
+
+    function connectWebSocket() {
+        const userId = {{ user.id }};
+        const wsScheme = window.location.protocol === 'https:' ? 'wss://' : 'ws://';
+        const wsUrl = `${wsScheme}${window.location.host}/ws/orders/${userId}/`;
+        
+        try {
+            socket = new WebSocket(wsUrl);
+            
+            socket.onopen = function() {
+                console.log('WebSocket подключен');
+                reconnectAttempts = 0;
+                if (window.pingInterval) clearInterval(window.pingInterval);
+                window.pingInterval = setInterval(() => {
+                    if (socket && socket.readyState === WebSocket.OPEN) {
+                        socket.send(JSON.stringify({ type: 'ping' }));
                     }
-                });
-            }
-        })
-        .catch(error => console.error('API ошибка:', error));
-}
+                }, 30000);
+            };
+            
+            socket.onmessage = function(e) {
+                try {
+                    const data = JSON.parse(e.data);
+                    if (data.type === 'new_order') {
+                        showToastNotification(`Новый заказ #${data.order_id}`, 'success');
+                        addNewOrder(data);
+                        updateOrdersCount();
+                    }
+                } catch (error) {
+                    console.error('Ошибка парсинга сообщения:', error);
+                }
+            };
+            
+            socket.onclose = function() {
+                if (reconnectAttempts < maxReconnectAttempts) {
+                    reconnectAttempts++;
+                    setTimeout(connectWebSocket, 3000);
+                }
+            };
+            
+            socket.onerror = function(e) {
+                console.error('WebSocket ошибка:', e);
+            };
+        } catch (error) {
+            console.error('Ошибка создания WebSocket:', error);
+        }
+    }
 
-function addNewOrderFromAPI(order) {
-    const container = document.getElementById('new-orders-container');
-    const emptyState = document.getElementById('emptyState');
-    
-    if (emptyState) {
-        emptyState.remove();
-    }
-    
-    const orderHtml = `
-        <div class="order-card" id="order-${order.id}" data-order-id="${order.id}">
-            <div class="order-header">
-                <div class="order-id-wrapper">
-                    <i class="bi bi-receipt"></i>
-                    <span class="order-id">Заказ №${order.id}</span>
-                </div>
-                <span class="order-time">${order.created_at || 'Только что'}</span>
-            </div>
-            
-            <div class="order-details">
-                <div class="order-address">
-                    <div class="address-icon pickup">
-                        <i class="bi bi-box-seam"></i>
-                    </div>
-                    <div class="address-text">
-                        <span class="address-label">Отправка</span>
-                        <span class="address-value">${escapeHtml(order.pickup_address || 'Не указан')}</span>
-                    </div>
-                </div>
-                <div class="order-arrow">
-                    <i class="bi bi-arrow-down-short"></i>
-                </div>
-                <div class="order-address">
-                    <div class="address-icon delivery">
-                        <i class="bi bi-geo-alt-fill"></i>
-                    </div>
-                    <div class="address-text">
-                        <span class="address-label">Доставка</span>
-                        <span class="address-value">${escapeHtml(order.delivery_address || 'Не указан')}</span>
-                    </div>
-                </div>
-            </div>
-            
-            <div class="order-meta">
-                <div class="meta-item">
-                    <i class="bi bi-tag"></i>
-                    <span>${escapeHtml(order.order_type_display || 'Документация')}</span>
-                </div>
-                <div class="meta-divider"></div>
-                <div class="meta-item">
-                    <i class="bi bi-weight"></i>
-                    <span>${order.weight || 'вес не указан'} кг</span>
-                </div>
-            </div>
-            
-            <div class="order-buttons">
-                <button class="btn-accept" onclick="acceptOrder(${order.id})">
-                    <i class="bi bi-check-lg"></i>
-                    <span>Принять заказ</span>
-                </button>
-                <button class="btn-reject" onclick="rejectOrder(${order.id})">
-                    <i class="bi bi-x-lg"></i>
-                    <span>Отклонить</span>
-                </button>
-            </div>
-            
-            <a href="/delivery/courier/order/${order.id}/readonly/" class="btn-detail" style="text-decoration: none; display: flex;">
-                <i class="bi bi-info-circle"></i>
-                <span>Подробнее о заказе</span>
-            </a>
-        </div>
-    `;
-    
-    container.insertAdjacentHTML('afterbegin', orderHtml);
-    
-    // Анимация
-    const newOrder = document.getElementById(`order-${order.id}`);
-    if (newOrder) {
-        newOrder.style.animation = 'slideIn 0.3s ease';
-        newOrder.style.backgroundColor = '#F0FFF4';
-        setTimeout(() => {
-            newOrder.style.backgroundColor = '';
-        }, 1000);
-    }
-    
-    showToastNotification(`Новый заказ #${order.id}!`, 'success');
-    updateOrdersCount();
-}
-// ЗАПРОС РАЗРЕШЕНИЯ НА УВЕДОМЛЕНИЯ
-if (Notification.permission === 'default') {
-    Notification.requestPermission();
-}
+    document.addEventListener('DOMContentLoaded', function() {
+        connectWebSocket();
+        setInterval(checkNewOrdersViaAPI, 5000);
+        loadActiveOrdersCount();
+        setInterval(loadActiveOrdersCount, 30000);
+        
+        const savedSlot = localStorage.getItem('courier_work_slot');
+        const savedDate = localStorage.getItem('courier_work_date');
+        const today = new Date().toDateString();
+        const shiftStatus = '{{ shift_status }}';
+        
+        if (savedSlot && savedDate === today && shiftStatus === 'on') {
+            const slotNames = {
+                'full': 'Полный день (09:00 - 18:00)',
+                'morning': 'Утро (09:00 - 12:00)',
+                'day': 'День (12:00 - 15:00)',
+                'afternoon': 'Вечер (15:00 - 18:00)'
+            };
+            document.getElementById('currentWorkSlotDisplay').textContent = slotNames[savedSlot] || 'Полный день';
+            document.getElementById('workTimeCard').style.display = 'none';
+            document.getElementById('activeWorkInfo').style.display = 'flex';
+        }
+    });
 
-// ИНИЦИАЛИЗАЦИЯ ПРИ ЗАГРУЗКЕ СТРАНИЦЫ
-document.addEventListener('DOMContentLoaded', function() {
-    console.log('DOM загружен, инициализация');
-    connectWebSocket();
-    
-    // Резервная проверка каждые 5 секунд (БЕЗ ПЕРЕЗАГРУЗКИ)
-    setInterval(checkNewOrdersViaAPI, 5000);
-    
-    // Обновление счетчика активных заказов
-    loadActiveOrdersCount();
-    setInterval(loadActiveOrdersCount, 30000);
-});
-
-// ОЧИСТКА ПРИ УХОДЕ СО СТРАНИЦЫ
-window.addEventListener('beforeunload', function() {
-    if (window.pingInterval) {
-        clearInterval(window.pingInterval);
-    }
-    if (socket && socket.readyState === WebSocket.OPEN) {
-        socket.close();
-    }
-});
+    window.addEventListener('beforeunload', function() {
+        if (window.pingInterval) {
+            clearInterval(window.pingInterval);
+        }
+        if (socket && socket.readyState === WebSocket.OPEN) {
+            socket.close();
+        }
+    });
 </script>
 {% endblock %}
