@@ -3,7 +3,7 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse  
 from .forms import OrderForm
-from .models import Order, Courier, OrderStatusHistory, CourierNotification, CourierShift, CourierShiftBreak, User
+from .models import Order, Courier, OrderStatusHistory, CourierNotification, CourierShift, CourierShiftBreak, User, Campaign, CampaignRecipient
 from django.utils import timezone
 from datetime import timedelta
 import json
@@ -25,6 +25,7 @@ def create_order(request):
         if form.is_valid():
             order = form.save(commit=False)
             order.client = client_profile
+            order.order_type = request.POST.get('order_type', 'documents')
             order.status = 'created'
             order.save()
             
@@ -803,3 +804,107 @@ def courier_update_shift_with_slot(request):
             return JsonResponse({'error': str(e)}, status=400)
     
     return JsonResponse({'error': 'Метод не разрешен'}, status=405)
+
+@login_required
+def create_campaign(request):
+    "Создание массовой рассылки (кампании)"
+    if request.method == 'POST':
+        try:
+            # Получаем данные кампании
+            campaign_name = request.POST.get('campaign_name')
+            occasion = request.POST.get('occasion')
+            pickup_address = request.POST.get('campaign_pickup_address')
+            campaign_comment = request.POST.get('campaign_comment', '')
+            delivery_mode = request.POST.get('delivery_mode', 'one_day')
+            delivery_date = request.POST.get('delivery_date')
+            
+            # Валидация
+            if not campaign_name:
+                messages.error(request, 'Введите название кампании')
+                return redirect('delivery:create_order')
+            
+            if not pickup_address:
+                messages.error(request, 'Введите адрес забора')
+                return redirect('delivery:create_order')
+            
+            # Получаем списки получателей
+            recipient_names = request.POST.getlist('recipient_full_name[]')
+            recipient_phones = request.POST.getlist('recipient_phone[]')
+            recipient_addresses = request.POST.getlist('recipient_address[]')
+            recipient_companies = request.POST.getlist('recipient_company[]')
+            recipient_comments = request.POST.getlist('recipient_comment[]')
+            
+            if not recipient_names or len(recipient_names) == 0:
+                messages.error(request, 'Добавьте хотя бы одного получателя')
+                return redirect('delivery:create_order')
+            
+            # Создаем кампанию
+            campaign = Campaign.objects.create(
+                client=request.user.client_profile,
+                name=campaign_name,
+                occasion=occasion,
+                pickup_address=pickup_address,
+                comment=campaign_comment,
+                delivery_mode=delivery_mode,
+                delivery_date=delivery_date if delivery_date else None,
+            )
+            
+            # Создаем получателей и отдельные заказы
+            for i in range(len(recipient_names)):
+                if not recipient_names[i] or not recipient_phones[i] or not recipient_addresses[i]:
+                    continue
+                    
+                # Разбираем ФИО
+                name_parts = recipient_names[i].strip().split(' ', 2)
+                last_name = name_parts[0] if len(name_parts) > 0 else ''
+                first_name = name_parts[1] if len(name_parts) > 1 else ''
+                patronymic = name_parts[2] if len(name_parts) > 2 else ''
+                
+                # Создаем отдельный заказ для каждого получателя
+                order = Order.objects.create(
+                    client=request.user.client_profile,
+                    order_type='gifts',
+                    pickup_address=pickup_address,
+                    delivery_address=recipient_addresses[i],
+                    recipient_last_name=last_name,
+                    recipient_first_name=first_name,
+                    recipient_patronymic=patronymic,
+                    recipient_phone=recipient_phones[i],
+                    recipient_company=recipient_companies[i] if i < len(recipient_companies) else '',
+                    client_comment=recipient_comments[i] if i < len(recipient_comments) else campaign_comment,
+                    requested_delivery_date=delivery_date or timezone.now().date(),
+                    status='created'
+                )
+                
+                # Создаем запись получателя в кампании
+                CampaignRecipient.objects.create(
+                    campaign=campaign,
+                    company_name=recipient_companies[i] if i < len(recipient_companies) else '',
+                    first_name=first_name,
+                    last_name=last_name,
+                    patronymic=patronymic,
+                    phone=recipient_phones[i],
+                    address=recipient_addresses[i],
+                    comment=recipient_comments[i] if i < len(recipient_comments) else '',
+                    order=order
+                )
+                
+                # История статуса
+                OrderStatusHistory.objects.create(
+                    order=order,
+                    status='created',
+                    comment=f'Создан в рамках кампании "{campaign_name}"'
+                )
+            
+            # Обновляем статистику кампании
+            campaign.total_recipients = CampaignRecipient.objects.filter(campaign=campaign).count()
+            campaign.save()
+            
+            messages.success(request, f'Кампания "{campaign_name}" успешно создана! Отправлено {campaign.total_recipients} получателей.')
+            return redirect('accounts:clients_orders')
+            
+        except Exception as e:
+            messages.error(request, f'Ошибка при создании кампании: {str(e)}')
+            return redirect('delivery:create_order')
+    
+    return redirect('delivery:create_order')  

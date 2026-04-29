@@ -37,4 +37,5 @@ urlpatterns = [
     path('manager/ai-stats/', views.manager_ai_stats, name='manager_ai_stats'),
     path('api/ai-chat-last-queries/', views.ai_chat_last_queries, name='ai_chat_last_queries'),
     path('main/', views.main_page, name='main_page'),
+    path('api/campaign-details/', views.campaign_details_api, name='campaign_details_api'),
 ]

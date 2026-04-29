@@ -7,7 +7,7 @@ from .models import (
     User, Client, ClientAdditionalInfo, Manager, Courier,
     CourierAdditionalInfo, Vacation, SickLeave, CourierShift,
     CourierShiftBreak, Order, OrderStatusHistory, OrderRating,
-    Payment, AIChatKnowledgeBase, AIChatLog
+    Payment, AIChatKnowledgeBase, AIChatLog, Campaign, CampaignRecipient
 )
 
 
@@ -141,3 +141,126 @@ class AIChatLogAdmin(admin.ModelAdmin):
     list_display = ('user', 'question', 'created_at')
     search_fields = ('user__email', 'question')
     list_filter = ('created_at',)
+
+
+class CampaignRecipientInline(admin.TabularInline):
+    model = CampaignRecipient
+    extra = 0
+    fields = ('company_name', 'last_name', 'first_name', 'patronymic', 'phone', 'status', 'courier',)
+    readonly_fields = ()
+    show_change_link = True
+
+@admin.register(Campaign)
+class CampaignAdmin(admin.ModelAdmin):
+    list_display = ('id', 'name', 'client', 'occasion', 'delivery_mode', 'delivery_date', 'total_recipients', 'delivered_count', 'created_at',)
+
+    list_filter = ('occasion', 'delivery_mode', 'created_at',)
+
+    search_fields = ('name', 'client__company_name', 'client__user__username', 'client__user__email',)
+
+    readonly_fields = (
+        'created_at',
+        'total_recipients',
+        'delivered_count',
+        'in_progress_count',
+        'error_count',
+    )
+
+    ordering = ('-created_at',)
+
+    inlines = [CampaignRecipientInline]
+
+    fieldsets = (
+        ('Основная информация', {
+            'fields': (
+                'client',
+                'name',
+                'occasion',
+            )
+        }),
+
+        ('Логистика', {
+            'fields': (
+                'pickup_address',
+                'delivery_mode',
+                'delivery_date',
+            )
+        }),
+
+        ('Комментарий', {
+            'fields': ('comment',)
+        }),
+
+        ('Статистика', {
+            'fields': (
+                'total_recipients',
+                'delivered_count',
+                'in_progress_count',
+                'error_count',
+                'created_at',
+            )
+        }),
+    )
+
+@admin.register(CampaignRecipient)
+class CampaignRecipientAdmin(admin.ModelAdmin):
+    list_display = (
+        'id',
+        'campaign',
+        'company_name',
+        'last_name',
+        'first_name',
+        'phone',
+        'status',
+        'courier',
+        'delivered_at',
+    )
+
+    list_filter = (
+        'status',
+        'courier',
+        'campaign',
+    )
+
+    search_fields = (
+        'last_name',
+        'first_name',
+        'phone',
+        'company_name',
+        'campaign__name',
+    )
+
+    readonly_fields = (
+        'delivered_at',
+    )
+
+    ordering = ('campaign', 'last_name')
+
+    fieldsets = (
+        ('Кампания', {
+            'fields': (
+                'campaign',
+                'order',
+            )
+        }),
+
+        ('Получатель', {
+            'fields': (
+                'company_name',
+                'last_name',
+                'first_name',
+                'patronymic',
+                'phone',
+                'address',
+                'comment',
+            )
+        }),
+
+        ('Доставка', {
+            'fields': (
+                'status',
+                'courier',
+                'delivered_at',
+            )
+        }),
+    )

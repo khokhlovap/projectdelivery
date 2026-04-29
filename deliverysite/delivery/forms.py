@@ -5,7 +5,6 @@ class OrderForm(forms.ModelForm):
     class Meta:
         model = Order
         fields = [
-            'order_type',
             'tariff',
             'weight',
             'client_comment',
@@ -17,7 +16,7 @@ class OrderForm(forms.ModelForm):
             'recipient_phone',
             'recipient_company',
             'requested_delivery_date',
-            'requested_time_slot',  # ДОБАВИТЬ
+            'requested_time_slot', 
         ]
         widgets = {
             'pickup_address': forms.Textarea(attrs={'rows': 2, 'class': 'form-control'}),

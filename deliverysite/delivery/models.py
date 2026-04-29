@@ -462,9 +462,9 @@ class Order(models.Model):
     
     ORDER_TYPE_CHOICES = (
         ('documents', 'Документация'),
-        ('gifts', 'Подарки'),
+        ('gifts', 'Корпоративные поздравления'),
     )
-    order_type = models.CharField(max_length=20, choices=ORDER_TYPE_CHOICES, verbose_name='Тип заказа')
+    order_type = models.CharField(max_length=20, choices=ORDER_TYPE_CHOICES, default='documents', verbose_name='Тип заказа')
     
     TARIFF_CHOICES = (
         ('standard', 'Стандартный'),
@@ -724,3 +724,76 @@ class CourierNotification(models.Model):
         ordering = ['-created_at']
         verbose_name = 'Уведомление курьера'
         verbose_name_plural = 'Уведомления курьеров'
+
+
+class Campaign(models.Model):
+    "Кампания массовой рассылки"
+    client = models.ForeignKey(Client, on_delete=models.CASCADE, related_name='campaigns')
+    name = models.CharField(max_length=255, verbose_name='Название кампании')
+    
+    OCCASION_CHOICES = (
+        ('gift', 'Подарок клиентам'),
+        ('pr', 'PR-рассылка'),
+        ('other', 'Другое'),
+    )
+    occasion = models.CharField(max_length=20, choices=OCCASION_CHOICES, verbose_name='Повод')
+    
+    pickup_address = models.TextField(verbose_name='Адрес забора')
+    comment = models.TextField(blank=True, verbose_name='Комментарий к кампании')
+    
+    DELIVERY_MODE_CHOICES = (
+        ('one_day', 'Все в один день'),
+        ('within_week', 'В течение недели'),
+        ('custom', 'Выбрать дату'),
+    )
+    delivery_mode = models.CharField(max_length=20, choices=DELIVERY_MODE_CHOICES, default='one_day')
+    delivery_date = models.DateField(blank=True, null=True, verbose_name='Желаемая дата доставки')
+    
+    created_at = models.DateTimeField(auto_now_add=True)
+    
+    # Статистика 
+    total_recipients = models.IntegerField(default=0)
+    delivered_count = models.IntegerField(default=0)
+    in_progress_count = models.IntegerField(default=0)
+    error_count = models.IntegerField(default=0)
+    
+    def __str__(self):
+        return f"Кампания #{self.id}: {self.name}"
+    
+    class Meta:
+        verbose_name = 'Кампания массовой рассылки'
+        verbose_name_plural = 'Кампания массовой рассылки'
+
+
+class CampaignRecipient(models.Model):
+    "Получатель в рамках кампании"
+    campaign = models.ForeignKey(Campaign, on_delete=models.CASCADE, related_name='recipients')
+    
+    company_name = models.CharField(max_length=255, blank=True, verbose_name='Компания')
+    first_name = models.CharField(max_length=100, verbose_name='Имя')
+    last_name = models.CharField(max_length=100, verbose_name='Фамилия')
+    patronymic = models.CharField(max_length=100, blank=True, verbose_name='Отчество')
+    phone = models.CharField(max_length=20, verbose_name='Телефон')
+    address = models.TextField(verbose_name='Адрес доставки')
+    comment = models.TextField(blank=True, verbose_name='Комментарий')
+    
+    STATUS_CHOICES = (
+        ('pending', 'Ожидает'),
+        ('assigned', 'Назначен курьер'),
+        ('in_progress', 'В пути'),
+        ('delivered', 'Доставлен'),
+        ('error', 'Ошибка адреса'),
+    )
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
+    
+    courier = models.ForeignKey(Courier, on_delete=models.SET_NULL, null=True, blank=True)
+    delivered_at = models.DateTimeField(blank=True, null=True)
+    
+    # Связь с оригинальным заказом (для обратной совместимости)
+    order = models.OneToOneField(Order, on_delete=models.SET_NULL, null=True, blank=True, related_name='campaign_recipient')
+    
+    def __str__(self):
+        return f"{self.last_name} {self.first_name} - {self.campaign.name}"
+    class Meta:
+        verbose_name = 'Получатель в рамках кампании'
+        verbose_name_plural = 'Получатель в рамках кампании'

@@ -7,7 +7,7 @@ from django.http import JsonResponse
 from django.utils import timezone  
 from .forms import RegistrationForm
 from django.contrib.auth.forms import AuthenticationForm
-from delivery.models import Order, Client, Courier, OrderRating, OrderStatusHistory, User, CourierNotification, AIChatLog 
+from delivery.models import Order, Client, Courier, OrderRating, OrderStatusHistory, User, CourierNotification, AIChatLog, Campaign 
 from django.db.models import Count, Avg, Q
 from datetime import datetime, timedelta
 from django.core.paginator import Paginator
@@ -33,6 +33,8 @@ from reportlab.platypus import (
     Table, TableStyle
 )
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from itertools import chain
+from operator import attrgetter
 
 # ЛК Клиент
 def register_view(request):
@@ -1670,3 +1672,78 @@ def ai_chat_last_queries(request):
 def main_page(request):
     "Главная страница сайта"
     return render(request, 'main_page.html')
+
+@login_required
+def client_orders(request):
+    try:
+        client = request.user.client_profile
+
+        orders = Order.objects.filter(
+            client=client,
+            campaign_recipient__isnull=True
+        ).order_by('-created_at')
+
+        campaigns = Campaign.objects.filter(
+            client=client
+        ).prefetch_related('recipients').order_by('-created_at')
+
+        # объединяем списки
+        items = sorted(
+            chain(orders, campaigns),
+            key=attrgetter('created_at'),
+            reverse=True
+        )
+        for obj in items:
+            obj.is_campaign = isinstance(obj, Campaign)
+
+        paginator = Paginator(items, 5)
+        page_number = request.GET.get('page', 1)
+        page_obj = paginator.get_page(page_number)
+
+        active_count = orders.exclude(status='delivered').count()
+        delivered_count = orders.filter(status='delivered').count()
+        total_orders = orders.count() + campaigns.count()
+
+    except:
+        page_obj = []
+        active_count = 0
+        delivered_count = 0
+        total_orders = 0
+
+    return render(request, 'accounts/clients_orders.html', {
+        'page_obj': page_obj,
+        'active_count': active_count,
+        'delivered_count': delivered_count,
+        'total_orders': total_orders,
+        'total_count': total_orders,
+        'active_tab': 'orders',
+    })
+
+
+@login_required
+def campaign_details_api(request):
+    "API для получения деталей кампании"
+    if request.user.role != 'client':
+        return JsonResponse({'error': 'Access denied'}, status=403)
+    
+    campaign_id = request.GET.get('campaign_id')
+    
+    try:
+        campaign = Campaign.objects.get(id=campaign_id, client=request.user.client_profile)
+        
+        data = {
+            'id': campaign.id,
+            'name': campaign.name,
+            'occasion_display': dict(Campaign.OCCASION_CHOICES).get(campaign.occasion, '—'),
+            'created_at': campaign.created_at.strftime('%d.%m.%Y %H:%M'),
+            'pickup_address': campaign.pickup_address,
+            'total_recipients': campaign.total_recipients,
+            'delivered_count': campaign.recipients.filter(status='delivered').count(),
+        }
+        
+        return JsonResponse({'success': True, 'data': data})
+        
+    except Campaign.DoesNotExist:
+        return JsonResponse({'error': 'Кампания не найдена'}, status=404)
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)

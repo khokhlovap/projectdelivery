@@ -1,4 +1,5 @@
 {% extends 'accounts/lk_base.html' %}
+{% load static %}
 {% block title %}Создание заказа{% endblock %}
 
 {% block lk_content %}
@@ -7,26 +8,319 @@
         <h5 class="mb-0"><i class="bi bi-plus-circle"></i> Создание нового заказа</h5>
     </div>
     <div class="card-body">
-        <form method="post">
+        <form method="post" id="orderForm" action="{% url 'delivery:create_order' %}">
             {% csrf_token %}
             
-            {% for field in form %}
+            <!-- Тип заказа -->
             <div class="mb-3">
-                <label class="form-label">{{ field.label }}</label>
-                {{ field }}
-                {% if field.errors %}
-                    <div class="text-danger small">{{ field.errors }}</div>
-                {% endif %}
+                <label class="form-label fw-bold">Тип заказа</label>
+                <select name="order_type" id="orderTypeSelect" class="form-select" required>
+                    <option value="documents">Документация (обычная доставка)</option>
+                    <option value="gifts">Корпоративные поздравления (массовая рассылка)</option>
+                </select>
             </div>
-            {% endfor %}
             
-            <button type="submit" class="btn btn-success">
-                <i class="bi bi-check-circle"></i> Создать заказ
-            </button>
-            <a href="{% url 'accounts:home' %}" class="btn btn-secondary">
-                <i class="bi bi-x-circle"></i> Отмена
-            </a>
+            <!-- Обычный заказ -->
+            <div id="singleOrderForm">
+                {% for field in form %}
+                <div class="mb-3">
+                    <label class="form-label">{{ field.label }}</label>
+                    {{ field }}
+                    {% if field.errors %}
+                        <div class="text-danger small">{{ field.errors }}</div>
+                    {% endif %}
+                </div>
+                {% endfor %}
+            </div>
+            
+            <!-- Массовая рассылка -->
+            <div id="campaignForm" style="display: none;">
+                <!-- Блок 1. Общая информация -->
+                <div class="campaign-section">
+                    <h6 class="fw-bold mb-3" style="color: #1E7A57;">
+                        <i class="bi bi-info-circle"></i> Общая информация
+                    </h6>
+                    <div class="row g-3">
+                        <div class="col-12">
+                            <label class="form-label">Название кампании *</label>
+                            <input type="text" name="campaign_name" id="campaignName" class="form-control" placeholder="Например: Рассылка новогодних подарков" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Повод *</label>
+                            <select name="occasion" id="occasion" class="form-select" required>
+                                <option value="gift">Подарок клиентам</option>
+                                <option value="pr">PR-рассылка</option>
+                                <option value="other">Другое</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Дата старта доставки</label>
+                            <input type="date" name="campaign_delivery_date" id="campaignDeliveryDate" class="form-control">
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label">Комментарий к кампании</label>
+                            <textarea name="campaign_comment" id="campaignComment" class="form-control" rows="2"></textarea>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Блок 2. Адрес забора -->
+                <div class="campaign-section mt-4">
+                    <h6 class="fw-bold mb-3" style="color: #1E7A57;">
+                        <i class="bi bi-box-seam"></i> Адрес забора
+                    </h6>
+                    <div class="row g-3">
+                        <div class="col-12">
+                            <label class="form-label">Откуда забрать коробки *</label>
+                            <textarea name="campaign_pickup_address" id="campaignPickupAddress" class="form-control" rows="2" placeholder="Адрес, где нужно забрать подарки/сувениры" required></textarea>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Блок 3. Получатели -->
+                <div class="campaign-section mt-4">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h6 class="fw-bold mb-0" style="color: #1E7A57;">
+                            <i class="bi bi-people"></i> Получатели
+                        </h6>
+                        <button type="button" class="btn-add-recipient" id="addRecipientBtn" style="background: #1E7A57; color: white; border: none; border-radius: 40px; padding: 6px 16px; font-size: 0.75rem;">
+                            <i class="bi bi-plus-lg"></i> Добавить получателя
+                        </button>
+                    </div>
+                    
+                    <div id="recipientsList">
+                        <div class="recipient-card" id="recipient-1">
+                            <div class="recipient-header">
+                                <span class="recipient-number">Получатель №1</span>
+                                <button type="button" class="btn-remove-recipient" onclick="removeRecipient(1)">✕</button>
+                            </div>
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <label class="form-label">Компания</label>
+                                    <input type="text" name="recipient_company[]" class="form-control">
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">ФИО *</label>
+                                    <input type="text" name="recipient_full_name[]" class="form-control" required>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label">Телефон *</label>
+                                    <input type="tel" name="recipient_phone[]" class="form-control" required>
+                                </div>
+                                <div class="col-md-8">
+                                    <label class="form-label">Адрес доставки *</label>
+                                    <textarea name="recipient_address[]" class="form-control" rows="2" required></textarea>
+                                </div>
+                                <div class="col-12">
+                                    <label class="form-label">Комментарий</label>
+                                    <textarea name="recipient_comment[]" class="form-control" rows="1"></textarea>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Блок 4. Параметры доставки -->
+                <div class="campaign-section mt-4">
+                    <h6 class="fw-bold mb-3" style="color: #1E7A57;">
+                        <i class="bi bi-calendar-check"></i> Параметры доставки
+                    </h6>
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Режим доставки</label>
+                            <select name="delivery_mode" id="deliveryMode" class="form-select">
+                                <option value="one_day">Все в один день</option>
+                                <option value="within_week">В течение недели</option>
+                                <option value="custom">Выбрать конкретную дату</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6" id="deliveryDateBlock" style="display: none;">
+                            <label class="form-label">Желаемая дата доставки</label>
+                            <input type="date" name="delivery_date" class="form-control">
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="mt-4">
+                <button type="submit" class="btn btn-success" id="submitBtn">
+                    <i class="bi bi-check-circle"></i> Создать заказ
+                </button>
+                <a href="{% url 'accounts:home' %}" class="btn btn-secondary">
+                    <i class="bi bi-x-circle"></i> Отмена
+                </a>
+            </div>
         </form>
     </div>
 </div>
+
+<style>
+    .campaign-section {
+        background: #F8F9FA;
+        border-radius: 20px;
+        padding: 20px;
+        border: 1px solid #E8E0D5;
+    }
+    .recipient-card {
+        background: white;
+        border-radius: 16px;
+        padding: 16px;
+        margin-bottom: 16px;
+        border: 1px solid #E8E0D5;
+        position: relative;
+    }
+    .recipient-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 16px;
+        padding-bottom: 8px;
+        border-bottom: 1px solid #E8E0D5;
+    }
+    .recipient-number {
+        font-weight: 600;
+        color: #1E7A57;
+    }
+    .btn-remove-recipient {
+        background: none;
+        border: none;
+        color: #DC2626;
+        font-size: 1.2rem;
+        cursor: pointer;
+        padding: 0 8px;
+    }
+    .btn-remove-recipient:hover {
+        color: #B91C1C;
+    }
+    .btn-add-recipient {
+        transition: all 0.2s;
+    }
+    .btn-add-recipient:hover {
+        background: #155f44 !important;
+        transform: translateY(-1px);
+    }
+</style>
+
+<script>
+let recipientCount = 1;
+
+const orderTypeSelect = document.getElementById('orderTypeSelect');
+const singleOrderForm = document.getElementById('singleOrderForm');
+const campaignForm = document.getElementById('campaignForm');
+const submitBtn = document.getElementById('submitBtn');
+const orderForm = document.getElementById('orderForm');
+
+
+function toggleRequired(container, enable) {
+    const fields = container.querySelectorAll('input, select, textarea');
+
+    fields.forEach(field => {
+        if (enable) {
+            if (field.dataset.required === 'true') {
+                field.required = true;
+            }
+        } else {
+            if (field.required) {
+                field.dataset.required = 'true';
+                field.required = false;
+            }
+        }
+    });
+}
+
+
+/* переключение формы */
+function toggleForms(showCampaign) {
+
+    if (showCampaign) {
+
+        singleOrderForm.style.display = 'none';
+        campaignForm.style.display = 'block';
+
+        toggleRequired(singleOrderForm, false);
+        toggleRequired(campaignForm, true);
+
+        submitBtn.innerHTML = '<i class="bi bi-send"></i> Создать кампанию';
+        orderForm.action = "{% url 'delivery:create_campaign' %}";
+
+    } else {
+
+        singleOrderForm.style.display = 'block';
+        campaignForm.style.display = 'none';
+
+        toggleRequired(campaignForm, false);
+        toggleRequired(singleOrderForm, true);
+
+        submitBtn.innerHTML = '<i class="bi bi-check-circle"></i> Создать заказ';
+        orderForm.action = "{% url 'delivery:create_order' %}";
+    }
+}
+
+
+/* выбор типа заказа */
+orderTypeSelect.addEventListener('change', function () {
+    toggleForms(this.value === 'gifts');
+});
+
+
+/* добавление получателя */
+document.getElementById('addRecipientBtn').addEventListener('click', function () {
+
+    recipientCount++;
+
+    const wrapper = document.getElementById('recipientsList');
+
+    const div = document.createElement('div');
+
+    div.className = 'recipient-card';
+    div.id = 'recipient-' + recipientCount;
+
+    div.innerHTML = `
+        <div class="recipient-header">
+            <span class="recipient-number">Получатель №${recipientCount}</span>
+            <button type="button" class="btn-remove-recipient" onclick="removeRecipient(${recipientCount})">✕</button>
+        </div>
+
+        <div class="row g-3">
+            <div class="col-md-6">
+                <label class="form-label">Компания</label>
+                <input type="text" name="recipient_company[]" class="form-control">
+            </div>
+
+            <div class="col-md-6">
+                <label class="form-label">ФИО *</label>
+                <input type="text" name="recipient_full_name[]" class="form-control" required>
+            </div>
+
+            <div class="col-md-4">
+                <label class="form-label">Телефон *</label>
+                <input type="tel" name="recipient_phone[]" class="form-control" required>
+            </div>
+
+            <div class="col-md-8">
+                <label class="form-label">Адрес *</label>
+                <textarea name="recipient_address[]" class="form-control" rows="2" required></textarea>
+            </div>
+        </div>
+    `;
+
+    wrapper.appendChild(div);
+});
+
+window.removeRecipient = function(id) {
+
+    const cards = document.querySelectorAll('.recipient-card');
+
+    if (cards.length <= 1) {
+        alert('Должен быть хотя бы один получатель');
+        return;
+    }
+
+    document.getElementById('recipient-' + id).remove();
+};
+
+document.addEventListener('DOMContentLoaded', function () {
+    toggleForms(orderTypeSelect.value === 'gifts');
+});
+</script>
 {% endblock %}
