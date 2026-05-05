@@ -145,7 +145,7 @@
         padding: 20px;
         border: 1px solid #E8E0D5;
         transition: all 0.3s;
-        border-left: 4px solid #d1ecf1;
+        border-left: 4px solid #66BB6A;
     }
     .order-card:hover {
         border-color: #bfccce;
@@ -224,6 +224,186 @@
     .btn-outline-info:hover {
         background: #6B6B6B;
         color: white;
+    }
+    
+    /* Стили для деталей заказа */
+    .detail-card {
+        background: #F8F9FA;
+        border-radius: 16px;
+        padding: 20px;
+        border: 1px solid #E8E0D5;
+        transition: all 0.2s;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+    }
+    .detail-card:hover {
+        background: white;
+        border-color: #C8E0D6;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    }
+    .detail-card-header {
+        font-size: 0.75rem;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        color: #1E7A57;
+        font-weight: 700;
+        margin-bottom: 16px;
+        padding-bottom: 8px;
+        border-bottom: 2px solid #C8E0D6;
+        display: inline-block;
+        flex-shrink: 0;
+    }
+    .detail-row {
+        display: flex;
+        flex-wrap: wrap;
+        margin-bottom: 12px;
+    }
+    .detail-label {
+        width: 110px;
+        font-size: 0.75rem;
+        color: #6B6B6B;
+        font-weight: 500;
+        flex-shrink: 0;
+    }
+    .detail-value {
+        flex: 1;
+        font-size: 0.85rem;
+        color: #1E1E1E;
+        font-weight: 500;
+        word-break: break-word;
+    }
+    .detail-value strong {
+        color: #1E7A57;
+    }
+    .highlight-badge {
+        background: #E8F5E9;
+        color: #2E7D32;
+        padding: 4px 12px;
+        border-radius: 30px;
+        font-size: 0.75rem;
+        font-weight: 500;
+        display: inline-block;
+    }
+    .details-row {
+        display: flex;
+        flex-wrap: wrap;
+        margin: 0 -10px;
+    }
+    .details-col {
+        flex: 1;
+        min-width: 250px;
+        padding: 0 10px;
+        margin-bottom: 20px;
+    }
+    .detail-card-body {
+        flex: 1;
+    }
+    .status-timeline {
+        background: #F8F9FA;
+        border-radius: 16px;
+        padding: 16px;
+        margin-top: 16px;
+        max-height: 250px;
+        overflow-y: auto;
+        padding-right: 8px;
+    }
+    .status-timeline::-webkit-scrollbar {
+        width: 6px;
+    }
+    .status-timeline::-webkit-scrollbar-thumb {
+        background: #C8E0D6;
+        border-radius: 10px;
+    }
+    .status-timeline::-webkit-scrollbar-thumb:hover {
+        background: #1E7A57;
+    }
+    .status-item {
+        display: flex;
+        align-items: flex-start;
+        gap: 12px;
+        padding: 12px 0;
+        border-bottom: 1px solid #E8E0D5;
+    }
+    .status-item:last-child {
+        border-bottom: none;
+    }
+    .status-icon {
+        width: 32px;
+        height: 32px;
+        background: white;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #1E7A57;
+        border: 1px solid #C8E0D6;
+    }
+    .status-content {
+        flex: 1;
+    }
+    .status-title {
+        font-weight: 600;
+        font-size: 0.85rem;
+        color: #1E1E1E;
+    }
+    .status-time {
+        font-size: 0.7rem;
+        color: #6B6B6B;
+    }
+    .status-comment {
+        font-size: 0.75rem;
+        color: #6B6B6B;
+        margin-top: 4px;
+    }
+
+    /* Стили для модального окна */
+    .custom-modal .modal-content {
+        border: none;
+        border-radius: 20px;
+        overflow: hidden;
+        box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+    }
+    .custom-modal .modal-header {
+        background: white;
+        border-bottom: 1px solid #E8E0D5;
+        padding: 20px 24px;
+    }
+    .custom-modal .modal-header .modal-title {
+        color: #1E7A57;
+        font-weight: 600;
+        font-size: 1.2rem;
+    }
+    .custom-modal .modal-header .btn-close {
+        background: none;
+        font-size: 1.2rem;
+        opacity: 0.6;
+    }
+    .custom-modal .modal-header .btn-close:hover {
+        opacity: 1;
+    }
+    .custom-modal .modal-body {
+        padding: 24px;
+        background: white;
+    }
+    .custom-modal .modal-footer {
+        border-top: 1px solid #E8E0D5;
+        padding: 16px 24px;
+        background: white;
+    }
+    .custom-modal .btn-secondary {
+        background: white;
+        border: 1px solid #E8E0D5;
+        border-radius: 30px;
+        padding: 8px 24px;
+        color: #6B6B6B;
+        font-weight: 500;
+        transition: all 0.2s;
+    }
+    .custom-modal .btn-secondary:hover {
+        background: #F5F3F0;
+        border-color: #C8E0D6;
+        color: #1E1E1E;
     }
     
     /* Пагинация */
@@ -344,6 +524,7 @@
                     <i class="bi bi-calendar-check"></i> {{ order.delivered_at|date:"d.m.Y"|default:order.created_at|date:"d.m.Y" }}
                 </span>
             </div>
+            <small class="text-muted">Создан: {{ order.created_at|date:"d.m.Y H:i" }}</small>
         </div>
         
         <div class="info-row">
@@ -359,6 +540,21 @@
             <div class="info-item">
                 <div class="info-label"><i class="bi bi-box-seam"></i> ТИП</div>
                 <div class="info-value">{{ order.get_order_type_display }}</div>
+                <div class="small text-muted">Вес: {{ order.weight|default:"—" }} кг</div>
+            </div>
+            <div class="info-item">
+                <div class="info-label"><i class="bi bi-calendar-event"></i> ЖЕЛАЕМАЯ ДАТА</div>
+                <div class="info-value">
+                    {% if order.requested_delivery_date %}
+                        {{ order.requested_delivery_date|date:"d.m.Y" }}
+                    {% else %}
+                        <span class="text-muted">—</span>
+                    {% endif %}
+                </div>
+            </div>
+            <div class="info-item">
+                <div class="info-label"><i class="bi bi-clock"></i> ВРЕМЯ ДОСТАВКИ</div>
+                <div class="info-value">{{ order.get_requested_time_slot_display|default:"—" }}</div>
             </div>
             <div class="info-item">
                 <div class="info-label"><i class="bi bi-person-badge"></i> КУРЬЕР</div>
@@ -374,14 +570,14 @@
         
         {% if order.client_comment %}
         <div class="mt-3">
-            <span class="info-label"><i class="bi bi-chat"></i> КОММЕНТАРИЙ</span>
+            <span class="info-label"><i class="bi bi-chat"></i> КОММЕНТАРИЙ КЛИЕНТА</span>
             <div class="small text-muted">{{ order.client_comment|truncatechars:100 }}</div>
         </div>
         {% endif %}
         
         <div class="action-buttons">
             <button class="btn-action btn-outline-info details-btn" data-order-id="{{ order.id }}">
-                <i class="bi bi-eye"></i> Подробнее
+                <i class="bi bi-eye"></i> Детали
             </button>
         </div>
     </div>
@@ -424,12 +620,12 @@
 {% endif %}
 
 <!-- Модальное окно деталей заказа -->
-<div class="modal fade" id="orderDetailsModal" tabindex="-1">
-    <div class="modal-dialog modal-lg">
+<div class="modal fade custom-modal" id="orderDetailsModal" tabindex="-1">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
         <div class="modal-content">
-            <div class="modal-header bg-info text-white">
+            <div class="modal-header">
                 <h5 class="modal-title"><i class="bi bi-info-circle me-2"></i>Детали заказа №<span id="detailOrderId"></span></h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body" id="orderDetailsContent">
                 <div class="text-center py-4">
@@ -439,7 +635,7 @@
                 </div>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Закрыть</button>
+                <button type="button" class="btn-secondary" data-bs-dismiss="modal">Закрыть</button>
             </div>
         </div>
     </div>
@@ -506,88 +702,156 @@
                     if (data.success) {
                         const d = data.data;
                         contentDiv.innerHTML = `
-                            <div class="row">
-                                <div class="col-md-6 mb-3">
-                                    <div class="card h-100">
-                                        <div class="card-header bg-light"><strong>Клиент</strong></div>
-                                        <div class="card-body">
-                                            <p><strong>Компания:</strong> ${d.client_name}<br>
-                                            <strong>ИНН:</strong> ${d.client_inn}<br>
-                                            <strong>Контактное лицо:</strong> ${d.contact_person}<br>
-                                            <strong>Телефон:</strong> ${d.contact_phone}<br>
-                                            <strong>Email:</strong> ${d.contact_email}</p>
+                            <div class="details-row">
+                                <div class="details-col">
+                                    <div class="detail-card">
+                                        <div class="detail-card-header"><i class="bi bi-building me-1"></i> КЛИЕНТ</div>
+                                        <div class="detail-card-body">
+                                            <div class="detail-row">
+                                                <div class="detail-label">Компания:</div>
+                                                <div class="detail-value"><strong>${d.client_name}</strong></div>
+                                            </div>
+                                            <div class="detail-row">
+                                                <div class="detail-label">ИНН:</div>
+                                                <div class="detail-value">${d.client_inn || '—'}</div>
+                                            </div>
+                                            <div class="detail-row">
+                                                <div class="detail-label">Контактное лицо:</div>
+                                                <div class="detail-value">${d.contact_person}</div>
+                                            </div>
+                                            <div class="detail-row">
+                                                <div class="detail-label">Телефон:</div>
+                                                <div class="detail-value">${d.contact_phone}</div>
+                                            </div>
+                                            <div class="detail-row">
+                                                <div class="detail-label">Email:</div>
+                                                <div class="detail-value">${d.contact_email || '—'}</div>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
-                                <div class="col-md-6 mb-3">
-                                    <div class="card h-100">
-                                        <div class="card-header bg-light"><strong>Заказ</strong></div>
-                                        <div class="card-body">
-                                            <p><strong>Тип:</strong> ${d.order_type}<br>
-                                            <strong>Тариф:</strong> ${d.tariff}<br>
-                                            <strong>Вес:</strong> ${d.weight} кг<br>
-                                            <strong>Создан:</strong> ${d.created_at}<br>
-                                            <strong>Доставлен:</strong> ${d.delivered_at || '—'}</p>
+                                <div class="details-col">
+                                    <div class="detail-card">
+                                        <div class="detail-card-header"><i class="bi bi-truck me-1"></i> ЗАКАЗ</div>
+                                        <div class="detail-card-body">
+                                            <div class="detail-row">
+                                                <div class="detail-label">Тип:</div>
+                                                <div class="detail-value"><span class="highlight-badge">${d.order_type}</span></div>
+                                            </div>
+                                            <div class="detail-row">
+                                                <div class="detail-label">Тариф:</div>
+                                                <div class="detail-value">${d.tariff}</div>
+                                            </div>
+                                            <div class="detail-row">
+                                                <div class="detail-label">Вес:</div>
+                                                <div class="detail-value">${d.weight} кг</div>
+                                            </div>
+                                            <div class="detail-row">
+                                                <div class="detail-label">Создан:</div>
+                                                <div class="detail-value">${d.created_at}</div>
+                                            </div>
+                                            <div class="detail-row">
+                                                <div class="detail-label">Желаемая дата:</div>
+                                                <div class="detail-value">${d.requested_delivery_date || 'Не указана'}</div>
+                                            </div>
+                                            <div class="detail-row">
+                                                <div class="detail-label">Желаемое время:</div>
+                                                <div class="detail-value">${d.requested_time_slot || 'Не указано'}</div>
+                                            </div>
+                                            <div class="detail-row">
+                                                <div class="detail-label">Курьер:</div>
+                                                <div class="detail-value"><strong>${d.courier_name}</strong></div>
+                                            </div>
+                                            ${d.courier_phone && d.courier_phone !== '—' ? `
+                                            <div class="detail-row">
+                                                <div class="detail-label">Телефон курьера:</div>
+                                                <div class="detail-value">${d.courier_phone}</div>
+                                            </div>
+                                            ` : ''}
                                         </div>
                                     </div>
                                 </div>
                             </div>
-                            <div class="row">
-                                <div class="col-md-6 mb-3">
-                                    <div class="card h-100">
-                                        <div class="card-header bg-light"><strong>Адрес отправки</strong></div>
-                                        <div class="card-body">${d.pickup_address}</div>
-                                    </div>
-                                </div>
-                                <div class="col-md-6 mb-3">
-                                    <div class="card h-100">
-                                        <div class="card-header bg-light"><strong>Адрес доставки</strong></div>
-                                        <div class="card-body">${d.delivery_address}</div>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="row">
-                                <div class="col-md-6 mb-3">
-                                    <div class="card h-100">
-                                        <div class="card-header bg-light"><strong>Получатель</strong></div>
-                                        <div class="card-body">
-                                            <p><strong>Имя:</strong> ${d.recipient_name}<br>
-                                            <strong>Телефон:</strong> ${d.recipient_phone}<br>
-                                            <strong>Компания:</strong> ${d.recipient_company}</p>
+                            <div class="details-row">
+                                <div class="details-col">
+                                    <div class="detail-card">
+                                        <div class="detail-card-header"><i class="bi bi-geo-alt me-1"></i> АДРЕС ОТПРАВКИ</div>
+                                        <div class="detail-card-body">
+                                            <div class="detail-value" style="margin-top: 8px;">${d.pickup_address || '—'}</div>
                                         </div>
                                     </div>
                                 </div>
-                                <div class="col-md-6 mb-3">
-                                    <div class="card h-100">
-                                        <div class="card-header bg-light"><strong>Комментарий</strong></div>
-                                        <div class="card-body">${d.client_comment || 'Нет комментария'}</div>
+                                <div class="details-col">
+                                    <div class="detail-card">
+                                        <div class="detail-card-header"><i class="bi bi-geo-alt me-1"></i> АДРЕС ДОСТАВКИ</div>
+                                        <div class="detail-card-body">
+                                            <div class="detail-value" style="margin-top: 8px;">${d.delivery_address || '—'}</div>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
-                            <div class="row">
-                                <div class="col-12">
-                                    <div class="card">
-                                        <div class="card-header bg-light"><strong>История статусов</strong></div>
-                                        <div class="card-body">
-                                            <div style="max-height: 200px; overflow-y: auto;">
-                                                ${d.status_history.length > 0 ? d.status_history.map(h => `
-                                                    <div style="padding: 8px 0; border-bottom: 1px solid #eee;">
-                                                        <span class="badge bg-secondary">${h.status}</span>
-                                                        <span class="text-muted ms-2 small">${h.time}</span>
-                                                        <div class="small text-muted mt-1">${h.comment || '—'}</div>
-                                                    </div>
-                                                `).join('') : '<div class="text-muted small">Нет записей в истории</div>'}
+                            <div class="details-row">
+                                <div class="details-col">
+                                    <div class="detail-card">
+                                        <div class="detail-card-header"><i class="bi bi-person me-1"></i> ПОЛУЧАТЕЛЬ</div>
+                                        <div class="detail-card-body">
+                                            <div class="detail-row">
+                                                <div class="detail-label">Имя:</div>
+                                                <div class="detail-value">${d.recipient_name || '—'}</div>
+                                            </div>
+                                            <div class="detail-row">
+                                                <div class="detail-label">Телефон:</div>
+                                                <div class="detail-value">${d.recipient_phone || '—'}</div>
+                                            </div>
+                                            <div class="detail-row">
+                                                <div class="detail-label">Компания:</div>
+                                                <div class="detail-value">${d.recipient_company || '—'}</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="details-col">
+                                    <div class="detail-card">
+                                        <div class="detail-card-header"><i class="bi bi-chat me-1"></i> КОММЕНТАРИЙ</div>
+                                        <div class="detail-card-body">
+                                            <div class="detail-value" style="margin-top: 8px; font-style: italic; color: #6B6B6B;">
+                                                ${d.client_comment || 'Нет комментария'}
                                             </div>
                                         </div>
                                     </div>
                                 </div>
                             </div>
+                            <div class="detail-card" style="margin-top: 20px;">
+                                <div class="detail-card-header"><i class="bi bi-clock-history me-1"></i> ИСТОРИЯ СТАТУСОВ</div>
+                                <div class="status-timeline">
+                                    ${d.status_history && d.status_history.length > 0 ? d.status_history.slice().reverse().map(h => `
+                                        <div class="status-item">
+                                            <div class="status-icon"><i class="bi bi-arrow-right-circle"></i></div>
+                                            <div class="status-content">
+                                                <div class="status-title">${h.status}</div>
+                                                <div class="status-time">${h.time}</div>
+                                                <div class="status-comment">${h.comment || '—'}</div>
+                                            </div>
+                                        </div>
+                                    `).join('') : `
+                                        <div class="status-item">
+                                            <div class="status-icon"><i class="bi bi-plus-circle"></i></div>
+                                            <div class="status-content">
+                                                <div class="status-title">${d.current_status || 'Доставлен'}</div>
+                                                <div class="status-time">${d.delivered_at || '—'}</div>
+                                                <div class="status-comment">—</div>
+                                            </div>
+                                        </div>
+                                    `}
+                                </div>
+                            </div>
                         `;
                     } else {
-                        contentDiv.innerHTML = '<div class="alert alert-danger">Ошибка: ' + data.error + '</div>';
+                        contentDiv.innerHTML = '<div class="alert alert-danger">Ошибка: ' + (data.error || 'Неизвестная ошибка') + '</div>';
                     }
                 })
                 .catch(error => {
+                    console.error('Error:', error);
                     contentDiv.innerHTML = '<div class="alert alert-danger">Ошибка загрузки данных</div>';
                 });
         });
