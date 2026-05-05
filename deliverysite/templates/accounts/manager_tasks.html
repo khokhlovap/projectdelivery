@@ -641,6 +641,12 @@
                 <div class="info-alert">
                     <i class="bi bi-info-circle"></i> Доступны только курьеры, которые сейчас на смене
                 </div>
+                <div class="info-alert mt-2" style="background: #FFF3E0; border-left: 3px solid #FF9800;">
+                    <i class="bi bi-arrow-repeat" style="color: #FF9800;"></i>
+                    <strong>Переназначение курьера:</strong>
+                    Если курьер не может выполнить заказ, вы можете выбрать другого курьера — 
+                    заказ будет автоматически переназначен и возвращен в статус "Ожидает подтверждения".
+                </div>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn-secondary" data-bs-dismiss="modal">Отмена</button>
@@ -769,7 +775,11 @@
                     'Content-Type': 'application/json',
                     'X-CSRFToken': csrftoken
                 },
-                body: JSON.stringify({ order_id: parseInt(orderId), courier_id: parseInt(courierId) })
+                body: JSON.stringify({ 
+                    order_id: parseInt(orderId), 
+                    courier_id: parseInt(courierId),
+                    is_reassign: true  
+                })
             })
             .then(response => response.json())
             .then(data => {

@@ -1452,38 +1452,72 @@ def assign_courier_ajax(request):
             data = json.loads(request.body)
             order_id = data.get('order_id')
             user_id = data.get('courier_id')
+            is_reassign = data.get('is_reassign', False)  
             
             order = get_object_or_404(Order, pk=order_id)
             courier = get_object_or_404(Courier, user_id=user_id)
             
-            # Проверки
-            if order.status not in ['created', 'pending']:
-                return JsonResponse({'error': 'Нельзя назначить курьера'}, status=400)
+            # Проверка на переназначение
+            if order.courier and order.courier.user_id == user_id:
+                return JsonResponse({'error': 'Этот курьер уже назначен на заказ'}, status=400)
             
+            # Проверка доступности курьера
             if not courier.is_available():
-                return JsonResponse({'error': 'Курьер недоступен'}, status=400)
+                return JsonResponse({'error': 'Курьер недоступен (не на смене или в отпуске/на больничном)'}, status=400)
             
-            # Назначение
+            # Hазрешаем разные статусы
+            allowed_statuses = ['created', 'pending']
+            
+            # Если это переназначение 
+            if order.courier:
+                allowed_statuses = ['created', 'pending', 'assigned']  # можно переназначить если заказ еще в пути
+                
+                if order.status == 'in_progress':
+                    pass
+            
+            if order.status not in allowed_statuses:
+                return JsonResponse({'error': f'Нельзя переназначить курьера в текущем статусе "{order.get_status_display()}"'}, status=400)
+            
+            # Запоминаем старого курьера для уведомления
+            old_courier = order.courier
+            
+            # Назначение/переназначение
             order.courier = courier
-            order.status = 'pending'
+            
+            # При переназначении возвращаем статус в pending (ожидает подтверждения новым курьером)
+            if old_courier:
+                order.status = 'pending'
+                comment = f'Переназначен курьер с {old_courier.user.get_full_name()} на {courier.user.get_full_name()}'
+                
+                # Уведомление старому курьеру, что заказ снят
+                if old_courier:
+                    CourierNotification.objects.create(
+                        courier=old_courier,
+                        order=order,
+                        message=f'Заказ №{order.id} был переназначен другому курьеру',
+                        notification_type='reassigned'
+                    )
+            else:
+                comment = f'Назначен курьер {courier.user.get_full_name()}, ожидает подтверждения'
+            
             order.save()
             
             # История
             OrderStatusHistory.objects.create(
                 order=order,
-                status='pending',
-                comment=f'Назначен курьер {courier.user.get_full_name()}, ожидает подтверждения'
+                status=order.status,
+                comment=comment
             )
             
-            # Уведомление
+            # Уведомление новому курьеру
             CourierNotification.objects.create(
                 courier=courier,
                 order=order,
-                message=f'Вам назначен заказ №{order.id}',
+                message=f'Вам назначен заказ №{order.id}' + (' (переназначен)' if old_courier else ''),
                 notification_type='new'
             )
             
-            return JsonResponse({'success': True})
+            return JsonResponse({'success': True, 'reassigned': bool(old_courier)})
             
         except Exception as e:
             return JsonResponse({'error': str(e)}, status=500)
