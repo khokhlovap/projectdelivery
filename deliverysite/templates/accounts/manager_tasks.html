@@ -564,7 +564,12 @@
             </div>
             <div class="info-item">
                 <div class="info-label"><i class="bi bi-clock"></i> ВРЕМЯ ДОСТАВКИ</div>
-                <div class="info-value">{{ order.get_requested_time_slot_display }}</div>
+                <div class="info-value">{% if order.requested_delivery_date %}
+                        {{ order.requested_delivery_date|date:"d.m.Y" }}
+                    {% else %}
+                        <span class="text-muted">—</span>
+                    {% endif %}
+                    <p>{{ order.get_requested_time_slot_display }}</p></div>
             </div>
             <div class="info-item">
                 <div class="info-label"><i class="bi bi-person-badge"></i> КУРЬЕР</div>
@@ -842,7 +847,7 @@ document.querySelectorAll('.details-btn').forEach(btn => {
                                         </div>
                                         <div class="detail-row">
                                             <div class="detail-label">ИНН:</div>
-                                            <div class="detail-value">${d.client_inn}</div>
+                                            <div class="detail-value">${d.client_inn || '—'}</div>
                                         </div>
                                         <div class="detail-row">
                                             <div class="detail-label">Контактное лицо:</div>
@@ -854,7 +859,7 @@ document.querySelectorAll('.details-btn').forEach(btn => {
                                         </div>
                                         <div class="detail-row">
                                             <div class="detail-label">Email:</div>
-                                            <div class="detail-value">${d.contact_email}</div>
+                                            <div class="detail-value">${d.contact_email || '—'}</div>
                                         </div>
                                     </div>
                                 </div>
@@ -881,12 +886,22 @@ document.querySelectorAll('.details-btn').forEach(btn => {
                                         </div>
                                         <div class="detail-row">
                                             <div class="detail-label">Желаемая дата:</div>
-                                            <div class="detail-value">${d.requested_delivery_date}</div>
+                                            <div class="detail-value">${d.requested_delivery_date || 'Не указана'}</div>
+                                        </div>
+                                        <div class="detail-row">
+                                            <div class="detail-label">Желаемое время:</div>
+                                            <div class="detail-value">${d.requested_time_slot || 'Не указано'}</div>
                                         </div>
                                         <div class="detail-row">
                                             <div class="detail-label">Курьер:</div>
                                             <div class="detail-value"><strong>${d.courier_name}</strong></div>
                                         </div>
+                                        ${d.courier_phone && d.courier_phone !== '—' ? `
+                                        <div class="detail-row">
+                                            <div class="detail-label">Телефон курьера:</div>
+                                            <div class="detail-value">${d.courier_phone}</div>
+                                        </div>
+                                        ` : ''}
                                     </div>
                                 </div>
                             </div>
@@ -943,15 +958,7 @@ document.querySelectorAll('.details-btn').forEach(btn => {
                         <div class="detail-card" style="margin-top: 20px;">
                             <div class="detail-card-header"><i class="bi bi-clock-history me-1"></i> ИСТОРИЯ СТАТУСОВ</div>
                             <div class="status-timeline">
-                                <div class="status-item">
-                                    <div class="status-icon"><i class="bi bi-plus-circle"></i></div>
-                                    <div class="status-content">
-                                        <div class="status-title">${d.current_status}</div>
-                                        <div class="status-time">${d.last_status_time}</div>
-                                        <div class="status-comment">${d.last_status_comment || '—'}</div>
-                                    </div>
-                                </div>
-                                ${d.status_history.length > 0 ? d.status_history.slice(0, -1).reverse().map(h => `
+                                ${d.status_history && d.status_history.length > 0 ? d.status_history.slice().reverse().map(h => `
                                     <div class="status-item">
                                         <div class="status-icon"><i class="bi bi-arrow-right-circle"></i></div>
                                         <div class="status-content">
@@ -960,15 +967,25 @@ document.querySelectorAll('.details-btn').forEach(btn => {
                                             <div class="status-comment">${h.comment || '—'}</div>
                                         </div>
                                     </div>
-                                `).join('') : ''}
+                                `).join('') : `
+                                    <div class="status-item">
+                                        <div class="status-icon"><i class="bi bi-plus-circle"></i></div>
+                                        <div class="status-content">
+                                            <div class="status-title">${d.current_status}</div>
+                                            <div class="status-time">${d.created_at || '—'}</div>
+                                            <div class="status-comment">—</div>
+                                        </div>
+                                    </div>
+                                `}
                             </div>
                         </div>
                     `;
                 } else {
-                    contentDiv.innerHTML = '<div class="alert alert-danger">Ошибка: ' + data.error + '</div>';
+                    contentDiv.innerHTML = '<div class="alert alert-danger">Ошибка: ' + (data.error || 'Неизвестная ошибка') + '</div>';
                 }
             })
             .catch(error => {
+                console.error('Error:', error);
                 contentDiv.innerHTML = '<div class="alert alert-danger">Ошибка загрузки данных</div>';
             });
     });

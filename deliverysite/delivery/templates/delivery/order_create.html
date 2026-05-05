@@ -209,6 +209,31 @@ const singleOrderForm = document.getElementById('singleOrderForm');
 const campaignForm = document.getElementById('campaignForm');
 const submitBtn = document.getElementById('submitBtn');
 const orderForm = document.getElementById('orderForm');
+const deliveryMode = document.getElementById('deliveryMode');
+const deliveryDateBlock = document.getElementById('deliveryDateBlock');
+
+function toggleDeliveryDate() {
+    if (deliveryMode && deliveryDateBlock) {
+        if (deliveryMode.value === 'custom') {
+            deliveryDateBlock.style.display = 'block';
+            // Делаем поле с датой обязательным при выборе "конкретной даты"
+            const dateInput = deliveryDateBlock.querySelector('input[name="delivery_date"]');
+            if (dateInput) dateInput.required = true;
+        } else {
+            deliveryDateBlock.style.display = 'none';
+            const dateInput = deliveryDateBlock.querySelector('input[name="delivery_date"]');
+            if (dateInput) dateInput.required = false;
+        }
+    }
+}
+
+if (deliveryMode) {
+    deliveryMode.addEventListener('change', toggleDeliveryDate);
+    // Вызываем при загрузке, чтобы установить правильное состояние
+    document.addEventListener('DOMContentLoaded', function() {
+        toggleDeliveryDate();
+    });
+}
 
 
 function toggleRequired(container, enable) {

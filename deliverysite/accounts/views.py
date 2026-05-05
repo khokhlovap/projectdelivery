@@ -1568,6 +1568,8 @@ def get_order_details(request):
             'total_amount': str(order.total_amount) if order.total_amount else '0',
             'status_history': history_list,
             'client_comment': order.client_comment or 'Нет комментария',
+            'requested_delivery_date': order.requested_delivery_date.strftime('%d.%m.%Y') if order.requested_delivery_date else 'Не указана',
+            'requested_time_slot': order.get_requested_time_slot_display() if order.requested_time_slot else 'Не указано',
         }
         
         # Добавляем информацию о курьере, если есть
