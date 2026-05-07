@@ -1463,22 +1463,22 @@ def assign_courier_ajax(request):
             
             # Проверка доступности курьера
             if not courier.is_available():
-                return JsonResponse({'error': 'Курьер недоступен (не на смене или в отпуске/на больничном)'}, status=400)
+                return JsonResponse({'error': 'Курьер недоступен (не на смене)'}, status=400)
             
-            # Hазрешаем разные статусы
-            allowed_statuses = ['created', 'pending']
-            
-            # Если это переназначение 
+            # Разрешаем разные статусы для переназначения
             if order.courier:
-                allowed_statuses = ['created', 'pending', 'assigned']  # можно переназначить если заказ еще в пути
+                # При переназначении разрешаем ВСЕ статусы, кроме доставленных и отмененных
+                # (чтобы менеджер мог вмешаться в любой момент)
+                allowed_statuses = ['created', 'pending', 'assigned', 'in_progress']
                 
-                if order.status == 'in_progress':
-                    pass
+                if order.status not in allowed_statuses:
+                    return JsonResponse({'error': f'Нельзя переназначить курьера в текущем статусе "{order.get_status_display()}"'}, status=400)
+            else:
+                # При первом назначении - только новые заказы
+                if order.status not in ['created', 'pending']:
+                    return JsonResponse({'error': f'Нельзя назначить курьера в текущем статусе "{order.get_status_display()}"'}, status=400)
             
-            if order.status not in allowed_statuses:
-                return JsonResponse({'error': f'Нельзя переназначить курьера в текущем статусе "{order.get_status_display()}"'}, status=400)
-            
-            # Запоминаем старого курьера для уведомления
+            # Запоминаем старого курьера
             old_courier = order.courier
             
             # Назначение/переназначение
@@ -1487,16 +1487,15 @@ def assign_courier_ajax(request):
             # При переназначении возвращаем статус в pending (ожидает подтверждения новым курьером)
             if old_courier:
                 order.status = 'pending'
-                comment = f'Переназначен курьер с {old_courier.user.get_full_name()} на {courier.user.get_full_name()}'
+                comment = f'Переназначен курьер с {old_courier.user.get_full_name()} на {courier.user.get_full_name()} (предыдущий статус был {order.get_status_display()})'
                 
-                # Уведомление старому курьеру, что заказ снят
-                if old_courier:
-                    CourierNotification.objects.create(
-                        courier=old_courier,
-                        order=order,
-                        message=f'Заказ №{order.id} был переназначен другому курьеру',
-                        notification_type='reassigned'
-                    )
+                # Уведомление старому курьеру
+                CourierNotification.objects.create(
+                    courier=old_courier,
+                    order=order,
+                    message=f'⚠️ Заказ №{order.id} был переназначен другому курьеру. Причина: форс-мажор.',
+                    notification_type='reassigned'
+                )
             else:
                 comment = f'Назначен курьер {courier.user.get_full_name()}, ожидает подтверждения'
             
@@ -1513,7 +1512,7 @@ def assign_courier_ajax(request):
             CourierNotification.objects.create(
                 courier=courier,
                 order=order,
-                message=f'Вам назначен заказ №{order.id}' + (' (переназначен)' if old_courier else ''),
+                message=f'📦 Вам назначен заказ №{order.id}' + (' (ПЕРЕНАЗНАЧЕН)' if old_courier else ''),
                 notification_type='new'
             )
             
