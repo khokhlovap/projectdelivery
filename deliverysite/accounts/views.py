@@ -1452,12 +1452,11 @@ def assign_courier_ajax(request):
             data = json.loads(request.body)
             order_id = data.get('order_id')
             user_id = data.get('courier_id')
-            is_reassign = data.get('is_reassign', False)  
             
             order = get_object_or_404(Order, pk=order_id)
             courier = get_object_or_404(Courier, user_id=user_id)
             
-            # Проверка на переназначение
+            # нельзя назначить того же курьера
             if order.courier and order.courier.user_id == user_id:
                 return JsonResponse({'error': 'Этот курьер уже назначен на заказ'}, status=400)
             
@@ -1465,12 +1464,10 @@ def assign_courier_ajax(request):
             if not courier.is_available():
                 return JsonResponse({'error': 'Курьер недоступен (не на смене)'}, status=400)
             
-            # Разрешаем разные статусы для переназначения
+            # разные статусы для переназначения
             if order.courier:
-                # При переназначении разрешаем ВСЕ статусы, кроме доставленных и отмененных
-                # (чтобы менеджер мог вмешаться в любой момент)
+            
                 allowed_statuses = ['created', 'pending', 'assigned', 'in_progress']
-                
                 if order.status not in allowed_statuses:
                     return JsonResponse({'error': f'Нельзя переназначить курьера в текущем статусе "{order.get_status_display()}"'}, status=400)
             else:
@@ -1484,38 +1481,23 @@ def assign_courier_ajax(request):
             # Назначение/переназначение
             order.courier = courier
             
-            # При переназначении возвращаем статус в pending (ожидает подтверждения новым курьером)
+            # Формируем комментарий и меняем статус при переназначении
             if old_courier:
                 order.status = 'pending'
-                comment = f'Переназначен курьер с {old_courier.user.get_full_name()} на {courier.user.get_full_name()} (предыдущий статус был {order.get_status_display()})'
-                
-                # Уведомление старому курьеру
-                CourierNotification.objects.create(
-                    courier=old_courier,
-                    order=order,
-                    message=f'⚠️ Заказ №{order.id} был переназначен другому курьеру. Причина: форс-мажор.',
-                    notification_type='reassigned'
-                )
+                comment = f'Переназначен курьер с {old_courier.user.get_full_name()} на {courier.user.get_full_name()} (предыдущий статус: {order.get_status_display()})'
             else:
                 comment = f'Назначен курьер {courier.user.get_full_name()}, ожидает подтверждения'
             
             order.save()
             
-            # История
+            # История статусов
             OrderStatusHistory.objects.create(
                 order=order,
                 status=order.status,
                 comment=comment
             )
             
-            # Уведомление новому курьеру
-            CourierNotification.objects.create(
-                courier=courier,
-                order=order,
-                message=f'📦 Вам назначен заказ №{order.id}' + (' (ПЕРЕНАЗНАЧЕН)' if old_courier else ''),
-                notification_type='new'
-            )
-            
+            # Возвращаем успешный ответ
             return JsonResponse({'success': True, 'reassigned': bool(old_courier)})
             
         except Exception as e:
