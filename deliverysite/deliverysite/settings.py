@@ -149,9 +149,10 @@ EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 EMAIL_HOST = 'smtp.mail.ru'
 EMAIL_PORT = 587
 EMAIL_USE_TLS = True
-EMAIL_HOST_USER = 'ваша-почта@mail.ru'
-EMAIL_HOST_PASSWORD = 'ваш-пароль'
+EMAIL_HOST_USER = 'avn-biz@mail.ru'
+EMAIL_HOST_PASSWORD = 'xEWErnR9uPUunQdWZhYE'
 DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
+EMAIL_USE_SSL = False 
 
 # Для разработки (письма будут выводиться в консоль)
-EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+# EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
