@@ -478,7 +478,24 @@ def courier_update_order_status(request):
             if new_status == 'delivered':
                 order.delivered_at = timezone.now()
                 order.save()
-            
+
+                # Обновляем счетчик в текущей смене курьера
+                current_shift = CourierShift.objects.filter(
+                    courier=courier,
+                    end_time__isnull=True
+                ).first()
+                
+                if current_shift:
+                    from django.db.models import F
+                    CourierShift.objects.filter(pk=current_shift.pk).update(
+                        orders_completed=F('orders_completed') + 1
+                    )
+                    
+                    # Обновляем total_orders в профиле курьера
+                    Courier.objects.filter(pk=courier.pk).update(
+                        total_orders=F('total_orders') + 1
+                    )
+                    
             status_display = dict(Order.STATUS_CHOICES).get(new_status, new_status)
             OrderStatusHistory.objects.create(
                 order=order,
