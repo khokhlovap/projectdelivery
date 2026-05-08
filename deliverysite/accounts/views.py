@@ -456,10 +456,11 @@ def privacy_policy(request):
     "Страница с политикой конфиденциальности"
     return render(request, 'accounts/privacy_policy.html')
 
-# ЛК Менеджер
 @login_required
 def manager_dashboard(request):
     """Главная страница менеджера"""
+    from datetime import timedelta
+    
     if request.user.role != 'manager':
         messages.error(request, 'У вас нет доступа к этой странице')
         return redirect('accounts:home')
@@ -472,7 +473,7 @@ def manager_dashboard(request):
     # Новые заказы (ожидают назначения)
     new_orders = Order.objects.filter(status='pending').count()
     
-    # Просроченные заказы (желаемая дата доставки уже прошла)
+    # Просроченные заказы
     from django.utils import timezone
     delayed_orders = Order.objects.filter(
         requested_delivery_date__lt=timezone.now().date(),
@@ -488,16 +489,62 @@ def manager_dashboard(request):
         count = Order.objects.filter(created_at__date=day).count()
         weekly_data.append(count)
     
-    # Топ курьеров по рейтингу
+    # Топ курьеров по рейтингу с реальным временем доставки
+    from django.db.models import Q, Avg
+    
     top_couriers = []
-    for courier in Courier.objects.filter(user__role='courier').order_by('-avg_rating')[:3]:
-        deliveries_count = Order.objects.filter(courier=courier, status='delivered').count()
+    couriers = Courier.objects.filter(user__role='courier')
+    
+    for courier in couriers:
+        # Получаем все доставленные заказы курьера
+        delivered_orders = Order.objects.filter(
+            courier=courier,
+            status='delivered',
+            delivered_at__isnull=False
+        )
+        
+        deliveries_count = delivered_orders.count()
+        
+        # Рассчитываем среднее время доставки
+        total_minutes = 0
+        valid_orders = 0
+        
+        for order in delivered_orders:
+            # Находим момент перехода в статус "в пути"
+            in_progress_entry = OrderStatusHistory.objects.filter(
+                order=order,
+                status='in_progress'
+            ).first()
+            
+            if in_progress_entry and order.delivered_at:
+                minutes = (order.delivered_at - in_progress_entry.changed_at).total_seconds() / 60
+                if minutes > 0:
+                    total_minutes += minutes
+                    valid_orders += 1
+        
+        avg_time = round(total_minutes / valid_orders, 1) if valid_orders > 0 else 0
+            
+        # Форматируем время для отображения
+        if avg_time >= 60:
+            hours = int(avg_time // 60)
+            minutes = int(avg_time % 60)
+            avg_time_display = f"{hours} ч {minutes} мин"
+        else:
+            avg_time_display = f"{avg_time} мин"
+        
+        # средний рейтинг
+        rating_avg = courier.ratings.aggregate(Avg('rating'))['rating__avg'] or 0
+        
         top_couriers.append({
             'name': courier.user.get_full_name(),
             'deliveries': deliveries_count,
-            'avg_time': 30,
-            'rating': float(courier.avg_rating)
+            'avg_time': avg_time,
+            'avg_time_display': avg_time_display,
+            'rating': round(rating_avg, 1),
         })
+    
+    # сортировка по рейтингу и берем топ-5
+    top_couriers = sorted(top_couriers, key=lambda x: x['rating'], reverse=True)[:5]
     
     context = {
         'active_orders': active_orders,
