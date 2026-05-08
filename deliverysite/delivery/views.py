@@ -11,6 +11,55 @@ from django.contrib.auth import update_session_auth_hash
 from django.db.models import F 
 from django.core.paginator import Paginator
 from delivery.websocket_utils import send_order_status_update, send_notification_to_user, notify_order_assigned
+from datetime import datetime, date
+import re
+
+def validate_order_data(data):
+    "Валидация данных заказа"
+    errors = {}
+    
+    # Валидация телефона (10 или 11 цифр)
+    phone = data.get('recipient_phone', '')
+    digits = re.sub(r'\D', '', phone)
+    if len(digits) not in [10, 11]:
+        errors['phone'] = 'Введите корректный номер телефона (10 цифр)'
+    
+    # Валидация ФИО (только буквы, пробелы, дефис)
+    name_pattern = re.compile(r'^[А-Яа-яЁёA-Za-z\s\-]+$')
+    
+    last_name = data.get('recipient_last_name', '')
+    if not name_pattern.match(last_name):
+        errors['last_name'] = 'Фамилия должна содержать только буквы'
+    
+    first_name = data.get('recipient_first_name', '')
+    if not name_pattern.match(first_name):
+        errors['first_name'] = 'Имя должно содержать только буквы'
+    
+    patronymic = data.get('recipient_patronymic', '')
+    if patronymic and not name_pattern.match(patronymic):
+        errors['patronymic'] = 'Отчество должно содержать только буквы'
+    
+    # Валидация веса (0-30 кг)
+    weight = data.get('weight')
+    if weight:
+        try:
+            weight_float = float(weight)
+            if weight_float < 0 or weight_float > 30:
+                errors['weight'] = 'Вес должен быть от 0 до 30 кг'
+        except ValueError:
+            errors['weight'] = 'Введите корректное значение веса'
+    
+    # Валидация даты (не в прошлом)
+    delivery_date = data.get('requested_delivery_date')
+    if delivery_date:
+        try:
+            date_obj = datetime.strptime(delivery_date, '%Y-%m-%d').date()
+            if date_obj < date.today():
+                errors['delivery_date'] = 'Дата доставки не может быть в прошлом'
+        except ValueError:
+            errors['delivery_date'] = 'Некорректная дата'
+    
+    return errors
 
 @login_required
 def create_order(request):
@@ -21,13 +70,42 @@ def create_order(request):
         return redirect('accounts:company_setup')
     
     if request.method == 'POST':
-        form = OrderForm(request.POST)
-        if form.is_valid():
-            order = form.save(commit=False)
-            order.client = client_profile
-            order.order_type = request.POST.get('order_type', 'documents')
-            order.status = 'created'
-            order.save()
+        order_type = request.POST.get('order_type', 'documents')
+        
+        if order_type == 'documents':
+            # Валидация данных
+            errors = validate_order_data(request.POST)
+            
+            if errors:
+                for field, error in errors.items():
+                    messages.error(request, error)
+                return redirect('delivery:create_order')
+            
+            pickup_address = request.POST.get('pickup_address')
+            delivery_address = request.POST.get('delivery_address')
+            
+            # Проверка обязательных полей
+            if not pickup_address or not delivery_address:
+                messages.error(request, 'Заполните адрес отправки и доставки')
+                return redirect('delivery:create_order')
+            
+            order = Order.objects.create(
+                client=client_profile,
+                order_type=order_type,
+                tariff=request.POST.get('tariff', 'standard'),
+                weight=request.POST.get('weight') or None,
+                pickup_address=pickup_address,
+                delivery_address=delivery_address,
+                recipient_last_name=request.POST.get('recipient_last_name'),
+                recipient_first_name=request.POST.get('recipient_first_name'),
+                recipient_patronymic=request.POST.get('recipient_patronymic', ''),
+                recipient_phone=request.POST.get('recipient_phone'),
+                recipient_company=request.POST.get('recipient_company', ''),
+                requested_delivery_date=request.POST.get('requested_delivery_date'),
+                requested_time_slot=request.POST.get('requested_time_slot', 'any'),
+                client_comment=request.POST.get('client_comment', ''),
+                status='created'
+            )
             
             OrderStatusHistory.objects.create(
                 order=order,
@@ -35,17 +113,18 @@ def create_order(request):
                 comment=f'Заказ создан клиентом {request.user.get_full_name()}'
             )
             
-            messages.success(request, 'Заказ успешно создан!')
+            messages.success(request, f'Заказ №{order.id} успешно создан!')
             return redirect('accounts:clients_orders')
-    else:
-        form = OrderForm()
+        
+        elif order_type == 'gifts':
+            return redirect('delivery:create_campaign')
     
+    form = OrderForm()
     context = {
         'form': form,
         'active_tab': 'create_order',
     }
-    
-    return render(request, 'delivery/order_create.html', context) 
+    return render(request, 'delivery/order_create.html', context)
 
 @login_required
 def order_list(request):

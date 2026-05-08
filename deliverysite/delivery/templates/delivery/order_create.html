@@ -8,7 +8,7 @@
         <h5 class="mb-0"><i class="bi bi-plus-circle"></i> Создание нового заказа</h5>
     </div>
     <div class="card-body">
-        <form method="post" id="orderForm" action="{% url 'delivery:create_order' %}">
+        <form method="post" id="orderForm" action="{% url 'delivery:create_order' %}" onsubmit="return validateForm()">
             {% csrf_token %}
             
             <!-- Тип заказа -->
@@ -22,20 +22,94 @@
             
             <!-- Обычный заказ -->
             <div id="singleOrderForm">
-                {% for field in form %}
+                <!-- Поле "Откуда забрать" -->
                 <div class="mb-3">
-                    <label class="form-label">{{ field.label }}</label>
-                    {{ field }}
-                    {% if field.errors %}
-                        <div class="text-danger small">{{ field.errors }}</div>
-                    {% endif %}
+                    <label class="form-label">Откуда забрать (адрес отправки) *</label>
+                    <input type="text" name="pickup_address" id="pickupAddress" class="form-control" 
+                        placeholder="Начните вводить адрес..." required autocomplete="off">
+                    <div id="pickupSuggestions" class="suggestions-dropdown"></div>
+                    <div class="invalid-feedback" id="pickupAddressError">Пожалуйста, укажите адрес отправки</div>
                 </div>
-                {% endfor %}
+
+                <!-- Поле "Куда доставить" -->
+                <div class="mb-3">
+                    <label class="form-label">Куда доставить (адрес доставки) *</label>
+                    <input type="text" name="delivery_address" id="deliveryAddress" class="form-control" 
+                        placeholder="Начните вводить адрес..." required autocomplete="off">
+                    <div id="deliverySuggestions" class="suggestions-dropdown"></div>
+                    <div class="invalid-feedback" id="deliveryAddressError">Пожалуйста, укажите адрес доставки</div>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Тариф доставки</label>
+                    <select name="tariff" class="form-select">
+                        <option value="standard">Стандартный</option>
+                        <option value="24_hours">24 часа</option>
+                        <option value="working">Рабочий</option>
+                        <option value="fast">Быстрый</option>
+                        <option value="per_hour">За час</option>
+                    </select>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Вес (кг) (макс. 30 кг)</label>
+                    <input type="number" step="0.1" name="weight" id="weight" class="form-control" placeholder="Например: 2.5" min="0" max="30">
+                    <div class="invalid-feedback" id="weightError">Вес должен быть от 0 до 30 кг</div>
+                </div>
+
+                <div class="row g-3 mb-3">
+                    <div class="col-md-4">
+                        <label class="form-label">Фамилия получателя *</label>
+                        <input type="text" name="recipient_last_name" id="lastName" class="form-control" required pattern="[А-Яа-яЁёA-Za-z\-]+">
+                        <div class="invalid-feedback" id="lastNameError">Только буквы и дефис</div>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Имя получателя *</label>
+                        <input type="text" name="recipient_first_name" id="firstName" class="form-control" required pattern="[А-Яа-яЁёA-Za-z]+">
+                        <div class="invalid-feedback" id="firstNameError">Только буквы</div>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Отчество получателя</label>
+                        <input type="text" name="recipient_patronymic" id="patronymic" class="form-control" pattern="[А-Яа-яЁёA-Za-z\-]*">
+                        <div class="invalid-feedback" id="patronymicError">Только буквы и дефис</div>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Телефон получателя *</label>
+                        <input type="tel" name="recipient_phone" id="phone" class="form-control" required placeholder="+7 (xxx) xxx-xx-xx">
+                        <div class="invalid-feedback" id="phoneError">Введите корректный номер телефона (10 цифр)</div>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Компания получателя</label>
+                        <input type="text" name="recipient_company" class="form-control">
+                    </div>
+                </div>
+
+                <div class="row g-3 mb-3">
+                    <div class="col-md-6">
+                        <label class="form-label">Желаемая дата доставки *</label>
+                        <input type="date" name="requested_delivery_date" id="deliveryDate" class="form-control" required>
+                        <div class="invalid-feedback" id="dateError">Дата не может быть в прошлом</div>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Желаемое время доставки</label>
+                        <select name="requested_time_slot" class="form-select">
+                            <option value="morning">09:00 - 12:00</option>
+                            <option value="day">12:00 - 15:00</option>
+                            <option value="afternoon">15:00 - 18:00</option>
+                            <option value="evening">18:00 - 21:00</option>
+                            <option value="any" selected>Весь день</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Комментарий к заказу</label>
+                    <textarea name="client_comment" class="form-control" rows="3" maxlength="500"></textarea>
+                </div>
             </div>
             
             <!-- Массовая рассылка -->
             <div id="campaignForm" style="display: none;">
-                <!-- Блок 1. Общая информация -->
                 <div class="campaign-section">
                     <h6 class="fw-bold mb-3" style="color: #1E7A57;">
                         <i class="bi bi-info-circle"></i> Общая информация
@@ -43,7 +117,7 @@
                     <div class="row g-3">
                         <div class="col-12">
                             <label class="form-label">Название кампании *</label>
-                            <input type="text" name="campaign_name" id="campaignName" class="form-control" placeholder="Например: Рассылка новогодних подарков" required>
+                            <input type="text" name="campaign_name" id="campaignName" class="form-control" required>
                         </div>
                         <div class="col-md-6">
                             <label class="form-label">Повод *</label>
@@ -64,7 +138,6 @@
                     </div>
                 </div>
                 
-                <!-- Блок 2. Адрес забора -->
                 <div class="campaign-section mt-4">
                     <h6 class="fw-bold mb-3" style="color: #1E7A57;">
                         <i class="bi bi-box-seam"></i> Адрес забора
@@ -72,22 +145,20 @@
                     <div class="row g-3">
                         <div class="col-12">
                             <label class="form-label">Откуда забрать коробки *</label>
-                            <textarea name="campaign_pickup_address" id="campaignPickupAddress" class="form-control" rows="2" placeholder="Адрес, где нужно забрать подарки/сувениры" required></textarea>
+                            <textarea name="campaign_pickup_address" id="campaignPickupAddress" class="form-control" rows="2" required></textarea>
                         </div>
                     </div>
                 </div>
                 
-                <!-- Блок 3. Получатели -->
                 <div class="campaign-section mt-4">
                     <div class="d-flex justify-content-between align-items-center mb-3">
                         <h6 class="fw-bold mb-0" style="color: #1E7A57;">
                             <i class="bi bi-people"></i> Получатели
                         </h6>
-                        <button type="button" class="btn-add-recipient" id="addRecipientBtn" style="background: #1E7A57; color: white; border: none; border-radius: 40px; padding: 6px 16px; font-size: 0.75rem;">
+                        <button type="button" class="btn-add-recipient" id="addRecipientBtn">
                             <i class="bi bi-plus-lg"></i> Добавить получателя
                         </button>
                     </div>
-                    
                     <div id="recipientsList">
                         <div class="recipient-card" id="recipient-1">
                             <div class="recipient-header">
@@ -120,7 +191,6 @@
                     </div>
                 </div>
                 
-                <!-- Блок 4. Параметры доставки -->
                 <div class="campaign-section mt-4">
                     <h6 class="fw-bold mb-3" style="color: #1E7A57;">
                         <i class="bi bi-calendar-check"></i> Параметры доставки
@@ -193,11 +263,47 @@
         color: #B91C1C;
     }
     .btn-add-recipient {
+        background: #1E7A57;
+        color: white;
+        border: none;
+        border-radius: 40px;
+        padding: 6px 16px;
+        font-size: 0.75rem;
         transition: all 0.2s;
     }
     .btn-add-recipient:hover {
         background: #155f44 !important;
         transform: translateY(-1px);
+    }
+    .suggestions-dropdown {
+        position: absolute;
+        z-index: 1000;
+        background: white;
+        border: 1px solid #E8E0D5;
+        border-radius: 12px;
+        max-height: 300px;
+        overflow-y: auto;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        display: none;
+        width: 100%;
+    }
+    .suggestions-dropdown.show {
+        display: block;
+    }
+    .suggestion-item {
+        padding: 10px 15px;
+        cursor: pointer;
+        font-size: 0.85rem;
+        border-bottom: 1px solid #F0EDE8;
+    }
+    .suggestion-item:hover {
+        background: #F5F3F0;
+    }
+    .position-relative {
+        position: relative;
+    }
+    .is-invalid {
+        border-color: #dc3545 !important;
     }
 </style>
 
@@ -212,11 +318,64 @@ const orderForm = document.getElementById('orderForm');
 const deliveryMode = document.getElementById('deliveryMode');
 const deliveryDateBlock = document.getElementById('deliveryDateBlock');
 
+function disableAllRequired(container) {
+    const fields = container.querySelectorAll('input, select, textarea');
+    fields.forEach(field => {
+        // Сохраняем оригинальное состояние required
+        if (field.hasAttribute('required')) {
+            field.dataset.wasRequired = 'true';
+            field.required = false;
+        }
+        // Убираем классы ошибок
+        field.classList.remove('is-invalid');
+    });
+}
+
+function enableAllRequired(container) {
+    const fields = container.querySelectorAll('input, select, textarea');
+    fields.forEach(field => {
+        if (field.dataset.wasRequired === 'true') {
+            field.required = true;
+        }
+    });
+}
+
+// Функция для полного скрытия обычной формы
+function hideSingleForm() {
+    if (!singleOrderForm.dataset.savedContent) {
+        singleOrderForm.dataset.savedContent = singleOrderForm.innerHTML;
+    }
+    singleOrderForm.innerHTML = '';
+    singleOrderForm.style.display = 'none';
+}
+
+function showSingleForm() {
+    if (singleOrderForm.dataset.savedContent) {
+        singleOrderForm.innerHTML = singleOrderForm.dataset.savedContent;
+    }
+    singleOrderForm.style.display = 'block';
+}
+
+// Функция для скрытия формы кампании
+function hideCampaignForm() {
+    if (!campaignForm.dataset.savedContent) {
+        campaignForm.dataset.savedContent = campaignForm.innerHTML;
+    }
+    campaignForm.innerHTML = '';
+    campaignForm.style.display = 'none';
+}
+
+function showCampaignForm() {
+    if (campaignForm.dataset.savedContent) {
+        campaignForm.innerHTML = campaignForm.dataset.savedContent;
+    }
+    campaignForm.style.display = 'block';
+}
+
 function toggleDeliveryDate() {
     if (deliveryMode && deliveryDateBlock) {
         if (deliveryMode.value === 'custom') {
             deliveryDateBlock.style.display = 'block';
-            // Делаем поле с датой обязательным при выборе "конкретной даты"
             const dateInput = deliveryDateBlock.querySelector('input[name="delivery_date"]');
             if (dateInput) dateInput.required = true;
         } else {
@@ -229,19 +388,45 @@ function toggleDeliveryDate() {
 
 if (deliveryMode) {
     deliveryMode.addEventListener('change', toggleDeliveryDate);
-    // Вызываем при загрузке, чтобы установить правильное состояние
-    document.addEventListener('DOMContentLoaded', function() {
-        toggleDeliveryDate();
-    });
 }
 
+/* переключение формы */
+function toggleForms(showCampaign) {
+    if (showCampaign) {
+        // Показываем форму кампании, скрываем обычную
+        showCampaignForm();
+        hideSingleForm();
+        
+        submitBtn.innerHTML = '<i class="bi bi-send"></i> Создать кампанию';
+        orderForm.action = "{% url 'delivery:create_campaign' %}";
+        
+        const campaignRequired = campaignForm.querySelectorAll('[required]');
+        campaignRequired.forEach(field => {
+            field.required = true;
+        });
+        
+    } else {
+        // Показываем обычную форму, скрываем кампанию
+        showSingleForm();
+        hideCampaignForm();
+        
+        submitBtn.innerHTML = '<i class="bi bi-check-circle"></i> Создать заказ';
+        orderForm.action = "{% url 'delivery:create_order' %}";
+        
+        // Восстанавливаем required для полей обычной формы
+        const singleRequired = singleOrderForm.querySelectorAll('[required]');
+        singleRequired.forEach(field => {
+            field.required = true;
+        });
+    }
+}
 
 function toggleRequired(container, enable) {
+    if (!container) return;
     const fields = container.querySelectorAll('input, select, textarea');
-
     fields.forEach(field => {
         if (enable) {
-            if (field.dataset.required === 'true') {
+            if (field.dataset.required === 'true' || field.hasAttribute('data-was-required')) {
                 field.required = true;
             }
         } else {
@@ -253,99 +438,251 @@ function toggleRequired(container, enable) {
     });
 }
 
-
-/* переключение формы */
-function toggleForms(showCampaign) {
-
-    if (showCampaign) {
-
-        singleOrderForm.style.display = 'none';
-        campaignForm.style.display = 'block';
-
-        toggleRequired(singleOrderForm, false);
-        toggleRequired(campaignForm, true);
-
-        submitBtn.innerHTML = '<i class="bi bi-send"></i> Создать кампанию';
-        orderForm.action = "{% url 'delivery:create_campaign' %}";
-
-    } else {
-
-        singleOrderForm.style.display = 'block';
-        campaignForm.style.display = 'none';
-
-        toggleRequired(campaignForm, false);
-        toggleRequired(singleOrderForm, true);
-
-        submitBtn.innerHTML = '<i class="bi bi-check-circle"></i> Создать заказ';
-        orderForm.action = "{% url 'delivery:create_order' %}";
-    }
-}
-
-
 /* выбор типа заказа */
 orderTypeSelect.addEventListener('change', function () {
     toggleForms(this.value === 'gifts');
 });
 
-
-/* добавление получателя */
-document.getElementById('addRecipientBtn').addEventListener('click', function () {
-
-    recipientCount++;
-
-    const wrapper = document.getElementById('recipientsList');
-
-    const div = document.createElement('div');
-
-    div.className = 'recipient-card';
-    div.id = 'recipient-' + recipientCount;
-
-    div.innerHTML = `
-        <div class="recipient-header">
-            <span class="recipient-number">Получатель №${recipientCount}</span>
-            <button type="button" class="btn-remove-recipient" onclick="removeRecipient(${recipientCount})">✕</button>
-        </div>
-
-        <div class="row g-3">
-            <div class="col-md-6">
-                <label class="form-label">Компания</label>
-                <input type="text" name="recipient_company[]" class="form-control">
-            </div>
-
-            <div class="col-md-6">
-                <label class="form-label">ФИО *</label>
-                <input type="text" name="recipient_full_name[]" class="form-control" required>
-            </div>
-
-            <div class="col-md-4">
-                <label class="form-label">Телефон *</label>
-                <input type="tel" name="recipient_phone[]" class="form-control" required>
-            </div>
-
-            <div class="col-md-8">
-                <label class="form-label">Адрес *</label>
-                <textarea name="recipient_address[]" class="form-control" rows="2" required></textarea>
-            </div>
-        </div>
-    `;
-
-    wrapper.appendChild(div);
-});
+/* добавление получателя (для кампании) */
+function initAddRecipientButton() {
+    const addBtn = document.getElementById('addRecipientBtn');
+    if (addBtn) {
+        // Удаляем старый обработчик, чтобы не дублировать
+        const newBtn = addBtn.cloneNode(true);
+        addBtn.parentNode.replaceChild(newBtn, addBtn);
+        newBtn.addEventListener('click', function () {
+            recipientCount++;
+            const wrapper = document.getElementById('recipientsList');
+            const div = document.createElement('div');
+            div.className = 'recipient-card';
+            div.id = 'recipient-' + recipientCount;
+            div.innerHTML = `
+                <div class="recipient-header">
+                    <span class="recipient-number">Получатель №${recipientCount}</span>
+                    <button type="button" class="btn-remove-recipient" onclick="removeRecipient(${recipientCount})">✕</button>
+                </div>
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label class="form-label">Компания</label>
+                        <input type="text" name="recipient_company[]" class="form-control">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">ФИО *</label>
+                        <input type="text" name="recipient_full_name[]" class="form-control" required>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Телефон *</label>
+                        <input type="tel" name="recipient_phone[]" class="form-control" required>
+                    </div>
+                    <div class="col-md-8">
+                        <label class="form-label">Адрес *</label>
+                        <textarea name="recipient_address[]" class="form-control" rows="2" required></textarea>
+                    </div>
+                </div>
+            `;
+            wrapper.appendChild(div);
+        });
+    }
+}
 
 window.removeRecipient = function(id) {
-
     const cards = document.querySelectorAll('.recipient-card');
-
     if (cards.length <= 1) {
         alert('Должен быть хотя бы один получатель');
         return;
     }
-
-    document.getElementById('recipient-' + id).remove();
+    const recipient = document.getElementById('recipient-' + id);
+    if (recipient) recipient.remove();
 };
 
 document.addEventListener('DOMContentLoaded', function () {
+    // Сохраняем исходное содержимое форм
+    singleOrderForm.dataset.savedContent = singleOrderForm.innerHTML;
+    campaignForm.dataset.savedContent = campaignForm.innerHTML;
+    
     toggleForms(orderTypeSelect.value === 'gifts');
+    toggleDeliveryDate();
+    initAddRecipientButton();
+    
+    // Установка минимальной даты для обычной формы
+    const dateInput = document.getElementById('deliveryDate');
+    if (dateInput) {
+        const today = new Date().toISOString().split('T')[0];
+        dateInput.setAttribute('min', today);
+    }
 });
+
+// Валидация телефона (10 цифр)
+function validatePhone(phone) {
+    const digits = phone.replace(/[^\d]/g, '');
+    return digits.length === 10 || digits.length === 11;
+}
+
+// Валидация ФИО (только буквы, пробелы и дефис)
+function validateName(name) {
+    if (!name) return true;
+    const regex = /^[А-Яа-яЁёA-Za-z\s\-]+$/;
+    return regex.test(name);
+}
+
+// Валидация даты
+function validateDate(dateString) {
+    if (!dateString) return false;
+    const selectedDate = new Date(dateString);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    return selectedDate >= today;
+}
+
+// Валидация веса
+function validateWeight(weight) {
+    if (!weight) return true;
+    const num = parseFloat(weight);
+    return !isNaN(num) && num >= 0 && num <= 30;
+}
+
+// Основная функция валидации формы 
+function validateForm() {
+    // Проверяем, какая форма сейчас активна
+    const isCampaign = campaignForm.style.display !== 'none';
+    
+    if (isCampaign) {
+        // Для кампании своя валидация
+        let isValid = true;
+        const recipients = document.querySelectorAll('.recipient-card');
+        
+        if (recipients.length === 0) {
+            alert('Добавьте хотя бы одного получателя');
+            isValid = false;
+        }
+        
+        // Проверка адреса забора
+        const pickupAddress = document.getElementById('campaignPickupAddress');
+        if (pickupAddress && !pickupAddress.value.trim()) {
+            pickupAddress.classList.add('is-invalid');
+            isValid = false;
+        } else if (pickupAddress) {
+            pickupAddress.classList.remove('is-invalid');
+        }
+        
+        // Проверка названия кампании
+        const campaignName = document.getElementById('campaignName');
+        if (campaignName && !campaignName.value.trim()) {
+            campaignName.classList.add('is-invalid');
+            isValid = false;
+        } else if (campaignName) {
+            campaignName.classList.remove('is-invalid');
+        }
+        
+        // Проверка данных получателей
+        recipients.forEach((recipient, index) => {
+            const fullName = recipient.querySelector('input[name="recipient_full_name[]"]');
+            const phone = recipient.querySelector('input[name="recipient_phone[]"]');
+            const address = recipient.querySelector('textarea[name="recipient_address[]"]');
+            
+            if (fullName && !fullName.value.trim()) {
+                fullName.classList.add('is-invalid');
+                isValid = false;
+            } else if (fullName) {
+                fullName.classList.remove('is-invalid');
+            }
+            
+            if (phone && !validatePhone(phone.value)) {
+                phone.classList.add('is-invalid');
+                isValid = false;
+            } else if (phone) {
+                phone.classList.remove('is-invalid');
+            }
+            
+            if (address && !address.value.trim()) {
+                address.classList.add('is-invalid');
+                isValid = false;
+            } else if (address) {
+                address.classList.remove('is-invalid');
+            }
+        });
+        
+        if (!isValid) {
+            alert('Пожалуйста, заполните все обязательные поля');
+        }
+        return isValid;
+    } else {
+        // Валидация обычного заказа
+        let isValid = true;
+        
+        // Проверка адресов
+        const pickupAddress = document.getElementById('pickupAddress');
+        const deliveryAddress = document.getElementById('deliveryAddress');
+        
+        if (!pickupAddress || !pickupAddress.value.trim()) {
+            if (pickupAddress) pickupAddress.classList.add('is-invalid');
+            isValid = false;
+        } else if (pickupAddress) {
+            pickupAddress.classList.remove('is-invalid');
+        }
+        
+        if (!deliveryAddress || !deliveryAddress.value.trim()) {
+            if (deliveryAddress) deliveryAddress.classList.add('is-invalid');
+            isValid = false;
+        } else if (deliveryAddress) {
+            deliveryAddress.classList.remove('is-invalid');
+        }
+        
+        // Проверка веса
+        const weight = document.getElementById('weight');
+        if (weight && !validateWeight(weight.value)) {
+            weight.classList.add('is-invalid');
+            isValid = false;
+        } else if (weight) {
+            weight.classList.remove('is-invalid');
+        }
+        
+        // Проверка фамилии
+        const lastName = document.getElementById('lastName');
+        if (lastName && !validateName(lastName.value)) {
+            lastName.classList.add('is-invalid');
+            isValid = false;
+        } else if (lastName) {
+            lastName.classList.remove('is-invalid');
+        }
+        
+        // Проверка имени
+        const firstName = document.getElementById('firstName');
+        if (firstName && !validateName(firstName.value)) {
+            firstName.classList.add('is-invalid');
+            isValid = false;
+        } else if (firstName) {
+            firstName.classList.remove('is-invalid');
+        }
+        
+        // Проверка телефона
+        const phone = document.getElementById('phone');
+        if (phone && !validatePhone(phone.value)) {
+            phone.classList.add('is-invalid');
+            isValid = false;
+        } else if (phone) {
+            phone.classList.remove('is-invalid');
+        }
+        
+        // Проверка даты
+        const deliveryDate = document.getElementById('deliveryDate');
+        if (deliveryDate && !validateDate(deliveryDate.value)) {
+            deliveryDate.classList.add('is-invalid');
+            isValid = false;
+        } else if (deliveryDate) {
+            deliveryDate.classList.remove('is-invalid');
+        }
+        
+        if (!isValid) {
+            alert('Пожалуйста, исправьте ошибки в форме');
+        }
+        return isValid;
+    }
+}
+
+// Добавляем валидацию на отправку формы
+if (orderForm) {
+    orderForm.onsubmit = validateForm;
+}
 </script>
 {% endblock %}
