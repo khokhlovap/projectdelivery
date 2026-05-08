@@ -203,6 +203,45 @@ class Courier(models.Model):
         null=True, 
         verbose_name='Конец рабочего дня'
     )
+
+    def get_total_break_minutes_today(self):
+        "Возвращает суммарную длительность перерывов курьера за сегодня в минутах"
+        today = timezone.now().date()
+        today_start = timezone.make_aware(timezone.datetime.combine(today, timezone.datetime.min.time()))
+        today_end = timezone.make_aware(timezone.datetime.combine(today, timezone.datetime.max.time()))
+        
+        # Получаем все смены курьера за сегодня
+        today_shifts = self.shifts.filter(
+            start_time__gte=today_start,
+            start_time__lte=today_end
+        )
+        
+        total_break_minutes = 0
+        
+        for shift in today_shifts:
+            # Суммируем время перерывов по каждой смене
+            total_break_minutes += shift.total_break_minutes or 0
+            
+            # Добавляем текущий активный перерыв (если есть)
+            active_break = shift.breaks.filter(end_time__isnull=True).first()
+            if active_break:
+                now = timezone.now()
+                if active_break.start_time:
+                    current_break_minutes = int((now - active_break.start_time).total_seconds() / 60)
+                    total_break_minutes += current_break_minutes
+        
+        return total_break_minutes
+    
+    def can_take_break(self, max_break_minutes=60):
+        "Проверяет, может ли курьер начать перерыв"
+        total_break_today = self.get_total_break_minutes_today()
+        return total_break_today < max_break_minutes
+    
+    def get_remaining_break_minutes_today(self, max_break_minutes=60):
+        "Возвращает оставшееся время на перерывы сегодня в минутах"
+        total_break_today = self.get_total_break_minutes_today()
+        remaining = max_break_minutes - total_break_today
+        return max(remaining, 0)
     
     def get_work_range_display(self):
         "Возвращает текстовое представление рабочего диапазона"

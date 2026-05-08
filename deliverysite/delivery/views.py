@@ -278,6 +278,12 @@ def courier_start_break(request):
         if courier.shift_status != 'on':
             return JsonResponse({'error': 'Можно начать перерыв только во время смены'}, status=400)
         
+        if not courier.can_take_break(max_break_minutes=60):
+            remaining_minutes = courier.get_remaining_break_minutes_today(max_break_minutes=60)
+            return JsonResponse({
+                'error': f'Лимит перерывов на сегодня исчерпан (1 час). Осталось {remaining_minutes} минут'
+            }, status=400)
+        
         current_shift = CourierShift.objects.filter(courier=courier, end_time__isnull=True).first()
         
         if not current_shift:
@@ -296,7 +302,15 @@ def courier_start_break(request):
             start_time=timezone.now()
         )
         
-        return JsonResponse({'success': True, 'message': 'Перерыв начат', 'status': 'break'})
+        # Рассчитываем оставшееся время на перерывы
+        remaining_minutes = courier.get_remaining_break_minutes_today(max_break_minutes=60)
+        
+        return JsonResponse({
+            'success': True, 
+            'message': 'Перерыв начат',
+            'status': 'break',
+            'remaining_break_minutes': remaining_minutes
+        })
     
     return JsonResponse({'error': 'Метод не разрешен'}, status=405)
 
@@ -321,12 +335,20 @@ def courier_end_break(request):
         current_break = CourierShiftBreak.objects.filter(shift=current_shift, end_time__isnull=True).first()
         
         if current_break:
-            current_break.end_break()
+            current_break.end_break()  # Этот метод уже обновляет total_break_minutes в смене
         
         courier.shift_status = 'on'
         courier.save()
         
-        return JsonResponse({'success': True, 'message': 'Перерыв завершен', 'status': 'on'})
+        # Рассчитываем оставшееся время на перерывы
+        remaining_minutes = courier.get_remaining_break_minutes_today(max_break_minutes=60)
+        
+        return JsonResponse({
+            'success': True, 
+            'message': 'Перерыв завершен', 
+            'status': 'on',
+            'remaining_break_minutes': remaining_minutes
+        })
     
     return JsonResponse({'error': 'Метод не разрешен'}, status=405)
 
@@ -495,7 +517,7 @@ def courier_update_order_status(request):
                     Courier.objects.filter(pk=courier.pk).update(
                         total_orders=F('total_orders') + 1
                     )
-                    
+
             status_display = dict(Order.STATUS_CHOICES).get(new_status, new_status)
             OrderStatusHistory.objects.create(
                 order=order,
@@ -938,3 +960,18 @@ def create_campaign(request):
             return redirect('delivery:create_order')
     
     return redirect('delivery:create_order')  
+
+@login_required
+def courier_remaining_break_time(request):
+    "API для получения оставшегося времени на перерывы сегодня"
+    if request.user.role != 'courier':
+        return JsonResponse({'error': 'Доступ запрещен'}, status=403)
+    
+    courier = request.user.courier_profile
+    remaining_minutes = courier.get_remaining_break_minutes_today(max_break_minutes=60)
+    
+    return JsonResponse({
+        'remaining_minutes': remaining_minutes,
+        'total_break_minutes_today': courier.get_total_break_minutes_today(),
+        'max_break_minutes': 60
+    })

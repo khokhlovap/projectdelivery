@@ -33,4 +33,5 @@ urlpatterns = [
     path('courier/check-new-orders/', views.courier_check_new_orders, name='courier_check_new_orders'),
     path('courier/update-shift-with-slot/', views.courier_update_shift_with_slot, name='courier_update_shift_with_slot'),
     path('create-campaign/', views.create_campaign, name='create_campaign'),
+    path('courier/remaining-break-time/', views.courier_remaining_break_time, name='courier_remaining_break_time'),
 ]
