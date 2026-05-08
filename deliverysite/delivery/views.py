@@ -181,10 +181,10 @@ def courier_dashboard(request):
     
     courier = request.user.courier_profile
     
-    # Новые заказы (статус pending)
+    # Новые заказы 
     new_orders = Order.objects.filter(
         status='pending',
-        courier=courier  # Только заказы, назначенные на этого курьера
+        courier=courier
     ).order_by('-created_at')
     
     # Текущий статус смены
@@ -199,11 +199,14 @@ def courier_dashboard(request):
     if current_shift:
         current_break = CourierShiftBreak.objects.filter(shift=current_shift, end_time__isnull=True).first()
     
+    current_work_slot_display = 'Полный день (09:00 - 18:00)' if shift_status == 'on' else None
+    
     context = {
         'new_orders': new_orders,
         'shift_status': shift_status,
         'shift_start_time': shift_start_time,
         'current_break': current_break,
+        'current_work_slot_display': current_work_slot_display,
         'active_tab': 'dashboard',
     }
     return render(request, 'courier/courier_dashboard.html', context)

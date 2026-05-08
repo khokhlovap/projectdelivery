@@ -974,12 +974,20 @@
         const endTime = document.getElementById('customEndTime').value;
         
         if (!startTime || !endTime) {
-            showToastNotification('Пожалуйста, укажите время начала и окончания смены', 'warning');
+            showToastNotification('Пожалуйста, укажите время', 'warning');
             return;
         }
         
         if (startTime >= endTime) {
             showToastNotification('Время окончания должно быть позже времени начала', 'warning');
+            return;
+        }
+        
+        const startHour = parseInt(startTime.split(':')[0]);
+        const endHour = parseInt(endTime.split(':')[0]);
+        
+        if (startHour < 9 || endHour > 20) {
+            showToastNotification('Рабочее время должно быть в пределах 09:00 - 20:00', 'warning');
             return;
         }
         
@@ -1110,6 +1118,11 @@
     function changeWorkTime() {
         document.getElementById('workTimeCard').style.display = 'block';
         document.getElementById('activeWorkInfo').style.display = 'none';
+        
+        localStorage.removeItem('courier_work_slot');
+        localStorage.removeItem('courier_work_date');
+        localStorage.removeItem('courier_work_start');
+        localStorage.removeItem('courier_work_end');
         
         selectedWorkSlot = null;
         selectedCustomStart = null;
@@ -1427,17 +1440,27 @@
         
         const savedSlot = localStorage.getItem('courier_work_slot');
         const savedDate = localStorage.getItem('courier_work_date');
+        const savedStart = localStorage.getItem('courier_work_start');
+        const savedEnd = localStorage.getItem('courier_work_end');
         const today = new Date().toDateString();
         const shiftStatus = '{{ shift_status }}';
         
         if (savedSlot && savedDate === today && shiftStatus === 'on') {
-            const slotNames = {
-                'full': 'Полный день (09:00 - 18:00)',
-                'morning': 'Утро (09:00 - 12:00)',
-                'day': 'День (12:00 - 15:00)',
-                'afternoon': 'Вечер (15:00 - 18:00)'
-            };
-            document.getElementById('currentWorkSlotDisplay').textContent = slotNames[savedSlot] || 'Полный день';
+            let displayText = '';
+            
+            if (savedSlot === 'custom' && savedStart && savedEnd) {
+                displayText = `Индивидуальный график: ${savedStart} - ${savedEnd}`;
+            } else {
+                const slotNames = {
+                    'full': 'Полный день (09:00 - 18:00)',
+                    'morning': 'Утро (09:00 - 12:00)',
+                    'day': 'День (12:00 - 15:00)',
+                    'afternoon': 'Вечер (15:00 - 18:00)'
+                };
+                displayText = slotNames[savedSlot] || 'Полный день (09:00 - 18:00)';
+            }
+            
+            document.getElementById('currentWorkSlotDisplay').textContent = displayText;
             document.getElementById('workTimeCard').style.display = 'none';
             document.getElementById('activeWorkInfo').style.display = 'flex';
         }
