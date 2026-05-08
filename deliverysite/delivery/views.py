@@ -587,7 +587,6 @@ def courier_settings_profile(request):
 
 
 @login_required
-@login_required
 def courier_settings_statistics(request):
     "Статистика курьера"
     if request.user.role != 'courier':
@@ -619,7 +618,7 @@ def courier_settings_statistics(request):
     # Рассчитываем среднее время в минутах
     avg_delivery_minutes = sum(delivery_times) / len(delivery_times) if delivery_times else 0
     
-    # Преобразуем в читаемый формат
+    # Преобразуем в формат
     if avg_delivery_minutes >= 60:
         hours = int(avg_delivery_minutes // 60)
         minutes = int(avg_delivery_minutes % 60)
@@ -634,8 +633,8 @@ def courier_settings_statistics(request):
     context = {
         'stats': {
             'completed_orders': completed_count,
-            'avg_delivery_minutes': round(avg_delivery_minutes, 1),  # оставляем для возможных расчетов
-            'avg_delivery_formatted': avg_delivery_formatted,        # добавляем отформатированную строку
+            'avg_delivery_minutes': round(avg_delivery_minutes, 1),  
+            'avg_delivery_formatted': avg_delivery_formatted,       
             'late_orders': late_orders,
             'avg_rating': float(courier.avg_rating) if courier.avg_rating else 0,
         },
