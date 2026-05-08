@@ -587,6 +587,7 @@ def courier_settings_profile(request):
 
 
 @login_required
+@login_required
 def courier_settings_statistics(request):
     "Статистика курьера"
     if request.user.role != 'courier':
@@ -615,7 +616,16 @@ def courier_settings_statistics(request):
             delivery_time = order.delivered_at - in_progress_history.changed_at
             delivery_times.append(delivery_time.total_seconds() / 60)
     
-    avg_delivery_time = sum(delivery_times) / len(delivery_times) if delivery_times else 0
+    # Рассчитываем среднее время в минутах
+    avg_delivery_minutes = sum(delivery_times) / len(delivery_times) if delivery_times else 0
+    
+    # Преобразуем в читаемый формат
+    if avg_delivery_minutes >= 60:
+        hours = int(avg_delivery_minutes // 60)
+        minutes = int(avg_delivery_minutes % 60)
+        avg_delivery_formatted = f"{hours} ч {minutes} мин"
+    else:
+        avg_delivery_formatted = f"{round(avg_delivery_minutes, 1)} мин"
     
     late_orders = completed_orders.filter(
         delivered_at__date__gt=F('requested_delivery_date')
@@ -624,7 +634,8 @@ def courier_settings_statistics(request):
     context = {
         'stats': {
             'completed_orders': completed_count,
-            'avg_delivery_time': round(avg_delivery_time, 1),
+            'avg_delivery_minutes': round(avg_delivery_minutes, 1),  # оставляем для возможных расчетов
+            'avg_delivery_formatted': avg_delivery_formatted,        # добавляем отформатированную строку
             'late_orders': late_orders,
             'avg_rating': float(courier.avg_rating) if courier.avg_rating else 0,
         },

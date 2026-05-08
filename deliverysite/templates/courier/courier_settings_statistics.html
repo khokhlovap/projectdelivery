@@ -357,8 +357,7 @@
             <div class="stat-info">
                 <div class="stat-label">СРЕДНЕЕ ВРЕМЯ ДОСТАВКИ</div>
                 <div class="stat-value">
-                    {{ stats.avg_delivery_time|floatformat:1 }}
-                    <span class="stat-unit">мин</span>
+                    {{ stats.avg_delivery_formatted }}
                 </div>
             </div>
         </div>
