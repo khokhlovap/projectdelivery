@@ -230,6 +230,177 @@
         transform: translateY(-1px);
         color: white;
     }
+
+    /* Стили для модального окна деталей заказа */
+    .custom-modal .modal-content {
+        border: none;
+        border-radius: 20px;
+        overflow: hidden;
+        box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+    }
+    .custom-modal .modal-header {
+        background: white;
+        border-bottom: 1px solid #E8E0D5;
+        padding: 20px 24px;
+    }
+    .custom-modal .modal-header .modal-title {
+        color: #1E7A57;
+        font-weight: 600;
+        font-size: 1.2rem;
+    }
+    .custom-modal .modal-body {
+        padding: 24px;
+        background: white;
+    }
+    .custom-modal .modal-footer {
+        border-top: 1px solid #E8E0D5;
+        padding: 16px 24px;
+        background: white;
+    }
+    .custom-modal .btn-secondary {
+        background: white;
+        border: 1px solid #E8E0D5;
+        border-radius: 30px;
+        padding: 8px 24px;
+        color: #6B6B6B;
+        font-weight: 500;
+        transition: all 0.2s;
+    }
+    .custom-modal .btn-secondary:hover {
+        background: #F5F3F0;
+        border-color: #C8E0D6;
+        color: #1E1E1E;
+    }
+    
+    .detail-card {
+        background: #F8F9FA;
+        border-radius: 16px;
+        padding: 20px;
+        border: 1px solid #E8E0D5;
+        transition: all 0.2s;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+    }
+    .detail-card:hover {
+        background: white;
+        border-color: #C8E0D6;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    }
+    .detail-card-header {
+        font-size: 0.75rem;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        color: #1E7A57;
+        font-weight: 700;
+        margin-bottom: 16px;
+        padding-bottom: 8px;
+        border-bottom: 2px solid #C8E0D6;
+        display: inline-block;
+        flex-shrink: 0;
+    }
+    .detail-row {
+        display: flex;
+        flex-wrap: wrap;
+        margin-bottom: 12px;
+    }
+    .detail-label {
+        width: 110px;
+        font-size: 0.75rem;
+        color: #6B6B6B;
+        font-weight: 500;
+        flex-shrink: 0;
+    }
+    .detail-value {
+        flex: 1;
+        font-size: 0.85rem;
+        color: #1E1E1E;
+        font-weight: 500;
+        word-break: break-word;
+    }
+    .detail-value strong {
+        color: #1E7A57;
+    }
+    .highlight-badge {
+        background: #E8F5E9;
+        color: #2E7D32;
+        padding: 4px 12px;
+        border-radius: 30px;
+        font-size: 0.75rem;
+        font-weight: 500;
+        display: inline-block;
+    }
+    .details-row {
+        display: flex;
+        flex-wrap: wrap;
+        margin: 0 -10px;
+    }
+    .details-col {
+        flex: 1;
+        min-width: 250px;
+        padding: 0 10px;
+        margin-bottom: 20px;
+    }
+    .detail-card-body {
+        flex: 1;
+    }
+    .status-timeline {
+        background: #F8F9FA;
+        border-radius: 16px;
+        padding: 16px;
+        margin-top: 16px;
+        max-height: 250px;
+        overflow-y: auto;
+        padding-right: 8px;
+    }
+    .status-timeline::-webkit-scrollbar {
+        width: 6px;
+    }
+    .status-timeline::-webkit-scrollbar-thumb {
+        background: #C8E0D6;
+        border-radius: 10px;
+    }
+    .status-item {
+        display: flex;
+        align-items: flex-start;
+        gap: 12px;
+        padding: 12px 0;
+        border-bottom: 1px solid #E8E0D5;
+    }
+    .status-item:last-child {
+        border-bottom: none;
+    }
+    .status-icon {
+        width: 32px;
+        height: 32px;
+        background: white;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #1E7A57;
+        border: 1px solid #C8E0D6;
+    }
+    .status-icon i {
+        font-size: 0.9rem;
+    }
+    .status-content {
+        flex: 1;
+    }
+    .status-title {
+        font-weight: 600;
+        font-size: 0.85rem;
+        color: #1E1E1E;
+    }
+    .status-time {
+        font-size: 0.7rem;
+        color: #6B6B6B;
+    }
+    .status-comment {
+        font-size: 0.75rem;
+        color: #6B6B6B;
+        margin-top: 4px;
+    }
 </style>
 
 <!-- Шапка раздела -->
@@ -333,9 +504,9 @@
             </div>
             
             <div class="action-buttons">
-                <a href="{% url 'delivery:order_detail' order.id %}" class="btn-action btn-outline-secondary">
+                <button class="btn-action btn-outline-secondary" onclick="openOrderDetailsModal({{ order.id }})">
                     <i class="bi bi-eye"></i> Подробнее
-                </a>
+                </button>
             </div>
         </div>
         {% endfor %}
@@ -353,6 +524,28 @@
     <a href="{% url 'delivery:create_order' %}" class="btn-create" style="background: #1E7A57 !important; color: #FFFFFF !important;">
         <i class="bi bi-plus-circle"></i> Создать новый заказ
     </a>
+</div>
+
+<!-- Модальное окно деталей заказа -->
+<div class="modal fade custom-modal" id="orderDetailsModal" tabindex="-1">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="bi bi-info-circle me-2"></i>Детали заказа №<span id="detailOrderId"></span></h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="orderDetailsContent">
+                <div class="text-center py-4">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Загрузка...</span>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn-secondary" data-bs-dismiss="modal">Закрыть</button>
+            </div>
+        </div>
+    </div>
 </div>
 
 <script>
@@ -373,7 +566,350 @@
         
         document.getElementById('greetingMessage').innerHTML = `${greeting}, ${userName}!`;
     }
-    
+
+    // Открытие модального окна с деталями обычного заказа
+    function openOrderDetailsModal(orderId) {
+        document.getElementById('detailOrderId').textContent = orderId;
+        const modal = new bootstrap.Modal(document.getElementById('orderDetailsModal'));
+        modal.show();
+
+        const contentDiv = document.getElementById('orderDetailsContent');
+        contentDiv.innerHTML = '<div class="text-center py-4"><div class="spinner-border text-primary" role="status"></div></div>';
+
+        fetch('/api/order-details/?order_id=' + orderId)
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    const d = data.data;
+                    contentDiv.innerHTML = `
+                        <div class="details-row">
+                            <div class="details-col">
+                                <div class="detail-card">
+                                    <div class="detail-card-header"><i class="bi bi-building me-1"></i> ОТПРАВИТЕЛЬ</div>
+                                    <div class="detail-card-body">
+                                        <div class="detail-row">
+                                            <div class="detail-label">Компания:</div>
+                                            <div class="detail-value"><strong>${escapeHtml(d.client_name || '—')}</strong></div>
+                                        </div>
+                                        <div class="detail-row">
+                                            <div class="detail-label">Контактное лицо:</div>
+                                            <div class="detail-value">${escapeHtml(d.contact_person || '—')}</div>
+                                        </div>
+                                        <div class="detail-row">
+                                            <div class="detail-label">Телефон:</div>
+                                            <div class="detail-value">${escapeHtml(d.contact_phone || '—')}</div>
+                                        </div>
+                                        <div class="detail-row">
+                                            <div class="detail-label">Email:</div>
+                                            <div class="detail-value">${escapeHtml(d.contact_email || '—')}</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="details-col">
+                                <div class="detail-card">
+                                    <div class="detail-card-header"><i class="bi bi-truck me-1"></i> ЗАКАЗ</div>
+                                    <div class="detail-card-body">
+                                        <div class="detail-row">
+                                            <div class="detail-label">Тип:</div>
+                                            <div class="detail-value"><span class="highlight-badge">${escapeHtml(d.order_type || '—')}</span></div>
+                                        </div>
+                                        <div class="detail-row">
+                                            <div class="detail-label">Тариф:</div>
+                                            <div class="detail-value">${escapeHtml(d.tariff || '—')}</div>
+                                        </div>
+                                        <div class="detail-row">
+                                            <div class="detail-label">Вес:</div>
+                                            <div class="detail-value">${d.weight || '—'} кг</div>
+                                        </div>
+                                        <div class="detail-row">
+                                            <div class="detail-label">Создан:</div>
+                                            <div class="detail-value">${d.created_at || '—'}</div>
+                                        </div>
+                                        <div class="detail-row">
+                                            <div class="detail-label">Желаемая дата:</div>
+                                            <div class="detail-value">${d.requested_delivery_date || '—'}</div>
+                                        </div>
+                                        <div class="detail-row">
+                                            <div class="detail-label">Курьер:</div>
+                                            <div class="detail-value"><strong>${escapeHtml(d.courier_name || 'Не назначен')}</strong></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="details-row">
+                            <div class="details-col">
+                                <div class="detail-card">
+                                    <div class="detail-card-header"><i class="bi bi-geo-alt me-1"></i> АДРЕС ОТПРАВКИ</div>
+                                    <div class="detail-card-body">
+                                        <div class="detail-value">${escapeHtml(d.pickup_address || '—')}</div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="details-col">
+                                <div class="detail-card">
+                                    <div class="detail-card-header"><i class="bi bi-geo-alt me-1"></i> АДРЕС ДОСТАВКИ</div>
+                                    <div class="detail-card-body">
+                                        <div class="detail-value">${escapeHtml(d.delivery_address || '—')}</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="details-row">
+                            <div class="details-col">
+                                <div class="detail-card">
+                                    <div class="detail-card-header"><i class="bi bi-person me-1"></i> ПОЛУЧАТЕЛЬ</div>
+                                    <div class="detail-card-body">
+                                        <div class="detail-row">
+                                            <div class="detail-label">Имя:</div>
+                                            <div class="detail-value">${escapeHtml(d.recipient_name || '—')}</div>
+                                        </div>
+                                        <div class="detail-row">
+                                            <div class="detail-label">Телефон:</div>
+                                            <div class="detail-value">${escapeHtml(d.recipient_phone || '—')}</div>
+                                        </div>
+                                        <div class="detail-row">
+                                            <div class="detail-label">Компания:</div>
+                                            <div class="detail-value">${escapeHtml(d.recipient_company || '—')}</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="details-col">
+                                <div class="detail-card">
+                                    <div class="detail-card-header"><i class="bi bi-chat me-1"></i> КОММЕНТАРИЙ</div>
+                                    <div class="detail-card-body">
+                                        <div class="detail-value">${escapeHtml(d.client_comment || 'Нет комментария')}</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="detail-card">
+                            <div class="detail-card-header"><i class="bi bi-clock-history me-1"></i> ИСТОРИЯ СТАТУСОВ</div>
+                            <div class="status-timeline">
+                                ${d.status_history && d.status_history.length > 0 ? d.status_history.slice().reverse().map(h => `
+                                    <div class="status-item">
+                                        <div class="status-icon"><i class="bi bi-arrow-right-circle"></i></div>
+                                        <div class="status-content">
+                                            <div class="status-title">${escapeHtml(h.status)}</div>
+                                            <div class="status-time">${escapeHtml(h.time || '—')}</div>
+                                            <div class="status-comment">${escapeHtml(h.comment || '—')}</div>
+                                        </div>
+                                    </div>
+                                `).join('') : '<div class="text-muted small">Нет записей</div>'}
+                            </div>
+                        </div>
+                    `;
+                } else {
+                    contentDiv.innerHTML = '<div class="alert alert-danger">Ошибка: ' + (data.error || 'Неизвестная ошибка') + '</div>';
+                }
+            })
+            .catch(error => {
+                contentDiv.innerHTML = '<div class="alert alert-danger">Ошибка загрузки данных</div>';
+            });
+    }
+
     updateGreeting();
+
+    // Функция для безопасного экранирования HTML
+    function escapeHtml(text) {
+        if (!text) return '';
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+
+    // Приветствие в зависимости от времени дня
+    function updateGreeting() {
+        const now = new Date();
+        const hours = now.getHours();
+        const userName = "{{ user.first_name|default:user.username }}";
+        let greeting;
+        
+        if (hours >= 5 && hours < 12) {
+            greeting = "Доброе утро";
+        } else if (hours >= 12 && hours < 17) {
+            greeting = "Добрый день";
+        } else {
+            greeting = "Добрый вечер";
+        }
+        
+        const greetingElement = document.getElementById('greetingMessage');
+        if (greetingElement) {
+            greetingElement.innerHTML = `${greeting}, ${userName}!`;
+        }
+    }
+
+    // Открытие модального окна с деталями заказа
+    function openOrderDetailsModal(orderId) {
+        const orderIdSpan = document.getElementById('detailOrderId');
+        if (orderIdSpan) {
+            orderIdSpan.textContent = orderId;
+        }
+        
+        const modalElement = document.getElementById('orderDetailsModal');
+        if (!modalElement) {
+            console.error('Модальное окно не найдено');
+            return;
+        }
+        
+        const modal = new bootstrap.Modal(modalElement);
+        modal.show();
+
+        const contentDiv = document.getElementById('orderDetailsContent');
+        if (contentDiv) {
+            contentDiv.innerHTML = '<div class="text-center py-4"><div class="spinner-border text-primary" role="status"><span class="visually-hidden">Загрузка...</span></div></div>';
+        }
+
+        fetch('/api/order-details/?order_id=' + orderId)
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    const d = data.data;
+                    if (contentDiv) {
+                        contentDiv.innerHTML = `
+                            <div class="details-row">
+                                <div class="details-col">
+                                    <div class="detail-card">
+                                        <div class="detail-card-header"><i class="bi bi-building me-1"></i> ОТПРАВИТЕЛЬ</div>
+                                        <div class="detail-card-body">
+                                            <div class="detail-row">
+                                                <div class="detail-label">Компания:</div>
+                                                <div class="detail-value"><strong>${escapeHtml(d.client_name || '—')}</strong></div>
+                                            </div>
+                                            <div class="detail-row">
+                                                <div class="detail-label">Контактное лицо:</div>
+                                                <div class="detail-value">${escapeHtml(d.contact_person || '—')}</div>
+                                            </div>
+                                            <div class="detail-row">
+                                                <div class="detail-label">Телефон:</div>
+                                                <div class="detail-value">${escapeHtml(d.contact_phone || '—')}</div>
+                                            </div>
+                                            <div class="detail-row">
+                                                <div class="detail-label">Email:</div>
+                                                <div class="detail-value">${escapeHtml(d.contact_email || '—')}</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="details-col">
+                                    <div class="detail-card">
+                                        <div class="detail-card-header"><i class="bi bi-truck me-1"></i> ЗАКАЗ</div>
+                                        <div class="detail-card-body">
+                                            <div class="detail-row">
+                                                <div class="detail-label">Тип:</div>
+                                                <div class="detail-value"><span class="highlight-badge">${escapeHtml(d.order_type || '—')}</span></div>
+                                            </div>
+                                            <div class="detail-row">
+                                                <div class="detail-label">Тариф:</div>
+                                                <div class="detail-value">${escapeHtml(d.tariff || '—')}</div>
+                                            </div>
+                                            <div class="detail-row">
+                                                <div class="detail-label">Вес:</div>
+                                                <div class="detail-value">${d.weight || '—'} кг</div>
+                                            </div>
+                                            <div class="detail-row">
+                                                <div class="detail-label">Создан:</div>
+                                                <div class="detail-value">${escapeHtml(d.created_at || '—')}</div>
+                                            </div>
+                                            <div class="detail-row">
+                                                <div class="detail-label">Желаемая дата:</div>
+                                                <div class="detail-value">${escapeHtml(d.requested_delivery_date || 'Не указана')}</div>
+                                            </div>
+                                            <div class="detail-row">
+                                                <div class="detail-label">Желаемое время:</div>
+                                                <div class="detail-value">${escapeHtml(d.requested_time_slot || 'Не указано')}</div>
+                                            </div>
+                                            <div class="detail-row">
+                                                <div class="detail-label">Курьер:</div>
+                                                <div class="detail-value"><strong>${escapeHtml(d.courier_name || 'Не назначен')}</strong></div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="details-row">
+                                <div class="details-col">
+                                    <div class="detail-card">
+                                        <div class="detail-card-header"><i class="bi bi-geo-alt me-1"></i> АДРЕС ОТПРАВКИ</div>
+                                        <div class="detail-card-body">
+                                            <div class="detail-value">${escapeHtml(d.pickup_address || '—')}</div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="details-col">
+                                    <div class="detail-card">
+                                        <div class="detail-card-header"><i class="bi bi-geo-alt me-1"></i> АДРЕС ДОСТАВКИ</div>
+                                        <div class="detail-card-body">
+                                            <div class="detail-value">${escapeHtml(d.delivery_address || '—')}</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="details-row">
+                                <div class="details-col">
+                                    <div class="detail-card">
+                                        <div class="detail-card-header"><i class="bi bi-person me-1"></i> ПОЛУЧАТЕЛЬ</div>
+                                        <div class="detail-card-body">
+                                            <div class="detail-row">
+                                                <div class="detail-label">Имя:</div>
+                                                <div class="detail-value">${escapeHtml(d.recipient_name || '—')}</div>
+                                            </div>
+                                            <div class="detail-row">
+                                                <div class="detail-label">Телефон:</div>
+                                                <div class="detail-value">${escapeHtml(d.recipient_phone || '—')}</div>
+                                            </div>
+                                            <div class="detail-row">
+                                                <div class="detail-label">Компания:</div>
+                                                <div class="detail-value">${escapeHtml(d.recipient_company || '—')}</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="details-col">
+                                    <div class="detail-card">
+                                        <div class="detail-card-header"><i class="bi bi-chat me-1"></i> КОММЕНТАРИЙ</div>
+                                        <div class="detail-card-body">
+                                            <div class="detail-value">${escapeHtml(d.client_comment || 'Нет комментария')}</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="detail-card">
+                                <div class="detail-card-header"><i class="bi bi-clock-history me-1"></i> ИСТОРИЯ СТАТУСОВ</div>
+                                <div class="status-timeline">
+                                    ${d.status_history && d.status_history.length > 0 ? d.status_history.slice().reverse().map(h => `
+                                        <div class="status-item">
+                                            <div class="status-icon"><i class="bi bi-arrow-right-circle"></i></div>
+                                            <div class="status-content">
+                                                <div class="status-title">${escapeHtml(h.status)}</div>
+                                                <div class="status-time">${escapeHtml(h.time || '—')}</div>
+                                                <div class="status-comment">${escapeHtml(h.comment || '—')}</div>
+                                            </div>
+                                        </div>
+                                    `).join('') : '<div class="text-muted small">Нет записей</div>'}
+                                </div>
+                            </div>
+                        `;
+                    }
+                } else {
+                    if (contentDiv) {
+                        contentDiv.innerHTML = '<div class="alert alert-danger">Ошибка: ' + escapeHtml(data.error || 'Неизвестная ошибка') + '</div>';
+                    }
+                }
+            })
+            .catch(error => {
+                console.error('Ошибка:', error);
+                if (contentDiv) {
+                    contentDiv.innerHTML = '<div class="alert alert-danger">Ошибка загрузки данных</div>';
+                }
+            });
+    }
+
+    // Запуск приветствия при загрузке страницы
+    document.addEventListener('DOMContentLoaded', function() {
+        updateGreeting();
+    });
 </script>
 {% endblock %}
