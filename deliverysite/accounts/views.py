@@ -1491,6 +1491,8 @@ def manager_tasks_count(request):
 
 @login_required
 def assign_courier_ajax(request):
+    print("=== assign_courier_ajax ВЫЗВАНА ===") 
+    
     if request.user.role != 'manager':
         return JsonResponse({'error': 'Доступ запрещен'}, status=403)
     
@@ -1498,56 +1500,54 @@ def assign_courier_ajax(request):
         try:
             data = json.loads(request.body)
             order_id = data.get('order_id')
-            user_id = data.get('courier_id')
+            courier_user_id = data.get('courier_id')
+            
+            print(f"order_id: {order_id}, courier_user_id: {courier_user_id}")  
             
             order = get_object_or_404(Order, pk=order_id)
-            courier = get_object_or_404(Courier, user_id=user_id)
+            courier = get_object_or_404(Courier, user_id=courier_user_id)
             
-            # нельзя назначить того же курьера
-            if order.courier and order.courier.user_id == user_id:
-                return JsonResponse({'error': 'Этот курьер уже назначен на заказ'}, status=400)
+            print(f"Статус ДО: {order.status}")  
             
-            # Проверка доступности курьера
+            # Проверки
+            if order.courier and order.courier.user_id == courier_user_id:
+                return JsonResponse({'error': 'Этот курьер уже назначен'}, status=400)
+            
             if not courier.is_available():
-                return JsonResponse({'error': 'Курьер недоступен (не на смене)'}, status=400)
+                return JsonResponse({'error': 'Курьер не на смене'}, status=400)
             
-            # разные статусы для переназначения
-            if order.courier:
-            
-                allowed_statuses = ['created', 'pending', 'assigned', 'in_progress']
-                if order.status not in allowed_statuses:
-                    return JsonResponse({'error': f'Нельзя переназначить курьера в текущем статусе "{order.get_status_display()}"'}, status=400)
-            else:
-                # При первом назначении - только новые заказы
-                if order.status not in ['created', 'pending']:
-                    return JsonResponse({'error': f'Нельзя назначить курьера в текущем статусе "{order.get_status_display()}"'}, status=400)
-            
-            # Запоминаем старого курьера
+            # Назначение
             old_courier = order.courier
-            
-            # Назначение/переназначение
             order.courier = courier
+            order.status = 'pending'
+            order.save()
             
-            # Формируем комментарий и меняем статус при переназначении
+            print(f"Статус ПОСЛЕ: {order.status}")  
+            
+            # Комментарий
             if old_courier:
-                order.status = 'pending'
-                comment = f'Переназначен курьер с {old_courier.user.get_full_name()} на {courier.user.get_full_name()} (предыдущий статус: {order.get_status_display()})'
+                comment = f'Переназначен с {old_courier.user.get_full_name()} на {courier.user.get_full_name()}'
             else:
                 comment = f'Назначен курьер {courier.user.get_full_name()}, ожидает подтверждения'
             
-            order.save()
-            
-            # История статусов
             OrderStatusHistory.objects.create(
                 order=order,
-                status=order.status,
+                status='pending',
                 comment=comment
             )
             
-            # Возвращаем успешный ответ
-            return JsonResponse({'success': True, 'reassigned': bool(old_courier)})
+            # Отправка уведомления
+            from delivery.websocket_utils import notify_order_assigned
+            notify_order_assigned(order, courier.user.id)
+            
+            print("Успешно!")  
+            
+            return JsonResponse({'success': True})
             
         except Exception as e:
+            print(f"ОШИБКА: {e}")  
+            import traceback
+            traceback.print_exc()
             return JsonResponse({'error': str(e)}, status=500)
     
     return JsonResponse({'error': 'Метод не разрешен'}, status=405)

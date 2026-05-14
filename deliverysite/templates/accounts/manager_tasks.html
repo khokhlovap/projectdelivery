@@ -769,19 +769,28 @@
             btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Отправка...';
             btn.disabled = true;
             
+            const csrftoken = getCookie('csrftoken');
+            console.log('Отправка назначения:', { orderId, courierId, csrftoken });
+            
             fetch('/api/assign-courier/', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                     'X-CSRFToken': csrftoken
                 },
+                credentials: 'same-origin',
                 body: JSON.stringify({ 
                     order_id: parseInt(orderId), 
                     courier_id: parseInt(courierId),
                     is_reassign: true  
                 })
             })
-            .then(response => response.json())
+            .then(response => {
+                if (!response.ok) {
+                    return response.text().then(text => { throw new Error(text) });
+                }
+                return response.json();
+            })
             .then(data => {
                 if (data.success) {
                     location.reload();
@@ -791,7 +800,7 @@
             })
             .catch(error => {
                 console.error('Error:', error);
-                alert('Ошибка сервера: ' + error);
+                alert('Ошибка сервера: ' + error.message);
             })
             .finally(() => {
                 btn.innerHTML = originalText;

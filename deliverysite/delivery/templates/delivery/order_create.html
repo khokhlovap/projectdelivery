@@ -309,24 +309,63 @@
 
 <script>
 let recipientCount = 1;
+let deliveryModeInitialized = false;
 
 const orderTypeSelect = document.getElementById('orderTypeSelect');
 const singleOrderForm = document.getElementById('singleOrderForm');
 const campaignForm = document.getElementById('campaignForm');
 const submitBtn = document.getElementById('submitBtn');
 const orderForm = document.getElementById('orderForm');
-const deliveryMode = document.getElementById('deliveryMode');
-const deliveryDateBlock = document.getElementById('deliveryDateBlock');
+
+// Функция для работы с полем даты в кампании
+function initDeliveryModeListener() {
+    const deliveryMode = document.getElementById('deliveryMode');
+    const deliveryDateBlock = document.getElementById('deliveryDateBlock');
+    
+    if (deliveryMode && !deliveryModeInitialized) {
+        const newDeliveryMode = deliveryMode.cloneNode(true);
+        deliveryMode.parentNode.replaceChild(newDeliveryMode, deliveryMode);
+        
+        newDeliveryMode.addEventListener('change', function() {
+            if (newDeliveryMode.value === 'custom') {
+                deliveryDateBlock.style.display = 'block';
+                const dateInput = deliveryDateBlock.querySelector('input[name="delivery_date"]');
+                if (dateInput) dateInput.required = true;
+            } else {
+                deliveryDateBlock.style.display = 'none';
+                const dateInput = deliveryDateBlock.querySelector('input[name="delivery_date"]');
+                if (dateInput) dateInput.required = false;
+            }
+        });
+        
+        deliveryModeInitialized = true;
+    }
+}
+
+function toggleDeliveryDate() {
+    const deliveryMode = document.getElementById('deliveryMode');
+    const deliveryDateBlock = document.getElementById('deliveryDateBlock');
+    
+    if (deliveryMode && deliveryDateBlock) {
+        if (deliveryMode.value === 'custom') {
+            deliveryDateBlock.style.display = 'block';
+            const dateInput = deliveryDateBlock.querySelector('input[name="delivery_date"]');
+            if (dateInput) dateInput.required = true;
+        } else {
+            deliveryDateBlock.style.display = 'none';
+            const dateInput = deliveryDateBlock.querySelector('input[name="delivery_date"]');
+            if (dateInput) dateInput.required = false;
+        }
+    }
+}
 
 function disableAllRequired(container) {
     const fields = container.querySelectorAll('input, select, textarea');
     fields.forEach(field => {
-        // Сохраняем оригинальное состояние required
         if (field.hasAttribute('required')) {
             field.dataset.wasRequired = 'true';
             field.required = false;
         }
-        // Убираем классы ошибок
         field.classList.remove('is-invalid');
     });
 }
@@ -340,7 +379,7 @@ function enableAllRequired(container) {
     });
 }
 
-// Функция для полного скрытия обычной формы
+// Сохранение и восстановление форм
 function hideSingleForm() {
     if (!singleOrderForm.dataset.savedContent) {
         singleOrderForm.dataset.savedContent = singleOrderForm.innerHTML;
@@ -356,7 +395,6 @@ function showSingleForm() {
     singleOrderForm.style.display = 'block';
 }
 
-// Функция для скрытия формы кампании
 function hideCampaignForm() {
     if (!campaignForm.dataset.savedContent) {
         campaignForm.dataset.savedContent = campaignForm.innerHTML;
@@ -370,116 +408,76 @@ function showCampaignForm() {
         campaignForm.innerHTML = campaignForm.dataset.savedContent;
     }
     campaignForm.style.display = 'block';
-}
-
-function toggleDeliveryDate() {
-    if (deliveryMode && deliveryDateBlock) {
-        if (deliveryMode.value === 'custom') {
-            deliveryDateBlock.style.display = 'block';
-            const dateInput = deliveryDateBlock.querySelector('input[name="delivery_date"]');
-            if (dateInput) dateInput.required = true;
-        } else {
-            deliveryDateBlock.style.display = 'none';
-            const dateInput = deliveryDateBlock.querySelector('input[name="delivery_date"]');
-            if (dateInput) dateInput.required = false;
+    
+    // Пересоздаем счетчик получателей и обработчики
+    recipientCount = 1;
+    
+    // Очищаем список получателей и создаем первого заново
+    const recipientsList = document.getElementById('recipientsList');
+    if (recipientsList) {
+        // Сохраняем шаблон первого получателя
+        const firstRecipient = document.getElementById('recipient-1');
+        if (firstRecipient) {
+            recipientsList.innerHTML = '';
+            const newFirst = firstRecipient.cloneNode(true);
+            newFirst.id = 'recipient-1';
+            // Очищаем значения полей
+            newFirst.querySelectorAll('input, textarea').forEach(field => {
+                field.value = '';
+                field.classList.remove('is-invalid');
+            });
+            recipientsList.appendChild(newFirst);
         }
     }
+    
+    // Пересоздаем обработчик кнопки "Добавить получателя"
+    initAddRecipientButton();
+    
+    // Пересоздаем обработчик для поля "Режим доставки"
+    deliveryModeInitialized = false;
+    initDeliveryModeListener();
+    toggleDeliveryDate();
 }
 
-if (deliveryMode) {
-    deliveryMode.addEventListener('change', toggleDeliveryDate);
-}
-
-/* переключение формы */
-function toggleForms(showCampaign) {
-    if (showCampaign) {
-        // Показываем форму кампании, скрываем обычную
-        showCampaignForm();
-        hideSingleForm();
-        
-        submitBtn.innerHTML = '<i class="bi bi-send"></i> Создать кампанию';
-        orderForm.action = "{% url 'delivery:create_campaign' %}";
-        
-        const campaignRequired = campaignForm.querySelectorAll('[required]');
-        campaignRequired.forEach(field => {
-            field.required = true;
-        });
-        
-    } else {
-        // Показываем обычную форму, скрываем кампанию
-        showSingleForm();
-        hideCampaignForm();
-        
-        submitBtn.innerHTML = '<i class="bi bi-check-circle"></i> Создать заказ';
-        orderForm.action = "{% url 'delivery:create_order' %}";
-        
-        // Восстанавливаем required для полей обычной формы
-        const singleRequired = singleOrderForm.querySelectorAll('[required]');
-        singleRequired.forEach(field => {
-            field.required = true;
-        });
-    }
-}
-
-function toggleRequired(container, enable) {
-    if (!container) return;
-    const fields = container.querySelectorAll('input, select, textarea');
-    fields.forEach(field => {
-        if (enable) {
-            if (field.dataset.required === 'true' || field.hasAttribute('data-was-required')) {
-                field.required = true;
-            }
-        } else {
-            if (field.required) {
-                field.dataset.required = 'true';
-                field.required = false;
-            }
-        }
-    });
-}
-
-/* выбор типа заказа */
-orderTypeSelect.addEventListener('change', function () {
-    toggleForms(this.value === 'gifts');
-});
-
-/* добавление получателя (для кампании) */
+// Добавление получателя
 function initAddRecipientButton() {
     const addBtn = document.getElementById('addRecipientBtn');
     if (addBtn) {
-        // Удаляем старый обработчик, чтобы не дублировать
         const newBtn = addBtn.cloneNode(true);
         addBtn.parentNode.replaceChild(newBtn, addBtn);
-        newBtn.addEventListener('click', function () {
+        
+        newBtn.addEventListener('click', function() {
             recipientCount++;
             const wrapper = document.getElementById('recipientsList');
+            if (!wrapper) return;
+            
+            // Находим шаблон первого получателя
+            const template = document.getElementById('recipient-1');
+            if (!template) return;
+            
             const div = document.createElement('div');
             div.className = 'recipient-card';
             div.id = 'recipient-' + recipientCount;
-            div.innerHTML = `
-                <div class="recipient-header">
-                    <span class="recipient-number">Получатель №${recipientCount}</span>
-                    <button type="button" class="btn-remove-recipient" onclick="removeRecipient(${recipientCount})">✕</button>
-                </div>
-                <div class="row g-3">
-                    <div class="col-md-6">
-                        <label class="form-label">Компания</label>
-                        <input type="text" name="recipient_company[]" class="form-control">
-                    </div>
-                    <div class="col-md-6">
-                        <label class="form-label">ФИО *</label>
-                        <input type="text" name="recipient_full_name[]" class="form-control" required>
-                    </div>
-                    <div class="col-md-4">
-                        <label class="form-label">Телефон *</label>
-                        <input type="tel" name="recipient_phone[]" class="form-control" required>
-                    </div>
-                    <div class="col-md-8">
-                        <label class="form-label">Адрес *</label>
-                        <textarea name="recipient_address[]" class="form-control" rows="2" required></textarea>
-                    </div>
-                </div>
-            `;
+            div.innerHTML = template.innerHTML;
+            
+            // Очищаем значения полей
+            div.querySelectorAll('input, textarea').forEach(field => {
+                field.value = '';
+                field.classList.remove('is-invalid');
+            });
+            
+            // Обновляем заголовок
+            const header = div.querySelector('.recipient-number');
+            if (header) {
+                header.textContent = `Получатель №${recipientCount}`;
+            }
+            
+            // Обновляем кнопку удаления
+            const removeBtn = div.querySelector('.btn-remove-recipient');
+            if (removeBtn) {
+                removeBtn.setAttribute('onclick', `removeRecipient(${recipientCount})`);
+            }
+            
             wrapper.appendChild(div);
         });
     }
@@ -495,14 +493,37 @@ window.removeRecipient = function(id) {
     if (recipient) recipient.remove();
 };
 
+// Переключение между формами
+function toggleForms(showCampaign) {
+    if (showCampaign) {
+        showCampaignForm();
+        hideSingleForm();
+        submitBtn.innerHTML = '<i class="bi bi-send"></i> Создать кампанию';
+        orderForm.action = "{% url 'delivery:create_campaign' %}";
+    } else {
+        showSingleForm();
+        hideCampaignForm();
+        submitBtn.innerHTML = '<i class="bi bi-check-circle"></i> Создать заказ';
+        orderForm.action = "{% url 'delivery:create_order' %}";
+    }
+}
+
+orderTypeSelect.addEventListener('change', function () {
+    toggleForms(this.value === 'gifts');
+});
+
+// Инициализация при загрузке
 document.addEventListener('DOMContentLoaded', function () {
     // Сохраняем исходное содержимое форм
     singleOrderForm.dataset.savedContent = singleOrderForm.innerHTML;
     campaignForm.dataset.savedContent = campaignForm.innerHTML;
     
-    toggleForms(orderTypeSelect.value === 'gifts');
-    toggleDeliveryDate();
+    // Инициализируем обработчики
     initAddRecipientButton();
+    initDeliveryModeListener();
+    
+    // Устанавливаем правильную форму
+    toggleForms(orderTypeSelect.value === 'gifts');
     
     // Установка минимальной даты для обычной формы
     const dateInput = document.getElementById('deliveryDate');
@@ -512,20 +533,18 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 });
 
-// Валидация телефона (10 цифр)
+// Валидация телефона
 function validatePhone(phone) {
     const digits = phone.replace(/[^\d]/g, '');
     return digits.length === 10 || digits.length === 11;
 }
 
-// Валидация ФИО (только буквы, пробелы и дефис)
 function validateName(name) {
     if (!name) return true;
     const regex = /^[А-Яа-яЁёA-Za-z\s\-]+$/;
     return regex.test(name);
 }
 
-// Валидация даты
 function validateDate(dateString) {
     if (!dateString) return false;
     const selectedDate = new Date(dateString);
@@ -534,20 +553,16 @@ function validateDate(dateString) {
     return selectedDate >= today;
 }
 
-// Валидация веса
 function validateWeight(weight) {
     if (!weight) return true;
     const num = parseFloat(weight);
     return !isNaN(num) && num >= 0 && num <= 30;
 }
 
-// Основная функция валидации формы 
 function validateForm() {
-    // Проверяем, какая форма сейчас активна
     const isCampaign = campaignForm.style.display !== 'none';
     
     if (isCampaign) {
-        // Для кампании своя валидация
         let isValid = true;
         const recipients = document.querySelectorAll('.recipient-card');
         
@@ -556,7 +571,6 @@ function validateForm() {
             isValid = false;
         }
         
-        // Проверка адреса забора
         const pickupAddress = document.getElementById('campaignPickupAddress');
         if (pickupAddress && !pickupAddress.value.trim()) {
             pickupAddress.classList.add('is-invalid');
@@ -565,7 +579,6 @@ function validateForm() {
             pickupAddress.classList.remove('is-invalid');
         }
         
-        // Проверка названия кампании
         const campaignName = document.getElementById('campaignName');
         if (campaignName && !campaignName.value.trim()) {
             campaignName.classList.add('is-invalid');
@@ -574,8 +587,7 @@ function validateForm() {
             campaignName.classList.remove('is-invalid');
         }
         
-        // Проверка данных получателей
-        recipients.forEach((recipient, index) => {
+        recipients.forEach(recipient => {
             const fullName = recipient.querySelector('input[name="recipient_full_name[]"]');
             const phone = recipient.querySelector('input[name="recipient_phone[]"]');
             const address = recipient.querySelector('textarea[name="recipient_address[]"]');
@@ -607,10 +619,8 @@ function validateForm() {
         }
         return isValid;
     } else {
-        // Валидация обычного заказа
         let isValid = true;
         
-        // Проверка адресов
         const pickupAddress = document.getElementById('pickupAddress');
         const deliveryAddress = document.getElementById('deliveryAddress');
         
@@ -628,7 +638,6 @@ function validateForm() {
             deliveryAddress.classList.remove('is-invalid');
         }
         
-        // Проверка веса
         const weight = document.getElementById('weight');
         if (weight && !validateWeight(weight.value)) {
             weight.classList.add('is-invalid');
@@ -637,7 +646,6 @@ function validateForm() {
             weight.classList.remove('is-invalid');
         }
         
-        // Проверка фамилии
         const lastName = document.getElementById('lastName');
         if (lastName && !validateName(lastName.value)) {
             lastName.classList.add('is-invalid');
@@ -646,7 +654,6 @@ function validateForm() {
             lastName.classList.remove('is-invalid');
         }
         
-        // Проверка имени
         const firstName = document.getElementById('firstName');
         if (firstName && !validateName(firstName.value)) {
             firstName.classList.add('is-invalid');
@@ -655,7 +662,6 @@ function validateForm() {
             firstName.classList.remove('is-invalid');
         }
         
-        // Проверка телефона
         const phone = document.getElementById('phone');
         if (phone && !validatePhone(phone.value)) {
             phone.classList.add('is-invalid');
@@ -664,7 +670,6 @@ function validateForm() {
             phone.classList.remove('is-invalid');
         }
         
-        // Проверка даты
         const deliveryDate = document.getElementById('deliveryDate');
         if (deliveryDate && !validateDate(deliveryDate.value)) {
             deliveryDate.classList.add('is-invalid');
@@ -680,7 +685,6 @@ function validateForm() {
     }
 }
 
-// Добавляем валидацию на отправку формы
 if (orderForm) {
     orderForm.onsubmit = validateForm;
 }

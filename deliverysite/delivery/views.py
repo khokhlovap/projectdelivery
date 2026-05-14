@@ -107,11 +107,11 @@ def create_order(request):
                 status='created'
             )
             
-            OrderStatusHistory.objects.create(
-                order=order,
-                status='created',
-                comment=f'Заказ создан клиентом {request.user.get_full_name()}'
-            )
+            # OrderStatusHistory.objects.create(
+            #     order=order,
+            #     status='created',
+            #     comment=f'Заказ создан клиентом {request.user.get_full_name()}'
+            # )
             
             messages.success(request, f'Заказ №{order.id} успешно создан!')
             return redirect('accounts:clients_orders')

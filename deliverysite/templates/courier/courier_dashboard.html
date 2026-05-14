@@ -156,7 +156,7 @@
             </div>
         {% endif %}
     </div>
-        <div class="break-info" id="breakInfo" style="margin-top: 12px; padding: 10px; background: #F8F9FA; border-radius: 12px; display: none;">
+    <div class="break-info" id="breakInfo" style="margin-top: 12px; padding: 10px; background: #F8F9FA; border-radius: 12px; display: none;">
         <div style="display: flex; align-items: center; justify-content: space-between; gap: 10px;">
             <div style="display: flex; align-items: center; gap: 8px;">
                 <i class="bi bi-hourglass-split" style="color: #1E7A57;"></i>
@@ -181,6 +181,7 @@
         {% endif %}
     </div>
     
+    <!-- Контейнер для заказов -->
     <div id="new-orders-container">
         {% if new_orders %}
             {% for order in new_orders %}
@@ -918,9 +919,7 @@
     let selectedWorkSlot = null;
     let selectedCustomStart = null;
     let selectedCustomEnd = null;
-    let socket = null;
-    let reconnectAttempts = 0;
-    const maxReconnectAttempts = 10;
+    let pollingInterval = null;
 
     function getCookie(name) {
         let cookieValue = null;
@@ -1009,7 +1008,6 @@
     }
 
     function confirmWorkTime() {
-        // Проверяем, если смена уже активна - не начинаем новую
         const currentShiftStatus = '{{ shift_status }}';
         if (currentShiftStatus === 'on') {
             showToastNotification('Смена уже активна', 'warning');
@@ -1058,7 +1056,6 @@
     }
 
     function updateShiftWithWorkSlot(status, workSlot, customStart, customEnd) {
-        // Проверяем, если смена уже активна - не отправляем запрос
         const currentShiftStatus = '{{ shift_status }}';
         if (status === 'on' && currentShiftStatus === 'on') {
             showToastNotification('Смена уже активна', 'warning');
@@ -1096,7 +1093,7 @@
         });
     }
 
-   function endShift() {
+    function endShift() {
         const currentShiftStatus = '{{ shift_status }}';
         if (currentShiftStatus === 'off') {
             showToastNotification('Смена уже завершена', 'warning');
@@ -1157,6 +1154,7 @@
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
+                    updateRemainingBreakTime();  // ← ДОБАВЬТЕ ЭТУ СТРОКУ
                     location.reload();
                 } else {
                     showToastNotification('Ошибка: ' + data.error, 'danger');
@@ -1173,6 +1171,7 @@
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
+                    updateRemainingBreakTime();  // ← ДОБАВЬТЕ ЭТУ СТРОКУ
                     location.reload();
                 } else {
                     showToastNotification('Ошибка: ' + data.error, 'danger');
@@ -1299,232 +1298,212 @@
     }
 
     function addNewOrder(orderData) {
-        const container = document.getElementById('new-orders-container');
-        const emptyState = document.getElementById('emptyState');
-        
-        if (emptyState) {
-            emptyState.remove();
-        }
-        
-        const orderHtml = `
-            <div class="order-card" id="order-${orderData.order_id}" data-order-id="${orderData.order_id}">
-                <div class="order-header">
-                    <div class="order-id-wrapper">
-                        <i class="bi bi-receipt"></i>
-                        <span class="order-id">Заказ №${orderData.order_id}</span>
-                    </div>
-                    <span class="order-time">${orderData.created_at || 'Только что'}</span>
-                </div>
-                <div class="order-details">
-                    <div class="order-address">
-                        <div class="address-icon pickup">
-                            <i class="bi bi-box-seam"></i>
-                        </div>
-                        <div class="address-text">
-                            <span class="address-label">Отправка</span>
-                            <span class="address-value">${escapeHtml(orderData.pickup_address || 'Не указан')}</span>
-                        </div>
-                    </div>
-                    <div class="order-arrow">
-                        <i class="bi bi-arrow-down-short"></i>
-                    </div>
-                    <div class="order-address">
-                        <div class="address-icon delivery">
-                            <i class="bi bi-geo-alt-fill"></i>
-                        </div>
-                        <div class="address-text">
-                            <span class="address-label">Доставка</span>
-                            <span class="address-value">${escapeHtml(orderData.delivery_address || 'Не указан')}</span>
-                        </div>
-                    </div>
-                </div>
-                <div class="order-meta">
-                    <div class="meta-item">
-                        <i class="bi bi-tag"></i>
-                        <span>${escapeHtml(orderData.order_type || 'Документация')}</span>
-                    </div>
-                    <div class="meta-divider"></div>
-                    <div class="meta-item">
-                        <i class="bi bi-weight"></i>
-                        <span>${orderData.weight || 'вес не указан'} кг</span>
-                    </div>
-                </div>
-                <div class="order-buttons">
-                    <button class="btn-accept" onclick="acceptOrder(${orderData.order_id})">
-                        <i class="bi bi-check-lg"></i>
-                        <span>Принять заказ</span>
-                    </button>
-                    <button class="btn-reject" onclick="rejectOrder(${orderData.order_id})">
-                        <i class="bi bi-x-lg"></i>
-                        <span>Отклонить</span>
-                    </button>
-                </div>
-                <a href="/delivery/courier/order/${orderData.order_id}/readonly/" class="btn-detail" style="text-decoration: none; display: flex;">
-                    <i class="bi bi-info-circle"></i>
-                    <span>Подробнее о заказе</span>
-                </a>
-            </div>
-        `;
-        
-        container.insertAdjacentHTML('afterbegin', orderHtml);
-        
-        const newOrder = document.getElementById(`order-${orderData.order_id}`);
-        if (newOrder) {
-            newOrder.style.animation = 'slideIn 0.3s ease';
-            newOrder.style.backgroundColor = '#F0FFF4';
-            setTimeout(() => {
-                newOrder.style.backgroundColor = '';
-            }, 1000);
-        }
+    console.log('addNewOrder вызвана с данными:', orderData);
+    
+    const container = document.getElementById('new-orders-container');
+    console.log('Контейнер new-orders-container:', container);
+    
+    if (!container) {
+        console.error('Контейнер new-orders-container НЕ НАЙДЕН!');
+        return;
     }
-
-    function updateRemainingBreakTime() {
-    fetch('/delivery/courier/remaining-break-time/')
-        .then(response => response.json())
-        .then(data => {
-            if (data.remaining_minutes !== undefined) {
-                const remainingSpan = document.getElementById('remainingBreakTime');
-                const breakInfo = document.getElementById('breakInfo');
-                
-                if (remainingSpan) {
-                    const hours = Math.floor(data.remaining_minutes / 60);
-                    const minutes = data.remaining_minutes % 60;
-                    
-                    if (hours > 0) {
-                        remainingSpan.textContent = `${hours} ч ${minutes} мин`;
-                    } else {
-                        remainingSpan.textContent = `${minutes} мин`;
-                    }
-                    
-                    if (breakInfo && data.remaining_minutes < 60) {
-                        breakInfo.style.display = 'block';
-                        
-                        // Если осталось мало времени, меняем цвет
-                        if (data.remaining_minutes < 15) {
-                            remainingSpan.style.color = '#E53935';
-                        } else if (data.remaining_minutes < 30) {
-                            remainingSpan.style.color = '#FF9800';
-                        } else {
-                            remainingSpan.style.color = '#1E7A57';
-                        }
-                    }
-                }
-            }
-        })
-        .catch(error => console.error('Ошибка загрузки времени перерывов:', error));
+    
+    const emptyState = document.getElementById('emptyState');
+    if (emptyState) {
+        console.log('Удаляем emptyState');
+        emptyState.remove();
+    }
+    
+    // Проверяем, что есть все необходимые поля
+    const orderId = orderData.id || orderData.order_id;
+    if (!orderId) {
+        console.error('Нет ID заказа в данных:', orderData);
+        return;
+    }
+    
+    console.log('Создаем HTML для заказа', orderId);
+    
+    const orderHtml = `
+        <div class="order-card" id="order-${orderId}" data-order-id="${orderId}">
+            <div class="order-header">
+                <div class="order-id-wrapper">
+                    <i class="bi bi-receipt"></i>
+                    <span class="order-id">Заказ №${orderId}</span>
+                </div>
+                <span class="order-time">${orderData.created_at || 'Только что'}</span>
+            </div>
+            <div class="order-details">
+                <div class="order-address">
+                    <div class="address-icon pickup">
+                        <i class="bi bi-box-seam"></i>
+                    </div>
+                    <div class="address-text">
+                        <span class="address-label">Отправка</span>
+                        <span class="address-value">${escapeHtml(orderData.pickup_address || 'Не указан')}</span>
+                    </div>
+                </div>
+                <div class="order-arrow">
+                    <i class="bi bi-arrow-down-short"></i>
+                </div>
+                <div class="order-address">
+                    <div class="address-icon delivery">
+                        <i class="bi bi-geo-alt-fill"></i>
+                    </div>
+                    <div class="address-text">
+                        <span class="address-label">Доставка</span>
+                        <span class="address-value">${escapeHtml(orderData.delivery_address || 'Не указан')}</span>
+                    </div>
+                </div>
+            </div>
+            <div class="order-meta">
+                <div class="meta-item">
+                    <i class="bi bi-tag"></i>
+                    <span>${escapeHtml(orderData.order_type || 'Документация')}</span>
+                </div>
+                <div class="meta-divider"></div>
+                <div class="meta-item">
+                    <i class="bi bi-weight"></i>
+                    <span>${orderData.weight || 'вес не указан'} кг</span>
+                </div>
+            </div>
+            <div class="order-buttons">
+                <button class="btn-accept" onclick="acceptOrder(${orderId})">
+                    <i class="bi bi-check-lg"></i>
+                    <span>Принять заказ</span>
+                </button>
+                <button class="btn-reject" onclick="rejectOrder(${orderId})">
+                    <i class="bi bi-x-lg"></i>
+                    <span>Отклонить</span>
+                </button>
+            </div>
+            <a href="/delivery/courier/order/${orderId}/readonly/" class="btn-detail" style="text-decoration: none; display: flex;">
+                <i class="bi bi-info-circle"></i>
+                <span>Подробнее о заказе</span>
+            </a>
+        </div>
+    `;
+    
+    container.insertAdjacentHTML('afterbegin', orderHtml);
+    console.log('HTML вставлен, заказ добавлен');
+    
+    const newOrder = document.getElementById(`order-${orderId}`);
+    if (newOrder) {
+        newOrder.style.animation = 'slideIn 0.3s ease';
+        newOrder.style.backgroundColor = '#F0FFF4';
+        setTimeout(() => {
+            newOrder.style.backgroundColor = '';
+        }, 1000);
+    }
+    
+    updateOrdersCount();
+    console.log('updateOrdersCount выполнен');
 }
 
-// Вызываем при загрузке страницы и после каждого перерыва
-document.addEventListener('DOMContentLoaded', function() {
-    updateRemainingBreakTime();
-    // Обновляем каждые 30 секунд
-    setInterval(updateRemainingBreakTime, 30000);
-});
-
-    function checkNewOrdersViaAPI() {
-        fetch('/delivery/courier/check-new-orders/')
+    function updateRemainingBreakTime() {
+        fetch('/delivery/courier/remaining-break-time/')
             .then(response => response.json())
             .then(data => {
-                if (data.new_orders && data.new_orders.length > 0) {
-                    data.new_orders.forEach(order => {
-                        if (!document.getElementById(`order-${order.id}`)) {
-                            addNewOrder(order);
-                            updateOrdersCount();
+                if (data.remaining_minutes !== undefined) {
+                    const remainingSpan = document.getElementById('remainingBreakTime');
+                    const breakInfo = document.getElementById('breakInfo');
+                    
+                    if (remainingSpan) {
+                        const hours = Math.floor(data.remaining_minutes / 60);
+                        const minutes = data.remaining_minutes % 60;
+                        
+                        if (hours > 0) {
+                            remainingSpan.textContent = `${hours} ч ${minutes} мин`;
+                        } else {
+                            remainingSpan.textContent = `${minutes} мин`;
                         }
-                    });
+                        
+                        if (breakInfo && data.remaining_minutes < 60) {
+                            breakInfo.style.display = 'block';
+                            
+                            if (data.remaining_minutes < 15) {
+                                remainingSpan.style.color = '#E53935';
+                            } else if (data.remaining_minutes < 30) {
+                                remainingSpan.style.color = '#FF9800';
+                            } else {
+                                remainingSpan.style.color = '#1E7A57';
+                            }
+                        }
+                    }
                 }
             })
-            .catch(error => console.error('API ошибка:', error));
+            .catch(error => console.error('Ошибка загрузки времени перерывов:', error));
     }
 
-    function connectWebSocket() {
-        const userId = {{ user.id }};
-        const wsScheme = window.location.protocol === 'https:' ? 'wss://' : 'ws://';
-        const wsUrl = `${wsScheme}${window.location.host}/ws/orders/${userId}/`;
-        
-        try {
-            socket = new WebSocket(wsUrl);
-            
-            socket.onopen = function() {
-                console.log('WebSocket подключен');
-                reconnectAttempts = 0;
-                if (window.pingInterval) clearInterval(window.pingInterval);
-                window.pingInterval = setInterval(() => {
-                    if (socket && socket.readyState === WebSocket.OPEN) {
-                        socket.send(JSON.stringify({ type: 'ping' }));
+    function checkNewOrdersViaAPI() {
+    console.log('Проверка новых заказов...');
+    fetch('/delivery/courier/check-new-orders/')
+        .then(response => response.json())
+        .then(data => {
+            console.log('Ответ API:', data);
+            if (data.new_orders && data.new_orders.length > 0) {
+                console.log('Найдено заказов:', data.new_orders.length);
+                data.new_orders.forEach(order => {
+                    console.log('Обработка заказа:', order);
+                    if (!document.getElementById(`order-${order.id}`)) {
+                        console.log('Добавляем заказ:', order.id);
+                        addNewOrder(order);
+                    } else {
+                        console.log('Заказ уже существует:', order.id);
                     }
-                }, 30000);
-            };
-            
-            socket.onmessage = function(e) {
-                try {
-                    const data = JSON.parse(e.data);
-                    if (data.type === 'new_order') {
-                        showToastNotification(`Новый заказ #${data.order_id}`, 'success');
-                        addNewOrder(data);
-                        updateOrdersCount();
-                    }
-                } catch (error) {
-                    console.error('Ошибка парсинга сообщения:', error);
-                }
-            };
-            
-            socket.onclose = function() {
-                if (reconnectAttempts < maxReconnectAttempts) {
-                    reconnectAttempts++;
-                    setTimeout(connectWebSocket, 3000);
-                }
-            };
-            
-            socket.onerror = function(e) {
-                console.error('WebSocket ошибка:', e);
-            };
-        } catch (error) {
-            console.error('Ошибка создания WebSocket:', error);
-        }
-    }
-
-    document.addEventListener('DOMContentLoaded', function() {
-        connectWebSocket();
-        setInterval(checkNewOrdersViaAPI, 5000);
-        loadActiveOrdersCount();
-        setInterval(loadActiveOrdersCount, 30000);
-        
-        const savedSlot = localStorage.getItem('courier_work_slot');
-        const savedDate = localStorage.getItem('courier_work_date');
-        const savedStart = localStorage.getItem('courier_work_start');
-        const savedEnd = localStorage.getItem('courier_work_end');
-        const today = new Date().toDateString();
-        const shiftStatus = '{{ shift_status }}';
-        
-        if (savedSlot && savedDate === today && shiftStatus === 'on') {
-            let displayText = '';
-            
-            if (savedSlot === 'custom' && savedStart && savedEnd) {
-                displayText = `Индивидуальный график: ${savedStart} - ${savedEnd}`;
+                });
             } else {
-                const slotNames = {
-                    'full': 'Полный день (09:00 - 18:00)',
-                    'morning': 'Утро (09:00 - 12:00)',
-                    'day': 'День (12:00 - 15:00)',
-                    'afternoon': 'Вечер (15:00 - 18:00)'
-                };
-                displayText = slotNames[savedSlot] || 'Полный день (09:00 - 18:00)';
+                console.log('Нет новых заказов');
             }
-            
-            document.getElementById('currentWorkSlotDisplay').textContent = displayText;
-            document.getElementById('workTimeCard').style.display = 'none';
-            document.getElementById('activeWorkInfo').style.display = 'flex';
-        }
-    });
+        })
+        .catch(error => console.error('API ошибка:', error));
+}
 
-    window.addEventListener('beforeunload', function() {
-        if (window.pingInterval) {
-            clearInterval(window.pingInterval);
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('Страница загружена');
+    
+    // Запускаем проверку новых заказов
+    setInterval(checkNewOrdersViaAPI, 5000);
+    checkNewOrdersViaAPI();
+    
+    // Запускаем обновление времени перерывов
+    updateRemainingBreakTime();
+    setInterval(updateRemainingBreakTime, 30000);
+    
+    loadActiveOrdersCount();
+    setInterval(loadActiveOrdersCount, 30000);
+    
+    const savedSlot = localStorage.getItem('courier_work_slot');
+    const savedDate = localStorage.getItem('courier_work_date');
+    const savedStart = localStorage.getItem('courier_work_start');
+    const savedEnd = localStorage.getItem('courier_work_end');
+    const today = new Date().toDateString();
+    const shiftStatus = '{{ shift_status }}';
+    
+    if (savedSlot && savedDate === today && shiftStatus === 'on') {
+        let displayText = '';
+        
+        if (savedSlot === 'custom' && savedStart && savedEnd) {
+            displayText = `Индивидуальный график: ${savedStart} - ${savedEnd}`;
+        } else {
+            const slotNames = {
+                'full': 'Полный день (09:00 - 18:00)',
+                'morning': 'Утро (09:00 - 12:00)',
+                'day': 'День (12:00 - 15:00)',
+                'afternoon': 'Вечер (15:00 - 18:00)'
+            };
+            displayText = slotNames[savedSlot] || 'Полный день (09:00 - 18:00)';
         }
-        if (socket && socket.readyState === WebSocket.OPEN) {
-            socket.close();
+        
+        const displayElement = document.getElementById('currentWorkSlotDisplay');
+        if (displayElement) {
+            displayElement.textContent = displayText;
         }
-    });
+        const workCard = document.getElementById('workTimeCard');
+        const activeInfo = document.getElementById('activeWorkInfo');
+        if (workCard) workCard.style.display = 'none';
+        if (activeInfo) activeInfo.style.display = 'flex';
+    }
+});
+    
 </script>
 {% endblock %}
